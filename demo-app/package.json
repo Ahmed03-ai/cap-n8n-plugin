@@ -1,12 +1,22 @@
 {
   "name": "demo-app",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "workspaces": [
+    "../cap-n8n-plugin"
+  ],
+  "dependencies": {
+    "@sap/cds": "^9.9.1",
+    "cap-n8n-plugin": "*"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "devDependencies": {
+    "@cap-js/sqlite": "^2.4"
+  },
+  "scripts": {
+    "start": "cds-serve"
+  },
+  "cds": {
+  "server": {
+    "port": 3000
+  }
+}
 }
