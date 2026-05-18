@@ -15,8 +15,16 @@
     "start": "cds-serve"
   },
   "cds": {
-  "server": {
-    "port": 3000
+    "requires": {
+      "n8n": {
+        "credentials": {
+          "baseUrl": "http://localhost:5678",
+          "apiKey": "{env.N8N_API_KEY}"
+        }
+      }
+    },
+    "server": {
+      "port": 3000
+    }
   }
-}
 }
