@@ -43,7 +43,8 @@ We have set up a programmatic integration where creating a new Book in CAP notif
 
 1. Ensure n8n is running.
 2. In the n8n UI, open the "cap-test-trigger" workflow and click "Test step" on the Webhook node, or ensure the workflow is active.
-3. Use the `demo-app/test.http` file with the VSCode REST Client to send a `POST` request to CAP. Alternatively, use curl:
+3. Use the `demo-app/test.http` file to send a `POST` request to CAP. **Tip:** The easiest way to trigger this request is by installing the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension in VS Code, which adds a "Send Request" button directly above the request in the file.
+   Alternatively, use curl:
    ```bash
    curl -X POST http://localhost:3000/odata/v4/admin/Books \
    -H "Content-Type: application/json" \
