@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAP CAP n8n Node — UI Mockups</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f0f0f0;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    max-width: 1100px;
+    margin: 0 auto 56px;
+  }
+  .page-header h1 {
+    font-size: 30px;
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.5px;
+  }
+  .page-header p {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #888;
+  }
+
+  /* ── Section wrapper ── */
+  .section {
+    max-width: 1100px;
+    margin: 0 auto 72px;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 20px;
+  }
+
+  /* ── Node card shell ── */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    background: #003399;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .card-icon {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; color: #fff;
+    flex-shrink: 0;
+    font-family: Georgia, serif;
+  }
+  .card-header-text h3 {
+    font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .card-header-text p {
+    font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px;
+  }
+  .card-body { padding: 24px 22px; }
+
+  /* ── Layout helpers ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) {
+    .two-col, .three-col { grid-template-columns: 1fr; }
+  }
+
+  /* ── Form fields ── */
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+
+  .field-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    color: #444; margin-bottom: 6px;
+  }
+  .field-label .required { color: #bb0000; }
+  .optional-badge {
+    font-size: 10px; font-weight: 600;
+    background: #f0f0f0; color: #888;
+    border-radius: 4px; padding: 1px 6px;
+    letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .field-hint {
+    font-size: 12px; color: #999;
+    margin-top: 5px; line-height: 1.4;
+  }
+
+  .input {
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: #1a1a1a;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+    appearance: none;
+  }
+  .input:focus { border-color: #003399; }
+  .input::placeholder { color: #bbb; }
+  .input.mono { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
+
+  select.input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px; cursor: pointer;
+  }
+
+  textarea.input {
+    resize: vertical; min-height: 88px;
+    line-height: 1.6;
+  }
+
+  .input-password { position: relative; }
+  .input-password .input { padding-right: 38px; }
+  .input-password .eye {
+    position: absolute; right: 10px; top: 50%;
+    transform: translateY(-50%);
+    color: #bbb; font-size: 14px; cursor: pointer;
+  }
+
+  /* ── Auth type toggle ── */
+  .auth-toggle {
+    display: flex;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .auth-btn {
+    flex: 1; padding: 8px 12px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; text-align: center;
+    background: #fff; color: #999;
+    border: none; transition: all 0.15s;
+    user-select: none;
+  }
+  .auth-btn + .auth-btn { border-left: 1.5px solid #e0e0e0; }
+  .auth-btn.active { background: #003399; color: #fff; }
+
+  /* ── Operation selector (6-button grid) ── */
+  .op-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .op-btn {
+    padding: 7px 8px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fff; color: #666;
+    cursor: pointer; text-align: center;
+    transition: all 0.15s; user-select: none;
+  }
+  .op-btn.active {
+    border-color: #003399;
+    color: #003399;
+    background: #f0f4ff;
+  }
+
+  /* ── Conceptual callout (Phillip's yellow box) ── */
+  .callout {
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+  .callout-yellow {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    color: #78350f;
+  }
+  .callout-yellow strong { font-weight: 700; color: #92400e; }
+  .callout-blue {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    color: #1e3a5f;
+  }
+  .callout-blue strong { font-weight: 700; }
+
+  /* ── Divider ── */
+  hr.divider {
+    border: none; border-top: 1px solid #f0f0f0;
+    margin: 18px 0;
+  }
+
+  /* ── Status messages ── */
+  .status {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 13px; padding: 10px 14px;
+    border-radius: 6px; margin-top: 14px;
+    line-height: 1.4;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .status-success { background: #f0fdf4; color: #166534; }
+  .status-success .status-dot { background: #22c55e; }
+  .status-error { background: #fef2f2; color: #991b1b; }
+  .status-error .status-dot { background: #ef4444; }
+  .status-warning { background: #fffbeb; color: #92400e; }
+  .status-warning .status-dot { background: #f59e0b; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 6px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-primary { background: #003399; color: #fff; }
+  .btn-primary:hover { background: #002080; }
+  .btn-outline {
+    background: #fff; color: #444;
+    border: 1.5px solid #e0e0e0;
+  }
+  .btn-outline:hover { border-color: #bbb; color: #111; }
+  .btn-row {
+    display: flex; gap: 10px; align-items: center;
+    margin-top: 20px;
+  }
+  .btn-row .spacer { flex: 1; }
+
+  /* ── Output / code box ── */
+  .output-box {
+    background: #1e1e1e;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.7;
+    overflow-x: auto;
+  }
+  .output-box .k { color: #60a5fa; }   /* key */
+  .output-box .s { color: #4ade80; }   /* string */
+  .output-box .n { color: #fb923c; }   /* number */
+  .output-box .c { color: #555; font-style: italic; }  /* comment */
+  .output-box .kw { color: #a78bfa; }  /* keyword */
+
+  /* ── Error states grid ── */
+  .error-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  @media (max-width: 700px) { .error-grid { grid-template-columns: 1fr; } }
+
+  .error-item {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #991b1b;
+  }
+  .error-item strong { display: block; font-weight: 700; margin-bottom: 3px; color: #7f1d1d; }
+  .error-item code {
+    font-family: 'SF Mono', monospace; font-size: 11px;
+    background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px;
+  }
+  .warn-item {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #92400e;
+  }
+  .warn-item strong { display: block; font-weight: 700; margin-bottom: 3px; }
+  .warn-item code {
+    font-family: 'SF Mono', monospace; font-size: 11px;
+    background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* ── Annotation block ── */
+  .annotations {
+    margin-top: 14px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .annotation {
+    font-size: 12px; color: #888;
+    display: flex; gap: 8px; align-items: baseline;
+    padding-left: 4px;
+  }
+  .annotation::before { content: '→'; color: #ccc; flex-shrink: 0; }
+  .annotation strong { color: #666; }
+  .annotation code {
+    font-family: 'SF Mono', monospace; font-size: 11px;
+    background: #f0f0f0; padding: 1px 5px; border-radius: 3px; color: #555;
+  }
+
+  /* ── US tag ── */
+  .us-tag {
+    display: inline-block;
+    background: #fef3c7; color: #92400e;
+    border: 1px solid #fde68a;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+    margin-left: 10px; vertical-align: middle;
+  }
+
+  /* ── Section description ── */
+  .section-desc {
+    font-size: 13px; color: #777;
+    margin-bottom: 20px; line-height: 1.5;
+  }
+
+  footer {
+    text-align: center; max-width: 1100px; margin: 0 auto;
+    padding-top: 24px; border-top: 1px solid #e0e0e0;
+    font-size: 12px; color: #bbb;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     PAGE HEADER
+═══════════════════════════════════════════════ -->
+<div class="page-header">
+  <h1>SAP CAP Community Node — UI Mockups</h1>
+  <p>Wireframes for the n8n node editor panels · n8n ↔ CAP integration</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP 1 — CREDENTIALS
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Mockup 1 — Credential Configuration</div>
+  <p class="section-desc">
+    Users configure how the node authenticates against their SAP CAP OData service.
+    Left panel shows Basic Auth with a successful test; right shows OAuth2 with a failed test.
+  </p>
+
+  <div class="two-col">
+
+    <!-- Basic Auth — success state -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP API</h3>
+          <p>Create New Credential</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential Name <span class="required">*</span></div>
+          <input class="input" type="text" value="My CAP Service">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Base URL <span class="required">*</span></div>
+          <input class="input mono" type="text" value="http://localhost:4004">
+          <div class="field-hint">Root URL of the CAP OData service</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Authentication Type <span class="required">*</span></div>
+          <div class="auth-toggle">
+            <div class="auth-btn active">Basic Auth</div>
+            <div class="auth-btn">OAuth2</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Username <span class="required">*</span></div>
+          <input class="input" type="text" value="alice">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Password <span class="required">*</span></div>
+          <div class="input-password">
+            <input class="input" type="password" value="password">
+            <span class="eye">👁</span>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:4px">Test Connection</button>
+
+        <div class="status status-success">
+          <div class="status-dot"></div>
+          Connection successful — service reachable
+        </div>
+
+        <div class="btn-row">
+          <div class="spacer"></div>
+          <button class="btn btn-outline">Cancel</button>
+          <button class="btn btn-primary">Save Credential</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- OAuth2 — error state -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP API</h3>
+          <p>Create New Credential</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential Name <span class="required">*</span></div>
+          <input class="input" type="text" value="My BTP CAP Service">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Base URL <span class="required">*</span></div>
+          <input class="input mono" type="text" value="https://my-app.cfapps.eu10.hana.ondemand.com">
+          <div class="field-hint">Root URL of the CAP OData service</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Authentication Type <span class="required">*</span></div>
+          <div class="auth-toggle">
+            <div class="auth-btn">Basic Auth</div>
+            <div class="auth-btn active">OAuth2</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Token URL <span class="required">*</span></div>
+          <input class="input mono" type="text" placeholder="https://…/oauth/token">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Client ID <span class="required">*</span></div>
+          <input class="input" type="text" placeholder="sb-my-app-client">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Client Secret <span class="required">*</span></div>
+          <div class="input-password">
+            <input class="input" type="password" placeholder="••••••••">
+            <span class="eye">👁</span>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:4px">Test Connection</button>
+
+        <div class="status status-error">
+          <div class="status-dot"></div>
+          401 Unauthorised — check client secret
+        </div>
+
+        <div class="btn-row">
+          <div class="spacer"></div>
+          <button class="btn btn-outline">Cancel</button>
+          <button class="btn btn-primary">Save Credential</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.two-col -->
+
+  <div class="two-col" style="margin-top:16px">
+    <div>
+      <strong style="font-size:13px">Credential screen — Basic Auth</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        The workflow designer enters the CAP service URL and login details once.
+        All CAP nodes in any workflow can then reuse this credential.
+        A "Test Connection" button calls <code style="font-size:11px;background:#f0f0f0;padding:1px 5px;border-radius:3px">GET /$metadata</code> to verify credentials and discover available entity sets.
+      </p>
+    </div>
+    <div>
+      <strong style="font-size:13px">Credential screen — OAuth2</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        For BTP-deployed CAP services, OAuth2 client credentials flow is used.
+        The node fetches and caches a bearer token before each request.
+        A failed test shows a clear error so the user knows exactly what to fix.
+      </p>
+    </div>
+  </div>
+
+  <div class="annotations" style="margin-top:12px">
+    <div class="annotation"><strong>Test Connection</strong> — calls <code>GET /$metadata</code>; on success, entity sets are cached for dropdowns in the node config</div>
+    <div class="annotation"><strong>OAuth2 token</strong> — fetched via client credentials grant, cached until expiry, refreshed automatically</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP 2 — QUERY & READ
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Mockup 2 — Query Mode vs Read Mode</div>
+  <p class="section-desc">
+    Two ways to fetch data. The yellow callout explains the intent behind each mode so workflow
+    designers choose the right one without needing to know OData.
+  </p>
+
+  <div class="two-col">
+
+    <!-- Query mode -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Query — fetch a list</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn active">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn">Action</div>
+          </div>
+        </div>
+
+        <div class="callout callout-yellow">
+          <strong>Query</strong> — I don't know the ID yet. Search or browse a list of records, optionally filtered and sorted.
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option><option>Authors</option><option>Orders</option></select>
+          <div class="field-hint">Loaded from $metadata</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Filter <span class="optional-badge">Optional</span></div>
+          <input class="input mono" type="text" value="price gt 10">
+          <div class="field-hint">OData $filter expression</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Sort By <span class="optional-badge">Optional</span></div>
+          <input class="input mono" type="text" placeholder="title asc">
+          <div class="field-hint">OData $orderby expression</div>
+        </div>
+
+        <div class="two-col" style="gap:10px">
+          <div class="field">
+            <div class="field-label">Limit <span class="optional-badge">Optional</span></div>
+            <input class="input" type="number" value="10">
+            <div class="field-hint">Max results ($top)</div>
+          </div>
+          <div class="field">
+            <div class="field-label">Skip <span class="optional-badge">Optional</span></div>
+            <input class="input" type="number" placeholder="0">
+            <div class="field-hint">Results to skip ($skip)</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Select Fields <span class="optional-badge">Optional</span></div>
+          <input class="input mono" type="text" placeholder="ID, title, price">
+          <div class="field-hint">Comma-separated ($select). Blank returns all fields.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Read mode -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Read — fetch one record</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn active">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn">Action</div>
+          </div>
+        </div>
+
+        <div class="callout callout-yellow">
+          <strong>Read</strong> — I already know the exact ID. Fetch that one specific record directly.
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option></select>
+          <div class="field-hint">Loaded from $metadata</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">ID (Primary Key) <span class="required">*</span></div>
+          <input class="input mono" type="text" value="42">
+          <div class="field-hint">Fetches Books(42) — returns exactly one record or a "not found" error</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Expand <span class="optional-badge">Optional</span></div>
+          <input class="input mono" type="text" placeholder="author, genre">
+          <div class="field-hint">Include related entities ($expand)</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Select Fields <span class="optional-badge">Optional</span></div>
+          <input class="input mono" type="text" placeholder="ID, title, price">
+          <div class="field-hint">Comma-separated ($select). Blank returns all fields.</div>
+        </div>
+
+        <hr class="divider">
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">Output Preview</div>
+        <div class="output-box">
+{<br>
+&nbsp;&nbsp;<span class="k">"ID"</span>: <span class="n">42</span>,<br>
+&nbsp;&nbsp;<span class="k">"title"</span>: <span class="s">"Wuthering Heights"</span>,<br>
+&nbsp;&nbsp;<span class="k">"price"</span>: <span class="n">11.11</span>,<br>
+&nbsp;&nbsp;<span class="k">"stock"</span>: <span class="n">12</span>,<br>
+&nbsp;&nbsp;<span class="k">"author"</span>: { <span class="k">"name"</span>: <span class="s">"Emily Brontë"</span> }<br>
+}
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.two-col -->
+
+  <div class="two-col" style="margin-top:16px">
+    <div>
+      <strong style="font-size:13px">Query mode — "I need a list"</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Use this when you don't know which records you want yet. You can filter, sort, and paginate.
+        Returns an array — each record becomes a separate item in n8n for the next node to process.
+      </p>
+    </div>
+    <div>
+      <strong style="font-size:13px">Read mode — "I need one specific record"</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Use this when a previous step already gave you an ID. No filtering or sorting — just provide the key
+        and get that exact record back. Returns a single object, not a list.
+      </p>
+    </div>
+  </div>
+
+  <div class="annotations" style="margin-top:12px">
+    <div class="annotation"><strong>n8n expressions</strong> — all fields accept <code>{{ $json.field }}</code> to reference data from previous nodes</div>
+    <div class="annotation"><strong>Action operation</strong> — reserved for CAP custom actions/functions (e.g. <code>POST /CatalogService/submitOrder</code>); shown in the selector to indicate scope, detailed in a future mockup</div>
+    <div class="annotation"><strong>Query URL</strong> — constructed as <code>{baseUrl}/odata/v4/{service}/{entity}?$filter=…&$top=…&$skip=…</code></div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP 3 — CREATE / UPDATE / DELETE
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Mockup 3 — Create, Update and Delete Modes</div>
+  <p class="section-desc">
+    Write operations against CAP entities — shown side by side so implementers can compare
+    what changes between each mode at a glance.
+  </p>
+
+  <div class="three-col">
+
+    <!-- Create -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Create — add a new record</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn active">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn">Action</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Body (JSON) <span class="required">*</span></div>
+          <textarea class="input mono">{
+  "title": "New Book",
+  "price": 19.99
+}</textarea>
+          <div class="field-hint">Fields to create. Server-generated fields (e.g. ID) are returned in the output.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Update -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Update — edit a record</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn active">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn">Action</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">ID (Primary Key) <span class="required">*</span></div>
+          <input class="input mono" type="text" value="42">
+        </div>
+
+        <div class="field">
+          <div class="field-label">Body (JSON) <span class="required">*</span></div>
+          <textarea class="input mono">{
+  "price": 24.99
+}</textarea>
+          <div class="field-hint">Only include fields you want to change (PATCH — partial update).</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Delete -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Delete — remove a record</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn active">Delete</div>
+            <div class="op-btn">Action</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">ID (Primary Key) <span class="required">*</span></div>
+          <input class="input mono" type="text" value="42">
+          <div class="field-hint">Sends DELETE to Books(42). Returns confirmation or a "not found" error.</div>
+        </div>
+
+        <div class="status status-warning" style="margin-top:16px">
+          <div class="status-dot"></div>
+          Irreversible — deletion cannot be undone
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.three-col -->
+
+  <div class="three-col" style="margin-top:16px">
+    <div>
+      <strong style="font-size:13px">Create mode</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Sends a POST request with the JSON body. The created record — including any server-generated fields like ID — is returned as output for the next node.
+      </p>
+    </div>
+    <div>
+      <strong style="font-size:13px">Update mode</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        You provide the ID of the record and only the fields you want to change. Fields you leave out are not touched. Uses PATCH, not PUT.
+      </p>
+    </div>
+    <div>
+      <strong style="font-size:13px">Delete mode</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Provide the ID of the record to remove. Returns confirmation on success, or a clear "not found" error if the record doesn't exist.
+      </p>
+    </div>
+  </div>
+
+  <div class="annotations" style="margin-top:12px">
+    <div class="annotation"><strong>Create</strong> — <code>POST {baseUrl}/odata/v4/{service}/{entity}</code> with JSON body</div>
+    <div class="annotation"><strong>Update</strong> — <code>PATCH {baseUrl}/odata/v4/{service}/{entity}({key})</code>, only changed fields needed</div>
+    <div class="annotation"><strong>Delete</strong> — <code>DELETE {baseUrl}/odata/v4/{service}/{entity}({key})</code>, returns 204 No Content on success</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP 4 — PROGRAMMATIC TRIGGER (US 2.1)
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">
+    Mockup 4 — Programmatic Workflow Trigger
+    <span class="us-tag">US 2.1 — In Progress</span>
+  </div>
+  <p class="section-desc">
+    The CAP → n8n direction. A CAP developer calls <code style="font-size:12px;background:#f0f0f0;padding:1px 6px;border-radius:3px">N8nWorkflowService.start(workflowId, inputs)</code>
+    from a Node.js event handler to trigger an n8n workflow. Left shows the CAP configuration and code;
+    right shows the n8n Webhook Trigger node that receives the call.
+  </p>
+
+  <div class="two-col">
+
+    <!-- Left: CAP side -->
+    <div class="card">
+      <div class="card-header" style="background:#3b5998">
+        <div class="card-icon" style="background:rgba(255,255,255,0.2);font-size:14px">CAP</div>
+        <div class="card-header-text">
+          <h3>CAP Configuration</h3>
+          <p>cap-n8n-plugin · server-side setup</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="callout callout-blue" style="margin-bottom:20px">
+          No visual node UI here — this is configured in code. The mockup shows what the developer writes.
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">
+          cds.requires — package.json
+        </div>
+        <div class="output-box" style="margin-bottom:20px">
+<span class="k">"cds"</span>: {<br>
+&nbsp;&nbsp;<span class="k">"requires"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"n8n"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"kind"</span>: <span class="s">"n8n"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"url"</span>: <span class="s">"http://localhost:5678"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"auth"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"type"</span>: <span class="s">"basic"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"user"</span>: <span class="s">"admin"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"password"</span>: <span class="s">"env:N8N_PASSWORD"</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;}<br>
+}
+        </div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">
+          Usage in a CAP event handler
+        </div>
+        <div class="output-box">
+<span class="c">// Connect once at module level</span><br>
+<span class="kw">const</span> n8n = <span class="kw">await</span> cds.connect.to(<span class="s">'n8n'</span>);<br><br>
+<span class="c">// Inside your CAP handler</span><br>
+this.on(<span class="s">'submitOrder'</span>, <span class="kw">async</span> req => {<br>
+&nbsp;&nbsp;<span class="kw">const</span> result = <span class="kw">await</span> n8n.start(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">'order-fulfillment'</span>,&nbsp;&nbsp;<span class="c">// webhook path</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ orderId: req.data.ID }<br>
+&nbsp;&nbsp;);<br>
+&nbsp;&nbsp;<span class="c">// result.executionId → "42"</span><br>
+});
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: n8n Webhook Trigger -->
+    <div class="card">
+      <div class="card-header" style="background:#2d6a4f">
+        <div class="card-icon" style="background:rgba(255,255,255,0.2);font-size:16px">🪝</div>
+        <div class="card-header-text">
+          <h3>Webhook Trigger</h3>
+          <p>n8n — entry point for CAP-triggered workflows</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">HTTP Method</div>
+          <select class="input"><option>POST</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Path <span class="required">*</span></div>
+          <div style="display:flex;gap:8px">
+            <input class="input mono" type="text" value="order-fulfillment" style="flex:1">
+            <button class="btn btn-outline" style="white-space:nowrap;font-size:12px;padding:9px 12px">Copy URL</button>
+          </div>
+          <div class="field-hint">http://localhost:5678/webhook/order-fulfillment</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Authentication</div>
+          <select class="input"><option>Basic Auth</option><option>Header Auth</option><option>None</option></select>
+        </div>
+
+        <hr class="divider">
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">
+          Incoming payload from CAP
+        </div>
+        <div class="output-box" style="margin-bottom:16px">
+{<br>
+&nbsp;&nbsp;<span class="k">"workflowId"</span>: <span class="s">"order-fulfillment"</span>,<br>
+&nbsp;&nbsp;<span class="k">"inputs"</span>: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"orderId"</span>: <span class="n">1042</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">"triggeredBy"</span>: <span class="s">"OrderService"</span><br>
+&nbsp;&nbsp;},<br>
+&nbsp;&nbsp;<span class="k">"callbackUrl"</span>: <span class="s">"http://cap-app/n8n/callback"</span><br>
+}
+        </div>
+
+        <div class="status status-success">
+          <div class="status-dot"></div>
+          Execution ID 42 returned to CAP caller
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.two-col -->
+
+  <!-- Error states -->
+  <div class="card" style="margin-top:20px">
+    <div class="card-header" style="background:#7f1d1d">
+      <div class="card-icon" style="background:rgba(255,255,255,0.2);font-size:16px">⚡</div>
+      <div class="card-header-text">
+        <h3>Error States</h3>
+        <p>How errors surface — covers US 2.1 acceptance criteria on error propagation</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="error-grid">
+        <div class="error-item">
+          <strong>401 Unauthorised</strong>
+          Invalid credentials for the n8n instance. Check <code>cds.requires.n8n.auth</code> config or the env variable.
+        </div>
+        <div class="error-item">
+          <strong>404 Not Found — entity</strong>
+          Entity <code>Books(999)</code> does not exist. Returned as a standard CDS error to the handler.
+        </div>
+        <div class="error-item">
+          <strong>Workflow not found</strong>
+          No active workflow with webhook path <code>order-fulfillment</code>. Check the path matches exactly in n8n.
+        </div>
+        <div class="error-item">
+          <strong>400 Bad Request</strong>
+          OData validation error: <code>Value for 'price' must be a number</code>. Propagated as CDS error.
+        </div>
+        <div class="error-item">
+          <strong>Connection refused</strong>
+          Could not reach n8n at <code>http://localhost:5678</code>. Is the n8n instance running and accessible?
+        </div>
+        <div class="warn-item">
+          <strong>No retry by default</strong>
+          <code>n8n.start()</code> does not retry on failure. Handle retries in the CAP handler with try/catch, or add an n8n retry node downstream.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="annotations" style="margin-top:14px">
+    <div class="annotation"><strong>N8nWorkflowService</strong> — provided by <code>cap-n8n-plugin</code>; registered via <code>cds.connect.to('n8n')</code></div>
+    <div class="annotation"><strong>workflowId</strong> — must match the Webhook Trigger path in n8n exactly (case-sensitive)</div>
+    <div class="annotation"><strong>executionId</strong> — returned synchronously when n8n accepts the call; the workflow result itself is async unless a callback URL is used</div>
+    <div class="annotation"><strong>Error propagation</strong> — per US 2.1 AC, all n8n API errors are re-thrown as standard CDS errors so CAP handlers catch them normally</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MOCKUP 5 — ACTION OPERATION
+═══════════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-label">Mockup 5 — Action Operation</div>
+  <p class="section-desc">
+    CAP services can expose custom actions and functions beyond standard CRUD — for example
+    <code style="font-size:12px;background:#f0f0f0;padding:1px 6px;border-radius:3px">submitOrder</code> or
+    <code style="font-size:12px;background:#f0f0f0;padding:1px 6px;border-radius:3px">calculateDiscount</code>.
+    These are called via POST and take typed parameters. The user picks the action from a dropdown
+    and provides parameters as a JSON object.
+  </p>
+
+  <div class="two-col">
+
+    <!-- Bound action -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Action — bound (entity-level)</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn active">Action</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Action Type <span class="required">*</span></div>
+          <div class="auth-toggle">
+            <div class="auth-btn active">Bound</div>
+            <div class="auth-btn">Unbound</div>
+          </div>
+          <div class="field-hint">Bound — tied to a specific entity record</div>
+        </div>
+
+        <div class="callout callout-yellow">
+          <strong>Bound action</strong> — runs in the context of one record. Requires the entity and its ID. Example: <code style="font-size:11px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px">POST /CatalogService/Books(201)/addReview</code>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Entity Set <span class="required">*</span></div>
+          <select class="input"><option>Books</option><option>Authors</option><option>Orders</option></select>
+          <div class="field-hint">Loaded from $metadata</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">ID (Primary Key) <span class="required">*</span></div>
+          <input class="input mono" type="text" value="{{ $json.bookID }}">
+          <div class="field-hint">The record the action will be applied to</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Action <span class="required">*</span></div>
+          <select class="input">
+            <option>addReview</option>
+            <option>archive</option>
+          </select>
+          <div class="field-hint">Loaded from $metadata — only actions bound to the selected entity</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Parameters <span class="optional-badge">Optional</span></div>
+          <textarea class="input mono">{
+  "rating": 5,
+  "comment": "Excellent"
+}</textarea>
+          <div class="field-hint">JSON object matching the action's parameter signature</div>
+        </div>
+
+        <hr class="divider">
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">Output Preview</div>
+        <div class="output-box">
+{<br>
+&nbsp;&nbsp;<span class="k">"reviewID"</span>: <span class="n">88</span>,<br>
+&nbsp;&nbsp;<span class="k">"status"</span>: <span class="s">"accepted"</span><br>
+}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Unbound action -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">C</div>
+        <div class="card-header-text">
+          <h3>SAP CAP Node</h3>
+          <p>Action — unbound (service-level)</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <div class="field-label">Credential <span class="required">*</span></div>
+          <select class="input"><option>My CAP Service</option></select>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Operation <span class="required">*</span></div>
+          <div class="op-grid">
+            <div class="op-btn">Query</div>
+            <div class="op-btn">Read</div>
+            <div class="op-btn">Create</div>
+            <div class="op-btn">Update</div>
+            <div class="op-btn">Delete</div>
+            <div class="op-btn active">Action</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Action Type <span class="required">*</span></div>
+          <div class="auth-toggle">
+            <div class="auth-btn">Bound</div>
+            <div class="auth-btn active">Unbound</div>
+          </div>
+          <div class="field-hint">Unbound — called at service level, not tied to a specific record</div>
+        </div>
+
+        <div class="callout callout-yellow">
+          <strong>Unbound action</strong> — runs at the service level. No entity record needed. Example: <code style="font-size:11px;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px">POST /CatalogService/submitOrder</code>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Action <span class="required">*</span></div>
+          <select class="input">
+            <option>submitOrder</option>
+            <option>calculateDiscount</option>
+            <option>sendNotification</option>
+          </select>
+          <div class="field-hint">Loaded from $metadata — shows only actions, not functions</div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">Parameters <span class="optional-badge">Optional</span></div>
+          <textarea class="input mono">{
+  "orderID": 201,
+  "quantity": 3
+}</textarea>
+          <div class="field-hint">JSON object matching the action's parameter signature</div>
+        </div>
+
+        <hr class="divider">
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#aaa;margin-bottom:8px">Output Preview</div>
+        <div class="output-box">
+{<br>
+&nbsp;&nbsp;<span class="k">"value"</span>: <span class="s">"Order 201 submitted successfully"</span><br>
+}
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /.two-col -->
+
+  <div class="two-col" style="margin-top:16px">
+    <div>
+      <strong style="font-size:13px">Bound action</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Called in the context of a specific record.
+        Sends <code style="font-size:11px;background:#f0f0f0;padding:1px 5px;border-radius:3px">POST /odata/v4/{service}/{entity}({id})/{actionName}</code>
+        with parameters as the request body.
+      </p>
+    </div>
+    <div>
+      <strong style="font-size:13px">Unbound action</strong>
+      <p style="font-size:13px;color:#666;margin-top:4px;line-height:1.5">
+        Called at the service level with no specific record context.
+        Sends <code style="font-size:11px;background:#f0f0f0;padding:1px 5px;border-radius:3px">POST /odata/v4/{service}/{actionName}</code>
+        with the parameters as the request body.
+      </p>
+    </div>
+  </div>
+
+  <!-- Future enhancement note -->
+  <div style="margin-top:20px;padding:16px 20px;background:#fff;border:1.5px dashed #d0d0d0;border-radius:10px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;color:#aaa;margin-bottom:8px">Future Enhancement — Dynamic Parameter Fields</div>
+    <p style="font-size:13px;color:#666;line-height:1.6">
+      The current design uses a single JSON input for parameters. A future version could instead
+      read the action's parameter definitions from <code style="font-size:11px;background:#f0f0f0;padding:1px 5px;border-radius:3px">$metadata</code>
+      and render individual typed input fields for each parameter — similar to how Salesforce or HubSpot nodes
+      work in n8n. This would give non-technical users a guided form instead of a raw JSON editor,
+      with the correct field types (text, number, dropdown) inferred automatically from the action definition.
+    </p>
+  </div>
+
+  <div class="annotations" style="margin-top:14px">
+    <div class="annotation"><strong>$metadata filtering</strong> — the Action dropdown should only show <code>Action</code> elements from metadata, not <code>Function</code> elements (functions use GET, not POST)</div>
+    <div class="annotation"><strong>Empty parameters</strong> — if the action takes no parameters, the field can be left blank or set to <code>{}</code>; the node should handle both gracefully</div>
+    <div class="annotation"><strong>Return type</strong> — CAP actions can return a primitive, a complex type, an entity, or nothing (204); the output preview should reflect whatever comes back</div>
+  </div>
+</div>
+
+
+<footer>
+  cap-n8n-plugin · UI Mockups v2 · Design reference · Not functional
+</footer>
+
+<script>
+  // Op button switching within each card (independent per card)
+  document.querySelectorAll('.card').forEach(card => {
+    card.querySelectorAll('.op-grid').forEach(grid => {
+      grid.querySelectorAll('.op-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          grid.querySelectorAll('.op-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+    });
+
+    // Auth toggle (Mockup 1)
+    card.querySelectorAll('.auth-toggle').forEach(toggle => {
+      toggle.querySelectorAll('.auth-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          toggle.querySelectorAll('.auth-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+    });
+  });
+</script>
+
+</body>
+</html>
