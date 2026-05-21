@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CAP n8n Node — UI Mockups</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f0f0;
+      padding: 40px 24px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #111;
+    }
+    .page-subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .mockup-row {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 48px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    /* n8n panel shell */
+    .panel {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+      width: 320px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .panel-header {
+      background: #ff6d5a;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-header .icon {
+      width: 28px; height: 28px;
+      background: #fff;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ff6d5a;
+      flex-shrink: 0;
+    }
+    .panel-header .title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .panel-header .subtitle {
+      font-size: 11px;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field-required {
+      color: #e03;
+      margin-left: 2px;
+    }
+    .field-input {
+      width: 100%;
+      border: 1.5px solid #ddd;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: #333;
+      background: #fafafa;
+    }
+    .field-input.placeholder {
+      color: #aaa;
+    }
+    .field-select {
+      width: 100%;
+      border: 1.5px solid #ddd;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: #333;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .field-select .arrow { color: #aaa; font-size: 11px; }
+
+    .field-hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #eee;
+      margin: 14px 0;
+    }
+
+    /* Highlighted / active mode button */
+    .mode-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .mode-btn {
+      border: 1.5px solid #ddd;
+      border-radius: 5px;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      color: #666;
+      cursor: pointer;
+      background: #fafafa;
+    }
+    .mode-btn.active {
+      border-color: #ff6d5a;
+      background: #fff5f3;
+      color: #ff6d5a;
+    }
+
+    /* Tags / badges */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+    .badge-optional { background: #eee; color: #888; }
+    .badge-required { background: #ffe8e5; color: #e03; }
+
+    /* Test button */
+    .btn {
+      width: 100%;
+      padding: 9px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary { background: #ff6d5a; color: #fff; }
+    .btn-secondary { background: #f0f0f0; color: #555; border: 1.5px solid #ddd; }
+
+    /* Credential screen specifics */
+    .auth-tabs {
+      display: flex;
+      gap: 0;
+      border: 1.5px solid #ddd;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .auth-tab {
+      flex: 1;
+      padding: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      color: #888;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    .auth-tab.active {
+      background: #ff6d5a;
+      color: #fff;
+    }
+
+    /* Status indicator */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 5px;
+      margin-top: 12px;
+    }
+    .status-bar.success { background: #e8f9f0; color: #1a7a4a; }
+    .status-bar.error   { background: #fff0ee; color: #c0392b; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-dot.green { background: #2ecc71; }
+    .status-dot.red   { background: #e74c3c; }
+
+    /* Annotation / callout */
+    .callout {
+      background: #fffbea;
+      border-left: 3px solid #f1c40f;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #7a6000;
+      border-radius: 0 5px 5px 0;
+      margin-bottom: 14px;
+    }
+
+    /* Caption under each panel */
+    .caption {
+      width: 320px;
+      flex-shrink: 0;
+    }
+    .caption h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #111;
+    }
+    .caption p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .mockup-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 320px;
+      flex-shrink: 0;
+    }
+    .mockup-card .caption h3 { font-size: 13px; }
+    .mockup-card .caption p  { font-size: 12px; }
+  </style>
+</head>
+<body>
+
+  <h1>SAP CAP Community Node — UI Mockups</h1>
+  <p class="page-subtitle">Wireframes for the n8n node editor panels · Epic 2 (n8n → CAP)</p>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 1 — CREDENTIAL SCREEN              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <p class="section-title">Mockup 1 — Credential Configuration</p>
+  <div class="mockup-row">
+
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP API</div>
+            <div class="subtitle">Create New Credential</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="field-group">
+            <div class="field-label">Credential Name <span class="field-required">*</span></div>
+            <div class="field-input">My CAP Service</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Base URL <span class="field-required">*</span></div>
+            <div class="field-input">http://localhost:3000</div>
+            <div class="field-hint">Root URL of the CAP OData service</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Authentication Type <span class="field-required">*</span></div>
+            <div class="auth-tabs">
+              <div class="auth-tab active">Basic Auth</div>
+              <div class="auth-tab">OAuth2</div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Username <span class="field-required">*</span></div>
+            <div class="field-input">alice</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Password <span class="field-required">*</span></div>
+            <div class="field-input placeholder">••••••••</div>
+          </div>
+
+          <button class="btn btn-secondary">Test Connection</button>
+          <div class="status-bar success">
+            <div class="status-dot green"></div>
+            Connection successful — service reachable
+          </div>
+
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Credential screen — Basic Auth</h3>
+        <p>The workflow designer enters the CAP service URL and login details once. All CAP nodes in any workflow can then reuse this credential. A "Test Connection" button verifies the URL and credentials are valid before saving.</p>
+      </div>
+    </div>
+
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP API</div>
+            <div class="subtitle">Create New Credential</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="field-group">
+            <div class="field-label">Credential Name <span class="field-required">*</span></div>
+            <div class="field-input">My BTP CAP Service</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Base URL <span class="field-required">*</span></div>
+            <div class="field-input">https://my-app.cfapps.eu10.hana.ondemand.com</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Authentication Type <span class="field-required">*</span></div>
+            <div class="auth-tabs">
+              <div class="auth-tab">Basic Auth</div>
+              <div class="auth-tab active">OAuth2</div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Token URL <span class="field-required">*</span></div>
+            <div class="field-input placeholder">https://…/oauth/token</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Client ID <span class="field-required">*</span></div>
+            <div class="field-input placeholder">sb-my-app-client</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Client Secret <span class="field-required">*</span></div>
+            <div class="field-input placeholder">••••••••</div>
+          </div>
+
+          <button class="btn btn-secondary">Test Connection</button>
+          <div class="status-bar error">
+            <div class="status-dot red"></div>
+            401 Unauthorised — check client secret
+          </div>
+
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Credential screen — OAuth2</h3>
+        <p>For BTP-deployed CAP services, OAuth2 is used instead. The designer provides the token URL and client credentials. A failed test shows a clear error message pointing to the exact problem.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 2 — NODE PANEL: QUERY vs READ      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <p class="section-title">Mockup 2 — Query Mode vs Read Mode</p>
+  <div class="mockup-row">
+
+    <!-- QUERY MODE -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Query — fetch a list</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">
+              My CAP Service <span class="arrow">▾</span>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn active">Query</div>
+              <div class="mode-btn">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action</div>
+            </div>
+            <div class="callout">
+              <strong>Query</strong> — I don't know the ID yet. Search or browse a list of records, optionally filtered and sorted.
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Entity Set <span class="field-required">*</span></div>
+            <div class="field-select">
+              Books <span class="arrow">▾</span>
+            </div>
+            <div class="field-hint">Loaded from $metadata</div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="field-group">
+            <div class="field-label">Filter <span class="badge badge-optional">Optional</span></div>
+            <div class="field-input">price gt 10</div>
+            <div class="field-hint">OData $filter expression</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Sort By <span class="badge badge-optional">Optional</span></div>
+            <div class="field-input placeholder">title asc</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Limit <span class="badge badge-optional">Optional</span></div>
+            <div class="field-input">10</div>
+            <div class="field-hint">Max number of results ($top)</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Skip <span class="badge badge-optional">Optional</span></div>
+            <div class="field-input placeholder">0</div>
+            <div class="field-hint">Number of results to skip ($skip)</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Query mode — "I need a list"</h3>
+        <p>Use this when you don't know which records you want yet. You can filter, sort and paginate. Returns an array — each record becomes a separate item in n8n for the next node to process.</p>
+      </div>
+    </div>
+
+    <!-- READ MODE -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Read — fetch one record</div>
+          </div>
+        </div>
+        <div class="panel-body">
+
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">
+              My CAP Service <span class="arrow">▾</span>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn">Query</div>
+              <div class="mode-btn active">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action</div>
+            </div>
+            <div class="callout">
+              <strong>Read</strong> — I already know the exact ID. Fetch that one specific record directly.
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Entity Set <span class="field-required">*</span></div>
+            <div class="field-select">
+              Books <span class="arrow">▾</span>
+            </div>
+            <div class="field-hint">Loaded from $metadata</div>
+          </div>
+
+          <hr class="divider" />
+
+          <div class="field-group">
+            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
+            <div class="field-input">42</div>
+            <div class="field-hint">Fetches Books(42) — returns exactly one record or a "not found" error</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Read mode — "I need one specific record"</h3>
+        <p>Use this when a previous step already gave you an ID. No filtering or sorting — just provide the key and get that exact record back. Returns a single object, not a list.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 3 — CREATE / UPDATE / DELETE       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <p class="section-title">Mockup 3 — Create, Update and Delete Modes</p>
+  <div class="mockup-row">
+
+    <!-- CREATE -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Create — add a new record</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">My CAP Service <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn">Query</div>
+              <div class="mode-btn">Read</div>
+              <div class="mode-btn active">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Entity Set <span class="field-required">*</span></div>
+            <div class="field-select">Books <span class="arrow">▾</span></div>
+          </div>
+          <hr class="divider" />
+          <div class="field-group">
+            <div class="field-label">Body (JSON) <span class="field-required">*</span></div>
+            <div class="field-input" style="font-family:monospace;font-size:11px;line-height:1.5">
+              {<br/>
+              &nbsp;&nbsp;"title": "New Book",<br/>
+              &nbsp;&nbsp;"price": 19.99<br/>
+              }
+            </div>
+            <div class="field-hint">Fields to create. Server-generated fields (e.g. ID) are returned in the output.</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Create mode</h3>
+        <p>Sends a POST request with the JSON body. The created record — including any server-generated fields like ID — is returned as output for the next node.</p>
+      </div>
+    </div>
+
+    <!-- UPDATE -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Update — edit a record</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">My CAP Service <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn">Query</div>
+              <div class="mode-btn">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn active">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Entity Set <span class="field-required">*</span></div>
+            <div class="field-select">Books <span class="arrow">▾</span></div>
+          </div>
+          <hr class="divider" />
+          <div class="field-group">
+            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
+            <div class="field-input">42</div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Body (JSON) <span class="field-required">*</span></div>
+            <div class="field-input" style="font-family:monospace;font-size:11px;line-height:1.5">
+              {<br/>
+              &nbsp;&nbsp;"price": 24.99<br/>
+              }
+            </div>
+            <div class="field-hint">Only include fields you want to change (PATCH — partial update).</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Update mode</h3>
+        <p>You provide the ID of the record and only the fields you want to change. Fields you leave out are not touched. Uses PATCH, not PUT.</p>
+      </div>
+    </div>
+
+    <!-- DELETE -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Delete — remove a record</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">My CAP Service <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn">Query</div>
+              <div class="mode-btn">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn active">Delete</div>
+              <div class="mode-btn">Action</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Entity Set <span class="field-required">*</span></div>
+            <div class="field-select">Books <span class="arrow">▾</span></div>
+          </div>
+          <hr class="divider" />
+          <div class="field-group">
+            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
+            <div class="field-input">42</div>
+            <div class="field-hint">Sends DELETE to Books(42). Returns confirmation or a "not found" error.</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Delete mode</h3>
+        <p>Provide the ID of the record to remove. Returns a confirmation on success, or a clear "not found" error if the record doesn't exist.</p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
