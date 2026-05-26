@@ -1,0 +1,14 @@
+### Create a new Book to test n8n trigger
+POST http://localhost:3000/odata/v4/admin/Books
+Content-Type: application/json
+Authorization: Basic YWxpY2U6
+
+{
+  "ID": 1021,
+  "IsActiveEntity": true,
+  "title": "My Successful Trigger Book",
+  "author_ID": 101,
+  "genre_ID": "10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "price": 25.50,
+  "stock": 100
+}

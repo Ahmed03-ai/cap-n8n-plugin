@@ -1,0 +1,14 @@
+{
+  "name": "cap-n8n-plugin-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "demo-app",
+    "cap-n8n-plugin",
+    "cap-n8n-node"
+  ],
+  "scripts": {
+    "n8n:export": "docker compose exec n8n n8n export:workflow --all --output=/test-workflows/workflows.json",
+    "n8n:import": "docker compose exec n8n n8n import:workflow --input=/test-workflows/workflows.json"
+  }
+}
