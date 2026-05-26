@@ -38,20 +38,24 @@ npm install cap-n8n-plugin
    cds watch
    ```
 
+   The demo app is configured to bind the n8n service explicitly through `demo-app/package.json`, so the CAP app can talk to the local n8n container without any extra manual service wiring.
+
 ### Testing the Workflow Trigger
 We have set up a programmatic integration where creating a new Book in CAP notifies an n8n webhook.
 
 1. Ensure n8n is running.
 2. In the n8n UI, open the "cap-test-trigger" workflow and click "Test step" on the Webhook node, or ensure the workflow is active.
-3. Use the `demo-app/test.http` file to send a `POST` request to CAP. **Tip:** The easiest way to trigger this request is by installing the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension in VS Code, which adds a "Send Request" button directly above the request in the file.
+3. Use the `demo-app/test.http` file to send a `POST` request to CAP. The book ID is now generated automatically, so you do not need to include `ID` in the request body. **Tip:** The easiest way to trigger this request is by installing the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension in VS Code, which adds a "Send Request" button directly above the request in the file.
    Alternatively, use curl:
    ```bash
    curl -X POST http://localhost:3000/odata/v4/admin/Books \
    -H "Content-Type: application/json" \
    -H "Authorization: Basic YWxpY2U6" \
-   -d '{"ID": 1022, "IsActiveEntity": true, "title": "My Curl Trigger Book", "author_ID": 101, "genre_ID": "10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "price": 25.50, "stock": 100}'
+   -d '{"IsActiveEntity": true, "title": "My Curl Trigger Book", "author_ID": 101, "genre_ID": "10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "price": 25.50, "stock": 100}'
    ```
 4. Check the n8n UI. You should see the webhook node light up with the event payload!
+
+If you want to import the shared workflow into the local n8n instance, use `npm run n8n:import`. n8n may deactivate the workflow during import, so open it in the UI and activate it or start it in test mode before sending the CAP request.
 
 ### Sharing n8n Workflows with the Team
 
