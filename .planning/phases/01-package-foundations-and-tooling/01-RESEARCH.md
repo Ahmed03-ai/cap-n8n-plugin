@@ -164,7 +164,7 @@ Use a human verification checkpoint before installing `vitest` because slopcheck
 | `cap-n8n-plugin/package.json` | Add `description`, `keywords`, `engines.node: >=20`, `peerDependencies.@sap/cds`, `files`, `main`, `exports`, and consistent `license`. | Existing plugin code requires `@sap/cds`; npm `main` controls `require('pkg')`; `exports` defines public entry points. [VERIFIED: codebase grep] [CITED: https://docs.npmjs.com/files/package.json/] |
 | `cap-n8n-plugin/index.js` | Export `{ N8nWorkflowService }` from `./lib/N8nWorkflowService.js` through package-level API. | Current entry is empty, so package consumers receive no useful API. [VERIFIED: local command audit] |
 | `cap-n8n-plugin/cds-plugin.js` | Keep next to `package.json`; avoid breaking CAP auto-discovery. | CAP docs say `cds-plugin.js` beside package metadata is auto-detected during CAP server bootstrap. [CITED: https://cap.cloud.sap/docs/node.js/cds-plugins] |
-| `cap-n8n-node/package.json` | Keep folder boundary, but use n8n community-node metadata: package name should start `n8n-nodes-` or be scoped as `@scope/n8n-nodes-*`, include `n8n-community-node-package` keyword, and include `n8n.nodes` / `n8n.credentials` manifest paths. | n8n community-node standards require the package-name prefix, keyword, and `n8n` package attribute. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] |
+| `cap-n8n-node/package.json` | Keep folder boundary, but use n8n community-node metadata: package name `n8n-nodes-sap-cap`, include `n8n-community-node-package` keyword, and include `n8n.nodes` / `n8n.credentials` manifest paths. | n8n community-node standards require the package-name prefix, keyword, and `n8n` package attribute; the exact package name was resolved during plan revision. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] |
 | `cap-n8n-node/nodes/SapCap/SapCap.node.ts` | Minimal action node class with metadata and no real OData operations yet. | n8n requires a base file in `nodes` named `<node-name>.node.ts`. [CITED: https://docs.n8n.io/integrations/creating-nodes/build/reference/node-file-structure/] |
 | `cap-n8n-node/credentials/SapCapApi.credentials.ts` | Minimal credential class skeleton; defer auth modes and `$metadata` credential test to Phase 6 unless needed for loadability. | n8n requires credentials files under `credentials`; credential test details are later requirements. [CITED: https://docs.n8n.io/integrations/creating-nodes/build/reference/credentials-files/] [VERIFIED: .planning/REQUIREMENTS.md] |
 | `package-lock.json` | Regenerate from root after package metadata/dependency changes. | npm workspaces and package-lock are root-level install state for linked packages. [CITED: https://docs.npmjs.com/cli/using-npm/workspaces/] |
@@ -320,7 +320,7 @@ assert.ok(Array.isArray(nodePackage.n8n.nodes))
 
 **Why it happens:** Developers conflate repository folder names with public npm package names. [ASSUMED]
 
-**How to avoid:** Keep the folder if desired, but set the package name to a n8n-compatible name such as `n8n-nodes-sap-cap`, pending product approval of the exact name. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] [ASSUMED]
+**How to avoid:** Keep the folder `cap-n8n-node/`, but set the package name to the resolved n8n-compatible name `n8n-nodes-sap-cap`. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] [VERIFIED: revision_context]
 
 **Warning signs:** `package.json` lacks `n8n-community-node-package` keyword or `n8n` manifest entries. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/]
 
@@ -418,7 +418,7 @@ Source basis: npm package `main`, `exports`, `files`, and `engines` docs; CAP pl
 }
 ```
 
-Source basis: n8n community-node package standards and `n8n-node` CLI docs. Exact package name is recommended but not user-confirmed. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] [ASSUMED]
+Source basis: n8n community-node package standards, `n8n-node` CLI docs, and the resolved Phase 1 revision decision to use `n8n-nodes-sap-cap`. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/] [VERIFIED: revision_context]
 
 ### Root Scripts Target
 
@@ -458,31 +458,28 @@ Source basis: current root scripts, npm workspace scripts, CAP start behavior, a
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | Keep license as `ISC` unless the user chooses a different license. | Package Metadata Target State | Legal/publishing mismatch if maintainers expect MIT or another license. |
-| A2 | Use `n8n-nodes-sap-cap` as the npm package name while retaining folder `cap-n8n-node/`. | Package Metadata Target State | Package rename may conflict with user branding or future npm availability. |
+| A2 | RESOLVED: Use `n8n-nodes-sap-cap` as the npm package name while retaining folder `cap-n8n-node/` unless implementation finds a strong technical reason to rename the folder. | Package Metadata Target State | Low; this is now a user-provided revision decision. |
 | A3 | Add `typescript` manually only if the `@n8n/node-cli` scaffold does not add it. | Standard Stack | Duplicate or missing compiler dependency if scaffold behavior differs. |
-| A4 | Regenerate the nested demo lockfile or remove it by explicit plan decision. | Common Pitfalls | Lockfile churn or install inconsistency if nested lockfile policy is unclear. |
-| A5 | Separate package-load smoke from live n8n smoke. | Common Pitfalls | Phase gate may be weaker than expected if reviewers require Docker n8n in the same command. |
+| A4 | RESOLVED: Treat root `package-lock.json` as canonical for the npm workspace; Phase 1 may remove or stop maintaining `demo-app/package-lock.json` if needed to eliminate workspace metadata drift. | Common Pitfalls | Low; verification must explicitly account for the chosen lockfile handling. |
+| A5 | RESOLVED: Separate Phase 1 package-load smoke and Docker Compose config sanity from later live n8n workflow execution. | Common Pitfalls | Low; later runtime/deployment phases own full live Docker workflow testing. |
 | A6 | Folder/package-name confusion is the likely reason the current n8n workspace name does not follow n8n community-node naming. | Common Pitfalls | Root cause may be intentional branding, not accidental mismatch. |
 | A7 | Meaningful smoke assertions should check exports and metadata rather than load success only. | Common Pitfalls | Planner may choose a different smoke threshold. |
 | A8 | Direct global CLI commands are likely to fail across machines if not routed through local npm scripts. | Common Pitfalls | Some target environments may provide global CLIs intentionally. |
 | A9 | Package metadata/script validation is sufficient V5 input-validation scope for Phase 1. | Security Domain | Security reviewer may require additional manifest-schema validation. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **What exact public npm name should the n8n node use?**
-   - What we know: n8n community-node package names must start with `n8n-nodes-` or `@scope/n8n-nodes-`. [CITED: https://docs.n8n.io/integrations/community-nodes/build-community-nodes/]
-   - What's unclear: Whether maintainers want `n8n-nodes-sap-cap`, a scoped package, or a temporary private workspace name. [ASSUMED]
-   - Recommendation: Plan a checkpoint before renaming `cap-n8n-node/package.json` `name`; use `n8n-nodes-sap-cap` as the default implementation target. [ASSUMED]
+   - Resolution: Use `n8n-nodes-sap-cap` as the target package name for the n8n community node package. Keep the workspace folder `cap-n8n-node/` unless implementation has a strong technical reason to rename the folder. [VERIFIED: revision_context]
+   - Planning impact: Phase 1 plans should set `cap-n8n-node/package.json` `name` to `n8n-nodes-sap-cap` and should not add a naming checkpoint.
 
 2. **Should the nested `demo-app/package-lock.json` remain?**
-   - What we know: Root workspaces already have a root lockfile, and codebase concerns found metadata drift between root and demo lockfiles. [VERIFIED: .planning/codebase/CONCERNS.md]
-   - What's unclear: Whether the team intentionally wants demo-app to remain independently installable. [ASSUMED]
-   - Recommendation: Planner should include a lockfile policy task before regenerating lockfiles. [ASSUMED]
+   - Resolution: Root `package-lock.json` is canonical for the npm workspace. Phase 1 plans may remove or stop maintaining `demo-app/package-lock.json` if needed to eliminate workspace metadata drift, but must be explicit and update verification accordingly. [VERIFIED: revision_context]
+   - Planning impact: Plan verification must not require a nested demo lockfile to remain if the executor chooses to remove it deliberately.
 
 3. **Should Phase 1 require live Docker n8n in the phase gate?**
-   - What we know: `FOUND-04` only requires package loadability smoke; `FOUND-05` requires pinned infrastructure; `VERIFY-05` is Phase 8. [VERIFIED: .planning/REQUIREMENTS.md]
-   - What's unclear: Whether reviewers expect live n8n import smoke during Phase 1. [ASSUMED]
-   - Recommendation: Make package-load smoke mandatory and live Docker n8n smoke optional/non-blocking in Phase 1. [ASSUMED]
+   - Resolution: Phase 1 verification should not require live n8n login or workflow execution. Phase 1 should pin the Docker image and may use `docker compose config` as an infrastructure sanity check. Live CAP-to-n8n behavior remains a smoke baseline to avoid regressing, but full live Docker workflow testing belongs to later runtime/deployment phases. [VERIFIED: revision_context]
+   - Planning impact: `docker compose config` is an appropriate Phase 1 infrastructure check; `npm run n8n:import`, live workflow execution, and n8n login are not required Phase 1 gates.
 
 ## Environment Availability
 
@@ -535,10 +532,9 @@ npm test --workspaces --if-present
 npm pack --workspace cap-n8n-plugin --dry-run
 npm pack --workspace cap-n8n-node --dry-run
 docker compose config
-docker compose pull n8n
 ```
 
-Optional live n8n smoke if Docker service is expected in the phase gate:
+Later live n8n smoke baseline for runtime/deployment phases, not a required Phase 1 gate:
 
 ```bash
 npm run n8n:up
