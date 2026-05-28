@@ -3,3 +3,5 @@ node_modules/
 .cds-services.json
 *.log
 .n8n-data/
+dist/
+.n8n/

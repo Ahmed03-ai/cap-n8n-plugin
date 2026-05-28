@@ -1,12 +1,51 @@
 {
-  "name": "cap-n8n-node",
-  "version": "1.0.0",
+  "name": "n8n-nodes-sap-cap",
+  "version": "0.1.0",
+  "description": "n8n community node for SAP CAP OData services",
+  "keywords": [
+    "n8n-community-node-package",
+    "sap",
+    "cap",
+    "odata"
+  ],
+  "license": "MIT",
+  "homepage": "",
+  "author": {
+    "name": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc && node -e \"const fs=require('fs');fs.mkdirSync('dist/nodes/SapCap',{recursive:true});fs.copyFileSync('nodes/SapCap/SapCap.svg','dist/nodes/SapCap/SapCap.svg')\"",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "prepublishOnly": "npm run build && npm run lint && npm run format"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/SapCapApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/SapCap/SapCap.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^18.16.16",
+    "eslint-plugin-n8n-nodes-base": "^1.16.2",
+    "n8n-workflow": "*",
+    "prettier": "^3.3.2",
+    "typescript": "^5.3.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }
