@@ -35,7 +35,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Developer can run repo-local CAP, n8n, node-build, and test commands using declared dependencies and pinned runtime versions.
   4. Developer can run a smoke test that proves the CAP plugin package and n8n node package are both loadable.
   5. Package metadata clearly declares engines, CAP peer dependencies, package files, and license expectations.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 01-01-PLAN.md — Repair CAP plugin public package boundary and metadata.
+- [ ] 01-02-PLAN.md — Create n8n community-node package loadability baseline.
+- [ ] 01-03-PLAN.md — Add repo-local tooling scripts and pin local n8n infrastructure.
+- [ ] 01-04-PLAN.md — Add gated smoke verification and refresh install state.
 
 ### Phase 2: Typed CAP Service, Mock Runtime, and Configuration
 **Goal**: CAP developers can connect to a typed `N8nWorkflowService`, start workflows reliably, and switch between mock and real n8n profiles.
