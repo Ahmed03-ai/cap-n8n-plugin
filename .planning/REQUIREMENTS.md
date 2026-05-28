@@ -132,70 +132,70 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | TBD | Pending |
-| FOUND-02 | TBD | Pending |
-| FOUND-03 | TBD | Pending |
-| FOUND-04 | TBD | Pending |
-| FOUND-05 | TBD | Pending |
-| CAPAPI-01 | TBD | Pending |
-| CAPAPI-02 | TBD | Pending |
-| CAPAPI-03 | TBD | Pending |
-| CAPAPI-04 | TBD | Pending |
-| CAPAPI-05 | TBD | Pending |
-| CAPAPI-06 | TBD | Pending |
-| RUNTIME-01 | TBD | Pending |
-| RUNTIME-02 | TBD | Pending |
-| RUNTIME-03 | TBD | Pending |
-| RUNTIME-04 | TBD | Pending |
-| RUNTIME-05 | TBD | Pending |
-| RUNTIME-06 | TBD | Pending |
-| RUNTIME-07 | TBD | Pending |
-| ANNO-01 | TBD | Pending |
-| ANNO-02 | TBD | Pending |
-| ANNO-03 | TBD | Pending |
-| ANNO-04 | TBD | Pending |
-| ANNO-05 | TBD | Pending |
-| ANNO-06 | TBD | Pending |
-| ANNO-07 | TBD | Pending |
-| IMPORT-01 | TBD | Pending |
-| IMPORT-02 | TBD | Pending |
-| IMPORT-03 | TBD | Pending |
-| IMPORT-04 | TBD | Pending |
-| IMPORT-05 | TBD | Pending |
-| IMPORT-06 | TBD | Pending |
-| IMPORT-07 | TBD | Pending |
-| NODE-01 | TBD | Pending |
-| NODE-02 | TBD | Pending |
-| NODE-03 | TBD | Pending |
-| NODE-04 | TBD | Pending |
-| NODE-05 | TBD | Pending |
-| NODE-06 | TBD | Pending |
-| NODE-07 | TBD | Pending |
-| NODE-08 | TBD | Pending |
-| NODE-09 | TBD | Pending |
-| NODE-10 | TBD | Pending |
-| NODE-11 | TBD | Pending |
-| NODE-12 | TBD | Pending |
-| NODE-13 | TBD | Pending |
-| DOCS-01 | TBD | Pending |
-| DOCS-02 | TBD | Pending |
-| DOCS-03 | TBD | Pending |
-| DOCS-04 | TBD | Pending |
-| DOCS-05 | TBD | Pending |
-| DOCS-06 | TBD | Pending |
-| DOCS-07 | TBD | Pending |
-| VERIFY-01 | TBD | Pending |
-| VERIFY-02 | TBD | Pending |
-| VERIFY-03 | TBD | Pending |
-| VERIFY-04 | TBD | Pending |
-| VERIFY-05 | TBD | Pending |
-| VERIFY-06 | TBD | Pending |
+| FOUND-01 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Pending |
+| FOUND-03 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Pending |
+| FOUND-05 | Phase 1 | Pending |
+| CAPAPI-01 | Phase 2 | Pending |
+| CAPAPI-02 | Phase 2 | Pending |
+| CAPAPI-03 | Phase 2 | Pending |
+| CAPAPI-04 | Phase 3 | Pending |
+| CAPAPI-05 | Phase 3 | Pending |
+| CAPAPI-06 | Phase 3 | Pending |
+| RUNTIME-01 | Phase 2 | Pending |
+| RUNTIME-02 | Phase 2 | Pending |
+| RUNTIME-03 | Phase 2 | Pending |
+| RUNTIME-04 | Phase 2 | Pending |
+| RUNTIME-05 | Phase 2 | Pending |
+| RUNTIME-06 | Phase 3 | Pending |
+| RUNTIME-07 | Phase 3 | Pending |
+| ANNO-01 | Phase 4 | Pending |
+| ANNO-02 | Phase 4 | Pending |
+| ANNO-03 | Phase 4 | Pending |
+| ANNO-04 | Phase 4 | Pending |
+| ANNO-05 | Phase 4 | Pending |
+| ANNO-06 | Phase 4 | Pending |
+| ANNO-07 | Phase 4 | Pending |
+| IMPORT-01 | Phase 5 | Pending |
+| IMPORT-02 | Phase 5 | Pending |
+| IMPORT-03 | Phase 5 | Pending |
+| IMPORT-04 | Phase 5 | Pending |
+| IMPORT-05 | Phase 5 | Pending |
+| IMPORT-06 | Phase 5 | Pending |
+| IMPORT-07 | Phase 5 | Pending |
+| NODE-01 | Phase 1 | Pending |
+| NODE-02 | Phase 6 | Pending |
+| NODE-03 | Phase 6 | Pending |
+| NODE-04 | Phase 6 | Pending |
+| NODE-05 | Phase 6 | Pending |
+| NODE-06 | Phase 6 | Pending |
+| NODE-07 | Phase 7 | Pending |
+| NODE-08 | Phase 7 | Pending |
+| NODE-09 | Phase 7 | Pending |
+| NODE-10 | Phase 6 | Pending |
+| NODE-11 | Phase 6 | Pending |
+| NODE-12 | Phase 7 | Pending |
+| NODE-13 | Phase 7 | Pending |
+| DOCS-01 | Phase 8 | Pending |
+| DOCS-02 | Phase 8 | Pending |
+| DOCS-03 | Phase 8 | Pending |
+| DOCS-04 | Phase 8 | Pending |
+| DOCS-05 | Phase 8 | Pending |
+| DOCS-06 | Phase 8 | Pending |
+| DOCS-07 | Phase 8 | Pending |
+| VERIFY-01 | Phase 2 | Pending |
+| VERIFY-02 | Phase 4 | Pending |
+| VERIFY-03 | Phase 5 | Pending |
+| VERIFY-04 | Phase 7 | Pending |
+| VERIFY-05 | Phase 8 | Pending |
+| VERIFY-06 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 58 total
-- Mapped to phases: 0
-- Unmapped: 58
+- Mapped to phases: 58
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-28*
-*Last updated: 2026-05-28 after initial definition*
+*Last updated: 2026-05-28 after roadmap creation*
