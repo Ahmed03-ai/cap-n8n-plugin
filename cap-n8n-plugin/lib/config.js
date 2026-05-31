@@ -1,10 +1,7 @@
 const VALID_KINDS = new Set(['mock', 'webhook'])
 const DEFAULT_TIMEOUT_MS = 10000
-const DEFAULT_RETRY = {
-  attempts: 3,
-  minDelayMs: 100,
-  maxDelayMs: 1000
-}
+const DEFAULT_RETRIES = 3
+const DEFAULT_RETRY_DELAY_MS = 250
 
 function firstConfiguredValue(...values) {
   for (const value of values) {
@@ -21,6 +18,12 @@ function createConfigError(message, details = {}) {
   error.retryable = false
   error.details = details
   return error
+}
+
+function normalizeNonNegativeInteger(value, fallback) {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return fallback
+  return Math.max(0, Math.trunc(number))
 }
 
 function normalizeKind(kind) {
@@ -62,25 +65,36 @@ function isDevelopmentEnv(env = {}) {
 function normalizeRetry(options = {}) {
   const retryOptions = options.retry || {}
   const retryCredentials = options.credentials?.retry || {}
+  const credentials = options.credentials || {}
+  const retries = normalizeNonNegativeInteger(firstConfiguredValue(
+    options.retries,
+    credentials.retries,
+    options.retryAttempts,
+    credentials.retryAttempts,
+    retryOptions.attempts,
+    retryCredentials.attempts,
+    DEFAULT_RETRIES
+  ), DEFAULT_RETRIES)
+  const retryDelayMs = normalizeNonNegativeInteger(firstConfiguredValue(
+    options.retryDelayMs,
+    credentials.retryDelayMs,
+    retryOptions.delayMs,
+    retryCredentials.delayMs,
+    retryOptions.minDelayMs,
+    retryCredentials.minDelayMs,
+    DEFAULT_RETRY_DELAY_MS
+  ), DEFAULT_RETRY_DELAY_MS)
 
   return {
-    attempts: Number(firstConfiguredValue(
-      retryOptions.attempts,
-      retryCredentials.attempts,
-      options.retries,
-      options.retryAttempts,
-      DEFAULT_RETRY.attempts
-    )),
-    minDelayMs: Number(firstConfiguredValue(
-      retryOptions.minDelayMs,
-      retryCredentials.minDelayMs,
-      DEFAULT_RETRY.minDelayMs
-    )),
-    maxDelayMs: Number(firstConfiguredValue(
+    attempts: retries,
+    minDelayMs: retryDelayMs,
+    maxDelayMs: normalizeNonNegativeInteger(firstConfiguredValue(
       retryOptions.maxDelayMs,
       retryCredentials.maxDelayMs,
-      DEFAULT_RETRY.maxDelayMs
-    ))
+      Math.max(retryDelayMs, DEFAULT_RETRY_DELAY_MS * 4)
+    ), Math.max(retryDelayMs, DEFAULT_RETRY_DELAY_MS * 4)),
+    retries,
+    retryDelayMs
   }
 }
 
@@ -102,13 +116,14 @@ function resolveN8nConfig(options = {}, env = process.env) {
   const configuredKind = normalizeKind(firstConfiguredValue(options.kind, options.mode))
   const baseUrl = firstConfiguredValue(credentials.baseUrl, options.baseUrl)
   const apiKey = firstConfiguredValue(credentials.apiKey, options.apiKey)
-  const timeoutMs = Number(firstConfiguredValue(
+  const timeoutMs = normalizeNonNegativeInteger(firstConfiguredValue(
     options.timeoutMs,
     credentials.timeoutMs,
     options.timeout,
     credentials.timeout,
     DEFAULT_TIMEOUT_MS
-  ))
+  ), DEFAULT_TIMEOUT_MS)
+  const retry = normalizeRetry(options)
 
   let kind = configuredKind
   if (!kind) {
@@ -118,7 +133,9 @@ function resolveN8nConfig(options = {}, env = process.env) {
   const config = {
     kind,
     timeoutMs,
-    retry: normalizeRetry(options),
+    retries: retry.retries,
+    retryDelayMs: retry.retryDelayMs,
+    retry,
     profiles: profileNames(env)
   }
 
