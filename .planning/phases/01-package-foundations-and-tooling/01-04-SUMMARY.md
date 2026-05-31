@@ -101,7 +101,7 @@ completed: 2026-05-31
 
 - Initial `npm install` failed with an ESLint peer-resolution conflict. Pinning the n8n CLI's expected ESLint peer set resolved it without force flags.
 - Initial `npm run smoke` found two n8n package build issues: deprecated TypeScript module resolution and `NodeConnectionType` being a type-only export. Both were fixed and reverified.
-- `npm install` reports 18 transitive vulnerabilities from the installed dependency tree. No audit remediation was applied in this phase because it would likely require dependency upgrades outside the package-foundation scope.
+- `npm audit --omit=dev` is clean. Full `npm audit` reports 18 findings limited to dev-tooling dependencies in the CAP/n8n build toolchain. This is an explicit Phase 1 dev-only audit exception; re-evaluate when compatible `@n8n/node-cli`, `n8n-workflow`, or CAP tooling versions remediate the advisories.
 - `n8n-node build` emits a Node deprecation warning for its internal child-process invocation. The build still succeeds.
 
 ## Verification
@@ -109,6 +109,7 @@ completed: 2026-05-31
 - `node --version` - passed: `v24.16.0`.
 - `npm --version` - passed: `11.13.0`.
 - `npm install` - passed; workspace lock is up to date.
+- `npm audit --omit=dev` - passed with 0 vulnerabilities.
 - `npm run build --workspaces --if-present` - passed.
 - `npm run smoke` - passed; 1 Vitest file and 2 tests passed.
 - `npm test --workspaces --if-present` - passed.
