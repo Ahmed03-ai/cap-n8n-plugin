@@ -95,7 +95,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260601-1cn | Update README with Phase 2 manual testing instructions | 2026-05-31 | 1b69f87 | [260601-1cn-update-readme-with-phase-2-manual-testin](./quick/260601-1cn-update-readme-with-phase-2-manual-testin/) |
-| 260601-2d7 | Clarify Docker n8n manual test modes in README | 2026-05-31 | 6dde4ac | [260601-2d7-clarify-docker-n8n-manual-test-modes-in-](./quick/260601-2d7-clarify-docker-n8n-manual-test-modes-in-/) |
+| 260601-2d7 | Clarify Docker n8n manual test modes in README | 2026-05-31 | c248e40 | [260601-2d7-clarify-docker-n8n-manual-test-modes-in-](./quick/260601-2d7-clarify-docker-n8n-manual-test-modes-in-/) |
 
 ## Deferred Items
 
