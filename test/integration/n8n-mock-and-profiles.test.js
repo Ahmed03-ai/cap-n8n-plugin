@@ -120,6 +120,12 @@ describe('n8n mock runtime and profile configuration', () => {
       })
     }
   })
+
+  it('fails non-development webhook configuration without a baseUrl', () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    expect(() => resolveN8nConfig({}, { NODE_ENV: 'production' })).toThrow(/baseUrl/)
+  })
 })
 
 describe('MockN8nWorkflowService', () => {
@@ -179,18 +185,27 @@ describe('MockN8nWorkflowService', () => {
       executionId: 'mock-exec-1',
       mock: true
     })
-    await expect(n8n.start('fail-me', { secret: 'do-not-leak' })).rejects.toMatchObject({
+    let failure
+    try {
+      await n8n.start('fail-me', { secret: 'do-not-leak' })
+    } catch (err) {
+      failure = err
+    }
+
+    expect(failure).toMatchObject({
       code: 'ERR_N8N_MOCK_FAILURE',
       source: 'n8n',
       mock: true
     })
-
-    try {
-      await n8n.start('fail-me', { secret: 'do-not-leak' })
-    } catch (err) {
-      expect(err.message).toContain('fail-me')
-      expect(err.message).not.toContain('do-not-leak')
-    }
+    expect(failure.message).toContain('fail-me')
+    expect(failure.message).not.toContain('do-not-leak')
+    expect(n8n.executions).toHaveLength(2)
+    expect(n8n.executions[1]).toMatchObject({
+      executionId: 'mock-exec-2',
+      workflowId: 'fail-me',
+      inputs: { secret: 'do-not-leak' },
+      status: 'failed'
+    })
 
     const MockN8nWorkflowService = require('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js')
     expect(MockN8nWorkflowService.prototype).not.toHaveProperty('query')

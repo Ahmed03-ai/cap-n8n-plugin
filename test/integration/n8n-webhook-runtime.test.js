@@ -261,6 +261,7 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
           statusCode: 500,
           retryable: false
         })
+        expect(err.details.response).toEqual({ error: 'workflow failed' })
         expect(serializedError).not.toContain(secretApiKey)
         expect(serializedError).not.toContain('payload-secret')
         expect(serializedError).not.toContain('stack trace should not be exposed')

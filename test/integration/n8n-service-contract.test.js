@@ -72,6 +72,14 @@ afterEach(async () => {
 })
 
 describe('N8nWorkflowService contract', () => {
+  it('loads the service implementation through the public package boundary', () => {
+    const plugin = require('cap-n8n-plugin')
+    const service = require('cap-n8n-plugin/service')
+
+    expect(plugin).toHaveProperty('N8nWorkflowService')
+    expect(plugin.N8nWorkflowService).toBe(service)
+  })
+
   it('connects through CAP and starts workflows with metadata', async () => {
     const server = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true, executionId: 'exec-1' })
@@ -138,6 +146,28 @@ describe('N8nWorkflowService contract', () => {
         workflowId: 'cap-test-trigger',
         result: { received: true }
       })
+    } finally {
+      await server.close()
+    }
+  })
+
+  it('accepts successful webhook responses without an executionId', async () => {
+    const server = await createWebhookServer(() => ({
+      body: JSON.stringify({ received: true })
+    }))
+
+    try {
+      configureN8n(server.baseUrl)
+
+      const n8n = await cds.connect.to('n8n')
+      const result = await n8n.start('no-execution-id-workflow', { event: 'NoExecutionId' })
+
+      expect(result).toMatchObject({
+        accepted: true,
+        workflowId: 'no-execution-id-workflow',
+        result: { received: true }
+      })
+      expect(result).not.toHaveProperty('executionId')
     } finally {
       await server.close()
     }
