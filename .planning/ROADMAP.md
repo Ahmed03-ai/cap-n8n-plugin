@@ -16,7 +16,7 @@ This roadmap turns the brownfield prototype into two package-owned integration s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Package Foundations and Tooling** - Developers can consume both packages and run pinned local tooling without hidden global dependencies. (completed 2026-05-31)
-- [ ] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability.
+- [x] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability. (completed 2026-05-31)
 - [ ] **Phase 3: Execution Store and Transaction-Safe Dispatch** - CAP developers can track, query, and cancel correlated workflow executions safely.
 - [ ] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models.
 - [ ] **Phase 5: Workflow Import and Build Validation** - CAP developers can import workflows into typed local artifacts and validate mappings during build.
@@ -187,7 +187,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
-| 2. Typed CAP Service, Mock Runtime, and Configuration | 3/4 | In Progress|  |
+| 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete   | 2026-05-31 |
 | 3. Execution Store and Transaction-Safe Dispatch | 0/TBD | Not started | - |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |

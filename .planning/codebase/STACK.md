@@ -36,7 +36,7 @@
 - n8n Docker image `n8nio/n8n:latest` - Local workflow automation runtime in `docker-compose.yml`.
 
 **Testing:**
-- Vitest 4.1.7 - Root integration and smoke tests run with `vitest run`, including `test/integration/n8n-service-contract.test.js`, `test/integration/n8n-mock-and-profiles.test.js`, and `test/smoke/package-boundaries.test.js`.
+- Vitest 4.1.7 - Root smoke and integration tests run through `npm run smoke`, `npm run test:integration`, and aggregate `npm test`. Integration coverage includes `test/integration/n8n-service-contract.test.js`, `test/integration/n8n-mock-and-profiles.test.js`, and `test/integration/n8n-webhook-runtime.test.js`; smoke coverage lives in `test/smoke/package-boundaries.test.js`.
 - Manual HTTP testing uses `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 
