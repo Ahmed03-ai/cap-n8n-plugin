@@ -44,24 +44,27 @@ class MockN8nWorkflowService extends cds.Service {
 
   async start(workflowId, inputs = {}, options = {}) {
     const failures = configuredFailures(this.config, this.options, options)
-    if (failures.includes(workflowId)) {
-      throw createMockFailure(workflowId)
-    }
-
     const executionId = `mock-exec-${this._nextExecution++}`
     const startedAt = new Date().toISOString()
-    const finishedAt = new Date().toISOString()
     const record = {
       executionId,
       workflowId,
       inputs: inputs || {},
       status: 'success',
-      startedAt,
-      finishedAt
+      startedAt
     }
 
     addOptionalValue(record, 'correlationId', options.correlationId)
     addOptionalValue(record, 'businessKey', options.businessKey)
+
+    if (failures.includes(workflowId)) {
+      record.status = 'failed'
+      record.finishedAt = new Date().toISOString()
+      this.executions.push(record)
+      throw createMockFailure(workflowId)
+    }
+
+    record.finishedAt = new Date().toISOString()
     this.executions.push(record)
 
     return createStartResult({
