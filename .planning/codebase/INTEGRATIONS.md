@@ -8,7 +8,7 @@
 - n8n - CAP business events trigger n8n workflows through HTTP webhook calls.
   - SDK/Client: Native `fetch` in `cap-n8n-plugin/lib/N8nWorkflowService.js`.
   - Auth: Optional `N8N_API_KEY` via `demo-app/package.json` `cds.requires.n8n.credentials.apiKey`, sent as `X-N8N-API-KEY` by `cap-n8n-plugin/lib/N8nWorkflowService.js`.
-  - Base URL: `cds.requires.n8n.credentials.baseUrl` in `demo-app/package.json`, with fallback `http://localhost:5678` in `cap-n8n-plugin/lib/N8nWorkflowService.js`.
+  - Base URL: `cds.requires.n8n.credentials.baseUrl` in `demo-app/package.json`; webhook mode validates that it is present through `cap-n8n-plugin/lib/config.js`.
   - Local runtime: `docker-compose.yml` runs `n8nio/n8n:latest` on port `5678`.
 
 **SAP CAP / OData:**
@@ -80,7 +80,8 @@
 - `N8N_API_KEY` - Optional n8n API key referenced by `demo-app/package.json`; required only when the target n8n webhook expects the `X-N8N-API-KEY` header.
 
 **Configuration keys:**
-- `cds.requires.n8n.impl` - Service implementation path in `demo-app/package.json`, defaulted by `cap-n8n-plugin/cds-plugin.js`.
+- `cds.requires.n8n.impl` - Service implementation path in `demo-app/package.json`; explicit values are preserved by `cap-n8n-plugin/cds-plugin.js`.
+- `cds.requires.n8n.kind` - Runtime selector, currently `mock` or `webhook`.
 - `cds.requires.n8n.credentials.baseUrl` - n8n base URL in `demo-app/package.json`.
 - `cds.requires.n8n.credentials.apiKey` - n8n API key expression in `demo-app/package.json`.
 - `cds.server.port` - CAP server port `3000` in `demo-app/package.json`.

@@ -5,7 +5,7 @@
 ## Languages
 
 **Primary:**
-- JavaScript CommonJS - Runtime code in `cap-n8n-plugin/cds-plugin.js`, `cap-n8n-plugin/lib/N8nWorkflowService.js`, `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.js`.
+- JavaScript CommonJS - Runtime code in `cap-n8n-plugin/cds-plugin.js`, `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, `cap-n8n-plugin/lib/config.js`, `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.js`.
 - CDS / CDL - SAP CAP domain, service, authorization, and Fiori annotation models in `demo-app/db/schema.cds`, `demo-app/srv/*.cds`, and `demo-app/app/**/*.cds`.
 
 **Secondary:**
@@ -36,7 +36,7 @@
 - n8n Docker image `n8nio/n8n:latest` - Local workflow automation runtime in `docker-compose.yml`.
 
 **Testing:**
-- No automated test runner detected in `package.json`, `demo-app/package.json`, `cap-n8n-plugin/package.json`, or `cap-n8n-node/package.json`.
+- Vitest 4.1.7 - Root integration and smoke tests run with `vitest run`, including `test/integration/n8n-service-contract.test.js`, `test/integration/n8n-mock-and-profiles.test.js`, and `test/smoke/package-boundaries.test.js`.
 - Manual HTTP testing uses `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 
@@ -62,16 +62,16 @@
 
 **Environment:**
 - CAP configuration lives in `demo-app/package.json` under `cds.requires.n8n`.
-- The n8n service binding uses `baseUrl: "http://localhost:5678"` and `apiKey: "{env.N8N_API_KEY}"` in `demo-app/package.json`.
-- The plugin provides a fallback CAP service implementation by setting `cds.env.requires.n8n.impl` in `cap-n8n-plugin/cds-plugin.js`.
-- `cap-n8n-plugin/lib/N8nWorkflowService.js` defaults `baseUrl` to `http://localhost:5678` if no credential or option is configured.
+- The n8n service binding uses `kind: "webhook"`, `baseUrl: "http://localhost:5678"`, and `apiKey: "{env.N8N_API_KEY}"` in `demo-app/package.json`.
+- The plugin provides a fallback CAP service implementation by resolving `cds.env.requires.n8n.kind` to mock or webhook in `cap-n8n-plugin/cds-plugin.js`.
+- `cap-n8n-plugin/lib/N8nWorkflowService.js` validates webhook configuration through `cap-n8n-plugin/lib/config.js`; webhook mode requires `baseUrl`.
 - `.env` files are not present in the repo scan; `.gitignore` excludes `.env`.
 
 **Build:**
 - `package.json` - npm workspaces and n8n import/export scripts.
 - `demo-app/package.json` - CAP app dependencies, `cds-serve` start script, CAP `cds.requires.n8n` configuration, and server port `3000`.
 - `docker-compose.yml` - local n8n container, port `5678`, local data mount `.n8n-data`, and workflow fixture mount `test-workflows`.
-- No `tsconfig.json`, bundler config, ESLint config, Prettier config, Vite config, Jest config, or Vitest config detected.
+- No `tsconfig.json`, bundler config, ESLint config, Prettier config, Vite config, Jest config, or Vitest config detected; Vitest is invoked directly from root scripts/commands.
 
 ## Platform Requirements
 

@@ -5,26 +5,24 @@
 ## Test Framework
 
 **Runner:**
-- Not detected.
-- No Jest, Vitest, Mocha, `node:test`, CAP test runner config, or dedicated test dependency is declared in `package.json`, `cap-n8n-plugin/package.json`, `cap-n8n-node/package.json`, or `demo-app/package.json`.
-- Config: Not detected. No `jest.config.*`, `vitest.config.*`, `nyc.config.*`, `c8.config.*`, `.eslintrc*`, or `eslint.config.*` files are present.
+- Vitest 4.1.7 is declared in root `package.json` and invoked with `vitest run`.
+- Config: No `vitest.config.*`, `jest.config.*`, `nyc.config.*`, or `c8.config.*` files are present; tests use default Vitest behavior.
 
 **Assertion Library:**
-- Not detected.
-- No `expect`, `assert`, `chai`, `sinon`, `supertest`, `jest`, or `vitest` usage exists in source or test files.
+- Vitest `expect` is used in smoke and integration tests.
 
 **Run Commands:**
 ```bash
-npm test --workspace cap-n8n-plugin   # Placeholder command; exits with "Error: no test specified"
-npm test --workspace cap-n8n-node     # Placeholder command; exits with "Error: no test specified"
+npm test                              # Runs root smoke workflow
+npx vitest run test/integration       # Runs CAP plugin integration tests
 npm start --workspace demo-app        # Starts the CAP demo app for manual verification
 ```
 
 ## Test File Organization
 
 **Location:**
-- Automated test file location: Not detected.
-- No `*.test.*` or `*.spec.*` files exist outside ignored dependency/build folders.
+- Automated test files live under `test/smoke/` and `test/integration/`.
+- Current integration coverage includes `test/integration/n8n-service-contract.test.js` and `test/integration/n8n-mock-and-profiles.test.js`.
 - Manual request verification lives in `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 
@@ -119,7 +117,7 @@ test-workflows/
 - Highest-value unit scope: `_triggerWebhook()` behavior in `cap-n8n-plugin/lib/N8nWorkflowService.js`, including base URL trimming, webhook path prefixing, `X-N8N-API-KEY` header behavior, empty response handling, JSON response parsing, non-JSON response handling, and non-OK status errors.
 
 **Integration Tests:**
-- Not implemented.
+- Implemented for package boundaries, CAP service start contract, mock runtime, profile/config behavior, and bootstrap runtime selection.
 - Manual integration path: `demo-app/test.http` sends `POST http://localhost:3000/odata/v4/admin/Books`, which exercises `demo-app/srv/admin-service.js` and the configured n8n service in `demo-app/package.json`.
 - Root scripts support n8n workflow import/export for integration setup: `npm run n8n:import` and `npm run n8n:export` in `package.json`.
 - Requirements documents repeatedly call for integration coverage across CAP-to-n8n and n8n-to-CAP flows: `N8N_REQUIREMENTS.md`, `cap_n8n_requirements_v2.md`.

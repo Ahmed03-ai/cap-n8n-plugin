@@ -27,9 +27,9 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### CAP Runtime Reliability
 
-- [ ] **RUNTIME-01**: CAP developer can use a local mock n8n runtime without starting a live n8n instance.
-- [ ] **RUNTIME-02**: CAP developer can switch between mock, local n8n, cloud n8n, and production configuration through CAP profiles.
-- [ ] **RUNTIME-03**: Production startup fails clearly when required n8n base URL or credentials are missing.
+- [x] **RUNTIME-01**: CAP developer can use a local mock n8n runtime without starting a live n8n instance.
+- [x] **RUNTIME-02**: CAP developer can switch between mock, local n8n, cloud n8n, and production configuration through CAP profiles.
+- [x] **RUNTIME-03**: Production startup fails clearly when required n8n base URL or credentials are missing.
 - [ ] **RUNTIME-04**: CAP developer receives structured, sanitized CDS errors for n8n communication failures.
 - [ ] **RUNTIME-05**: Transient n8n HTTP failures use configurable timeout and retry behavior.
 - [ ] **RUNTIME-06**: Workflow starts and retries are correlated so duplicate or ambiguous executions can be detected.
@@ -143,9 +143,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAPAPI-04 | Phase 3 | Pending |
 | CAPAPI-05 | Phase 3 | Pending |
 | CAPAPI-06 | Phase 3 | Pending |
-| RUNTIME-01 | Phase 2 | Pending |
-| RUNTIME-02 | Phase 2 | Pending |
-| RUNTIME-03 | Phase 2 | Pending |
+| RUNTIME-01 | Phase 2 | Complete |
+| RUNTIME-02 | Phase 2 | Complete |
+| RUNTIME-03 | Phase 2 | Complete |
 | RUNTIME-04 | Phase 2 | Pending |
 | RUNTIME-05 | Phase 2 | Pending |
 | RUNTIME-06 | Phase 3 | Pending |

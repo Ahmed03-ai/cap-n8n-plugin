@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-31T22:11:50.639Z"
+last_updated: "2026-05-31T22:23:13.012Z"
 last_activity: 2026-05-31
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
-  percent: 13
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -25,17 +25,17 @@ See: .planning/PROJECT.md (updated 2026-05-28)
 ## Current Position
 
 Phase: 02 (typed-cap-service-mock-runtime-and-configuration) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [██████░░░░] 63%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 6
 - Average duration: n/a
 - Total execution time: 0.0 hours
 
@@ -53,6 +53,7 @@ Progress: [██████░░░░] 63%
 
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 3 tasks | 3 files |
+| Phase 02 P02 | 6 min | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - Package-owned CAP plugin and n8n node artifacts are the deliverables; the demo app is evidence, not the integration owner.
 - [Phase 02]: Workflow IDs remain caller-facing in start results; only outbound webhook paths are normalized. — Preserves the CAP developer contract while still supporting n8n webhook and webhook-test routes.
 - [Phase 02]: Webhook responses are wrapped in accepted/result start envelopes with optional executionId and correlation metadata. — Keeps Phase 2 schema-friendly without adding Phase 3 durable tracking, query, or cancel behavior.
+- [Phase 02]: Runtime selection uses kind: 'mock' | 'webhook' while explicit cds.env.requires.n8n.impl overrides are preserved. — Keeps CAP profile/config selection native without breaking apps that bind a custom service implementation.
+- [Phase 02]: The webhook service validates baseUrl through the shared resolver instead of defaulting to localhost. — This prevents explicit webhook bindings from masking production missing-configuration errors.
+- [Phase 02]: Mock executions remain in process memory and only cover start records in Phase 2. — Phase 3 owns durable execution tracking, query, and cancellation semantics.
 
 ### Pending Todos
 
@@ -85,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T22:11:50.624Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-05-31T22:23:12.995Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

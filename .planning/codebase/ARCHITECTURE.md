@@ -39,9 +39,11 @@
 | Component | Responsibility | File |
 |-----------|----------------|------|
 | Workspace root | Declares npm workspaces and root workflow import/export scripts. | `package.json` |
-| CAP plugin bootstrap | Registers a default `cds.env.requires.n8n.impl` during CAP bootstrap when the plugin is loaded. | `cap-n8n-plugin/cds-plugin.js` |
-| n8n workflow service | Implements the CAP service class used by `cds.connect.to('n8n')`, exposes a `start` event, normalizes webhook paths, posts JSON to n8n, and returns parsed webhook responses. | `cap-n8n-plugin/lib/N8nWorkflowService.js` |
-| Plugin package entry | Package `main` target; currently an empty file, so plugin behavior comes from `cds-plugin.js` or explicit service binding. | `cap-n8n-plugin/index.js` |
+| CAP plugin bootstrap | Preserves explicit `cds.env.requires.n8n.impl` values and fills missing implementations from resolved `kind: 'mock' | 'webhook'`. | `cap-n8n-plugin/cds-plugin.js` |
+| Runtime config resolver | Resolves mock/webhook mode, credentials, timeout/retry defaults, and sanitized missing-`baseUrl` errors. | `cap-n8n-plugin/lib/config.js` |
+| n8n workflow service | Implements the webhook CAP service used by `cds.connect.to('n8n')`, validates webhook config, exposes a `start` event, normalizes webhook paths, posts JSON to n8n, and returns parsed webhook responses. | `cap-n8n-plugin/lib/N8nWorkflowService.js` |
+| Mock n8n workflow service | Implements deterministic offline `start` behavior with in-memory start records and explicit opt-in failures. | `cap-n8n-plugin/lib/MockN8nWorkflowService.js` |
+| Plugin package entry | Public package entry that exports `N8nWorkflowService` and `MockN8nWorkflowService`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
 | n8n node package entry | Package `main` target for the planned n8n community node; currently empty. | `cap-n8n-node/index.js` |
 | Demo app configuration | Binds the demo app to the plugin service implementation, configures n8n credentials, and sets the CAP server port. | `demo-app/package.json` |
 | Domain model | Owns Bookshop persistence entities, localized fields, associations, code lists, and Fiori draft annotations. | `demo-app/db/schema.cds` |
@@ -77,7 +79,7 @@
 **CAP Plugin Layer:**
 - Purpose: Provides the reusable CAP-to-n8n service implementation.
 - Location: `cap-n8n-plugin/`
-- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, package entry in `cap-n8n-plugin/index.js`.
+- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
 - Depends on: `@sap/cds` at runtime from the consuming CAP app and global `fetch` from the Node runtime.
 - Used by: `demo-app/package.json` through `cds.requires.n8n.impl` and by `demo-app/srv/admin-service.js` through `cds.connect.to('n8n')`.
 
@@ -154,8 +156,8 @@
 **State Management:**
 - Persistent business state lives in CAP entities from `demo-app/db/schema.cds` and CSV seeds in `demo-app/db/data/`.
 - Draft state is managed by CAP/Fiori through `@odata.draft.enabled` and `@fiori.draft.enabled` annotations in `demo-app/app/admin-books/fiori-service.cds:79`, `demo-app/app/admin-authors/fiori-service.cds:3`, and `demo-app/db/schema.cds:48`.
-- Runtime n8n configuration is stored on each service instance as `this.baseUrl` and `this.apiKey` in `cap-n8n-plugin/lib/N8nWorkflowService.js:6`.
-- `cds.env.requires.n8n` is module-level CAP runtime configuration mutated by `cap-n8n-plugin/cds-plugin.js:3`.
+- Runtime n8n configuration is resolved by `cap-n8n-plugin/lib/config.js`; webhook services store it on each instance as `this.config`, `this.baseUrl`, and `this.apiKey`.
+- `cds.env.requires.n8n` is module-level CAP runtime configuration mutated by `cap-n8n-plugin/cds-plugin.js` only when no explicit `impl` exists.
 
 ## Key Abstractions
 
@@ -231,7 +233,7 @@
 - **Threading:** JavaScript executes on the Node.js event loop; asynchronous CAP handlers and `fetch()` calls are used in `demo-app/srv/*.js` and `cap-n8n-plugin/lib/N8nWorkflowService.js`.
 - **Global state:** `cap-n8n-plugin/cds-plugin.js` mutates `cds.env.requires.n8n`; `cap-n8n-plugin/lib/N8nWorkflowService.js` stores service configuration on each service instance.
 - **Circular imports:** No JavaScript circular imports detected. CDS annotations intentionally import service/model definitions across `demo-app/app/**` and `demo-app/srv/**`.
-- **Service binding:** The demo app explicitly binds `n8n.impl` to `../cap-n8n-plugin/lib/N8nWorkflowService.js` in `demo-app/package.json:20`; new consumers must provide the same CAP service binding or rely on plugin bootstrap.
+- **Service binding:** The demo app explicitly binds `n8n.impl` to `cap-n8n-plugin/service` with `kind: "webhook"` in `demo-app/package.json`; new consumers can provide the same binding, choose `kind: "mock"`, or rely on plugin bootstrap selection.
 - **Runtime fetch:** `cap-n8n-plugin/lib/N8nWorkflowService.js` uses global `fetch`, so runtime must provide it.
 - **Secret handling:** `demo-app/package.json:23` references `{env.N8N_API_KEY}`; secrets must stay in environment configuration such as `.env`, which is ignored by `.gitignore`.
 - **Generated/local data:** `node_modules/`, `.cds-services.json`, `*.log`, and `.n8n-data/` are ignored by `.gitignore` and should not be treated as source.
