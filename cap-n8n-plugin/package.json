@@ -13,7 +13,7 @@
     "lib/"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node -e \"const plugin = require('./index.js'); if (typeof plugin.N8nWorkflowService !== 'function') process.exit(1)\""
   },
   "keywords": [
     "sap",

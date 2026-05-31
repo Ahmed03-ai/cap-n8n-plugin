@@ -1,7 +1,7 @@
 import {
   INodeType,
   INodeTypeDescription,
-  NodeConnectionType,
+  NodeConnectionTypes,
 } from 'n8n-workflow'
 
 export class SapCap implements INodeType {
@@ -16,8 +16,8 @@ export class SapCap implements INodeType {
     defaults: {
       name: 'SAP CAP',
     },
-    inputs: [NodeConnectionType.Main],
-    outputs: [NodeConnectionType.Main],
+    inputs: [NodeConnectionTypes.Main],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       {
         name: 'sapCapApi',

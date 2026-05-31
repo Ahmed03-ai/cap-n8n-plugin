@@ -1,4 +1,5 @@
 node_modules/
+cap-n8n-node/dist/
 .env
 .cds-services.json
 *.log

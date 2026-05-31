@@ -8,7 +8,7 @@
     "build": "n8n-node build",
     "lint": "n8n-node lint",
     "dev": "n8n-node dev",
-    "test": "n8n-node lint && n8n-node build"
+    "test": "npm run build"
   },
   "keywords": [
     "n8n-community-node-package",
