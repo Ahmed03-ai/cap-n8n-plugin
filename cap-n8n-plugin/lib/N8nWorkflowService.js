@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { createStartResult, normalizeWebhookPath } = require('./result')
 
 class N8nWorkflowService extends cds.Service {
   async init() {
@@ -10,26 +11,18 @@ class N8nWorkflowService extends cds.Service {
       cds.log('n8n').warn('No baseUrl configured for n8n service')
     }
 
-    // Programmatic start method
-    this.on('start', async (req) => {
-      const { workflowId, inputs } = req.data
-      return this._triggerWebhook(workflowId, inputs)
-    })
+    this.on('start', (req) => this.start(req.data.workflowId, req.data.inputs, req.data.options || req.data))
 
     await super.init()
   }
 
-  async _triggerWebhook(workflowId, inputs) {
-    // Construct the webhook URL using the workflowId as the path
+  async start(workflowId, inputs = {}, options = {}) {
+    return this._triggerWebhook(workflowId, inputs, options)
+  }
+
+  async _triggerWebhook(workflowId, inputs = {}, options = {}) {
     const safeBaseUrl = this.baseUrl.replace(/\/$/, '')
-    let safePath = workflowId.replace(/^\//, '')
-    
-    // Auto-prepend 'webhook/' if the user just provided the name (e.g., 'cap-test-trigger')
-    // This allows users to optionally specify 'webhook-test/...' for canvas debugging
-    if (!safePath.startsWith('webhook/') && !safePath.startsWith('webhook-test/')) {
-      safePath = `webhook/${safePath}`
-    }
-    
+    const safePath = normalizeWebhookPath(workflowId)
     const url = `${safeBaseUrl}/${safePath}`
     const headers = {
       'Content-Type': 'application/json'
@@ -55,11 +48,20 @@ class N8nWorkflowService extends cds.Service {
 
       // n8n webhook might respond with empty body depending on "Respond" setting
       const responseText = await response.text()
+      let result
       try {
-        return responseText ? JSON.parse(responseText) : { success: true }
+        result = responseText ? JSON.parse(responseText) : { success: true }
       } catch (e) {
-        return { success: true, message: responseText }
+        result = { success: true, message: responseText }
       }
+
+      return createStartResult({
+        workflowId,
+        executionId: result && typeof result === 'object' ? result.executionId : undefined,
+        correlationId: options.correlationId,
+        businessKey: options.businessKey,
+        result
+      })
     } catch (err) {
       cds.log('n8n').error(`Failed to trigger n8n workflow: ${err.message}`)
       throw err
