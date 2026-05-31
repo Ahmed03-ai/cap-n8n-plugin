@@ -8,7 +8,14 @@
     "cap-n8n-node"
   ],
   "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "cap:serve": "npm run start --workspace demo-app",
+    "cap:compile": "cds compile demo-app --to csn",
+    "n8n:up": "docker compose up -d n8n",
     "n8n:export": "docker compose exec n8n n8n export:workflow --all --output=/test-workflows/workflows.json",
     "n8n:import": "docker compose exec n8n n8n import:workflow --input=/test-workflows/workflows.json"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "9.9.1"
   }
 }

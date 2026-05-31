@@ -1,6 +1,6 @@
 services:
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:2.22.5
     container_name: n8n_local
     ports:
       - "5678:5678"

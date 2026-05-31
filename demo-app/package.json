@@ -17,7 +17,7 @@
   "cds": {
     "requires": {
       "n8n": {
-        "impl": "../cap-n8n-plugin/lib/N8nWorkflowService.js",
+        "impl": "cap-n8n-plugin/service",
         "credentials": {
           "baseUrl": "http://localhost:5678",
           "apiKey": "{env.N8N_API_KEY}"

@@ -1,12 +1,33 @@
 {
   "name": "cap-n8n-plugin",
   "version": "1.0.0",
+  "description": "SAP CAP plugin for triggering n8n workflows",
   "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./service": "./lib/N8nWorkflowService.js"
+  },
+  "files": [
+    "index.js",
+    "cds-plugin.js",
+    "lib/"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "sap",
+    "cap",
+    "cds",
+    "n8n",
+    "workflow"
+  ],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@sap/cds": ">=9 <10"
+  }
 }

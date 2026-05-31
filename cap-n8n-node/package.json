@@ -1,12 +1,46 @@
 {
-  "name": "cap-n8n-node",
+  "name": "n8n-nodes-sap-cap",
   "version": "1.0.0",
+  "description": "n8n community node for SAP CAP OData services",
   "main": "index.js",
+  "types": "dist/nodes/SapCap/SapCap.node.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "n8n-node build",
+    "lint": "n8n-node lint",
+    "dev": "n8n-node dev",
+    "test": "n8n-node lint && n8n-node build"
   },
-  "keywords": [],
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "sap",
+    "cap",
+    "odata"
+  ],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "engines": {
+    "node": ">=22.16 <25"
+  },
+  "files": [
+    "dist",
+    "index.js"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/SapCap/SapCap.node.js"
+    ],
+    "credentials": [
+      "dist/credentials/SapCapApi.credentials.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "0.32.1",
+    "n8n-workflow": "2.16.0",
+    "typescript": "6.0.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }
