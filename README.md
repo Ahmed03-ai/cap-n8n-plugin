@@ -138,7 +138,7 @@ Expected result:
 - message mentions missing `baseUrl`
 - message does not leak the API key
 
-### 5. Test Live n8n Webhook Through the Demo App
+### 5. Test Live n8n Webhook With Docker
 
 Start n8n and import the shared workflow:
 
@@ -147,7 +147,9 @@ npm run n8n:up
 npm run n8n:import
 ```
 
-Open [http://localhost:5678](http://localhost:5678), find the `cap-test-trigger` workflow, and either activate it or put its Webhook node into test mode.
+Open [http://localhost:5678](http://localhost:5678) and find the `cap-test-trigger` workflow.
+
+The current demo app uses `workflowId: "webhook-test/cap-test-trigger"` in `demo-app/srv/admin-service.js`, so the demo-app create flow must be tested with the n8n Webhook node in test/listening mode. Click **Test step** on the Webhook node before sending the CAP request below.
 
 Start the CAP demo app:
 
@@ -170,7 +172,30 @@ Expected result:
 - The n8n webhook receives the event payload.
 - The CAP service uses `demo-app/package.json` configuration: `kind: "webhook"` with `credentials.baseUrl` set to `http://localhost:5678`.
 
-If n8n deactivates workflows during import, re-open the workflow and activate it or run the Webhook node in test mode before sending the CAP request.
+If you want to test an active n8n workflow instead of the test webhook URL, activate the `cap-test-trigger` workflow and call the service with the workflow ID without the `webhook-test/` prefix:
+
+```powershell
+@'
+const cds = require('@sap/cds')
+
+cds.env.requires ??= {}
+cds.env.requires.n8n = {
+  impl: 'cap-n8n-plugin/service',
+  kind: 'webhook',
+  credentials: { baseUrl: 'http://localhost:5678' }
+}
+
+cds.connect.to('n8n')
+  .then(n8n => n8n.start('cap-test-trigger', { event: 'ManualActiveWebhook' }))
+  .then(result => console.log(JSON.stringify(result, null, 2)))
+  .catch(err => {
+    console.error(err)
+    process.exit(1)
+  })
+'@ | node
+```
+
+Use this active-workflow snippet when the n8n workflow is activated. Use the demo-app create request when the Webhook node is in test mode.
 
 ## Runtime Configuration
 
