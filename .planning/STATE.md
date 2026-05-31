@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-31T22:23:13.012Z"
+last_updated: "2026-05-31T22:34:15.426Z"
 last_activity: 2026-05-31
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-28)
 ## Current Position
 
 Phase: 02 (typed-cap-service-mock-runtime-and-configuration) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [████████░░] 75%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [████████░░] 75%
 *Updated after each plan completion*
 | Phase 02 P01 | 5 min | 3 tasks | 3 files |
 | Phase 02 P02 | 6 min | 4 tasks | 8 files |
+| Phase 02 P03 | 5 min | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 02]: Runtime selection uses kind: 'mock' | 'webhook' while explicit cds.env.requires.n8n.impl overrides are preserved. — Keeps CAP profile/config selection native without breaking apps that bind a custom service implementation.
 - [Phase 02]: The webhook service validates baseUrl through the shared resolver instead of defaulting to localhost. — This prevents explicit webhook bindings from masking production missing-configuration errors.
 - [Phase 02]: Mock executions remain in process memory and only cover start records in Phase 2. — Phase 3 owns durable execution tracking, query, and cancellation semantics.
+- [Phase 02]: Webhook retries treat retries as total attempts, with a minimum of one request. — Keeps timeout/retry config predictable for CAP developers and makes retries: 1 a bounded single-attempt mode.
+- [Phase 02]: HTTP 502, 503, and 504 plus network and timeout failures are retryable; HTTP 400, 401, 403, 404, and 500 are not retried by default. — Limits duplicate workflow risk while still handling transient n8n or gateway failures.
+- [Phase 02]: Transport errors expose sanitized machine-readable fields while omitting headers, API keys, request payloads, stack traces, and configured secret values. — Satisfies CAP-visible error diagnostics without leaking n8n credentials or business input payloads.
 
 ### Pending Todos
 
@@ -89,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T22:23:12.995Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-05-31T22:33:55.662Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
