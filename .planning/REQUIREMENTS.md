@@ -10,11 +10,11 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### Foundations
 
-- [ ] **FOUND-01**: Developer can install and consume `cap-n8n-plugin` through a package-level public entry point.
-- [ ] **FOUND-02**: Developer can rely on declared package metadata, including CAP peer dependencies, Node engine constraints, and package license.
-- [ ] **FOUND-03**: Developer can run repo-local CAP, n8n, and test tooling without relying on undocumented global installs.
-- [ ] **FOUND-04**: Developer can run a passing smoke test proving the CAP plugin package and n8n node package are loadable.
-- [ ] **FOUND-05**: Developer can use pinned local development infrastructure so n8n and CAP behavior do not drift unexpectedly.
+- [x] **FOUND-01**: Developer can install and consume `cap-n8n-plugin` through a package-level public entry point.
+- [x] **FOUND-02**: Developer can rely on declared package metadata, including CAP peer dependencies, Node engine constraints, and package license.
+- [x] **FOUND-03**: Developer can run repo-local CAP, n8n, and test tooling without relying on undocumented global installs.
+- [x] **FOUND-04**: Developer can run a passing smoke test proving the CAP plugin package and n8n node package are loadable.
+- [x] **FOUND-05**: Developer can use pinned local development infrastructure so n8n and CAP behavior do not drift unexpectedly.
 
 ### CAP Programmatic API
 
@@ -57,7 +57,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### n8n CAP Action Node
 
-- [ ] **NODE-01**: n8n workflow designer can install and load an SAP CAP community node package.
+- [x] **NODE-01**: n8n workflow designer can install and load an SAP CAP community node package.
 - [ ] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
 - [ ] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
 - [ ] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
@@ -132,11 +132,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
-| FOUND-03 | Phase 1 | Pending |
-| FOUND-04 | Phase 1 | Pending |
-| FOUND-05 | Phase 1 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
 | CAPAPI-01 | Phase 2 | Pending |
 | CAPAPI-02 | Phase 2 | Pending |
 | CAPAPI-03 | Phase 2 | Pending |
@@ -164,7 +164,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IMPORT-05 | Phase 5 | Pending |
 | IMPORT-06 | Phase 5 | Pending |
 | IMPORT-07 | Phase 5 | Pending |
-| NODE-01 | Phase 1 | Pending |
+| NODE-01 | Phase 1 | Complete |
 | NODE-02 | Phase 6 | Pending |
 | NODE-03 | Phase 6 | Pending |
 | NODE-04 | Phase 6 | Pending |

@@ -15,7 +15,7 @@ This roadmap turns the brownfield prototype into two package-owned integration s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Package Foundations and Tooling** - Developers can consume both packages and run pinned local tooling without hidden global dependencies.
+- [x] **Phase 1: Package Foundations and Tooling** - Developers can consume both packages and run pinned local tooling without hidden global dependencies. (completed 2026-05-31)
 - [ ] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability.
 - [ ] **Phase 3: Execution Store and Transaction-Safe Dispatch** - CAP developers can track, query, and cancel correlated workflow executions safely.
 - [ ] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models.
@@ -44,13 +44,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Repair CAP plugin public package boundary and metadata.
-- [ ] 01-02-PLAN.md — Create n8n community-node package loadability baseline.
-- [ ] 01-03-PLAN.md — Add repo-local tooling scripts and pin local n8n infrastructure.
+- [x] 01-01-PLAN.md — Repair CAP plugin public package boundary and metadata.
+- [x] 01-02-PLAN.md — Create n8n community-node package loadability baseline.
+- [x] 01-03-PLAN.md — Add repo-local tooling scripts and pin local n8n infrastructure.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-04-PLAN.md — Add gated smoke verification and refresh install state.
+- [x] 01-04-PLAN.md — Add gated smoke verification and refresh install state.
 
 ### Phase 2: Typed CAP Service, Mock Runtime, and Configuration
 
@@ -186,7 +186,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Package Foundations and Tooling | 0/TBD | Not started | - |
+| 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 0/TBD | Not started | - |
 | 3. Execution Store and Transaction-Safe Dispatch | 0/TBD | Not started | - |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
