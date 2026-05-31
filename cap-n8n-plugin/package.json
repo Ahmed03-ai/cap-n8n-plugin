@@ -6,6 +6,7 @@
   "exports": {
     ".": "./index.js",
     "./service": "./lib/N8nWorkflowService.js",
+    "./mock-service": "./lib/MockN8nWorkflowService.js",
     "./cds-plugin": "./cds-plugin.js",
     "./cds-plugin.js": "./cds-plugin.js"
   },

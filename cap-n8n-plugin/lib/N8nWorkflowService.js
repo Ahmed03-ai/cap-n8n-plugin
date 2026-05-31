@@ -1,15 +1,12 @@
 const cds = require('@sap/cds')
+const { resolveN8nConfig } = require('./config')
 const { createStartResult, normalizeWebhookPath } = require('./result')
 
 class N8nWorkflowService extends cds.Service {
   async init() {
-    // Read config from cds.requires.n8n
-    this.baseUrl = this.options.credentials?.baseUrl || this.options.baseUrl || 'http://localhost:5678'
-    this.apiKey = this.options.credentials?.apiKey || this.options.apiKey
-
-    if (!this.baseUrl) {
-      cds.log('n8n').warn('No baseUrl configured for n8n service')
-    }
+    this.config = resolveN8nConfig({ ...(this.options || {}), kind: 'webhook' })
+    this.baseUrl = this.config.baseUrl
+    this.apiKey = this.config.apiKey
 
     this.on('start', (req) => this.start(req.data.workflowId, req.data.inputs, req.data.options || req.data))
 

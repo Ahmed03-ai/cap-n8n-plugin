@@ -9,6 +9,12 @@ function loadConfig() {
   return require('../../cap-n8n-plugin/lib/config.js')
 }
 
+function loadFreshCdsPlugin() {
+  const pluginPath = require.resolve('../../cap-n8n-plugin/cds-plugin.js')
+  delete require.cache[pluginPath]
+  require(pluginPath)
+}
+
 function configureMockN8n(options = {}) {
   cds.env.requires ??= {}
   cds.env.requires.n8n = {
@@ -189,5 +195,45 @@ describe('MockN8nWorkflowService', () => {
     const MockN8nWorkflowService = require('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js')
     expect(MockN8nWorkflowService.prototype).not.toHaveProperty('query')
     expect(MockN8nWorkflowService.prototype).not.toHaveProperty('cancel')
+  })
+})
+
+describe('CAP plugin runtime implementation selection', () => {
+  it("selects mock implementation when kind: 'mock' has no explicit impl", () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = { kind: 'mock' }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe(require.resolve('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js'))
+  })
+
+  it("selects webhook implementation when kind: 'webhook' has no explicit impl", () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = {
+      kind: 'webhook',
+      credentials: {
+        baseUrl: 'http://localhost:5678'
+      }
+    }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe(require.resolve('../../cap-n8n-plugin/lib/N8nWorkflowService.js'))
+  })
+
+  it('preserves explicit n8n implementation overrides', () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = {
+      kind: 'mock',
+      impl: 'custom-n8n-service'
+    }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe('custom-n8n-service')
   })
 })
