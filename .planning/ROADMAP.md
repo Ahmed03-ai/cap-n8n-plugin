@@ -187,7 +187,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
-| 2. Typed CAP Service, Mock Runtime, and Configuration | 0/TBD | Not started | - |
+| 2. Typed CAP Service, Mock Runtime, and Configuration | 0/4 | Planned    |  |
 | 3. Execution Store and Transaction-Safe Dispatch | 0/TBD | Not started | - |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
