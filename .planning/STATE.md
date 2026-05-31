@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-31T21:59:40.495Z"
-last_activity: 2026-05-31 -- Phase 2 planning complete
+last_updated: "2026-05-31T22:11:50.639Z"
+last_activity: 2026-05-31
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 8
-  completed_plans: 4
+  completed_plans: 5
   percent: 13
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-28)
 
 **Core value:** CAP developers can add reliable n8n workflow automation to CAP applications without repeatedly hand-writing integration glue.
-**Current focus:** Phase 2 — typed cap service, mock runtime, and configuration
+**Current focus:** Phase 02 — typed-cap-service-mock-runtime-and-configuration
 
 ## Current Position
 
-Phase: 2 of 8 (typed cap service, mock runtime, and configuration)
-Plan: Not started
+Phase: 02 (typed-cap-service-mock-runtime-and-configuration) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-05-31 -- Phase 2 planning complete
+Last activity: 2026-05-31
 
-Progress: [----------] 0%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [----------] 0%
 - Trend: n/a
 
 *Updated after each plan completion*
+| Phase 02 P01 | 5 min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -63,6 +64,8 @@ Recent decisions affecting current work:
 - Initial roadmap keeps the research-suggested eight phases because each phase has distinct requirement coverage and dependency boundaries.
 - Optional v2 SAP CAP Trigger Node work remains deferred unless explicitly promoted later.
 - Package-owned CAP plugin and n8n node artifacts are the deliverables; the demo app is evidence, not the integration owner.
+- [Phase 02]: Workflow IDs remain caller-facing in start results; only outbound webhook paths are normalized. — Preserves the CAP developer contract while still supporting n8n webhook and webhook-test routes.
+- [Phase 02]: Webhook responses are wrapped in accepted/result start envelopes with optional executionId and correlation metadata. — Keeps Phase 2 schema-friendly without adding Phase 3 durable tracking, query, or cancel behavior.
 
 ### Pending Todos
 
@@ -82,6 +85,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-31T21:48:40.199Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-typed-cap-service-mock-runtime-and-configuration/02-CONTEXT.md
+Last session: 2026-05-31T22:11:50.624Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

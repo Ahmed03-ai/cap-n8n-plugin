@@ -18,9 +18,9 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### CAP Programmatic API
 
-- [ ] **CAPAPI-01**: CAP developer can connect to a typed `N8nWorkflowService` through `cds.connect.to('n8n')`.
-- [ ] **CAPAPI-02**: CAP developer can start an n8n workflow programmatically with `workflowId` and input payload.
-- [ ] **CAPAPI-03**: CAP developer receives a workflow execution identifier or clear result object after a successful start.
+- [x] **CAPAPI-01**: CAP developer can connect to a typed `N8nWorkflowService` through `cds.connect.to('n8n')`.
+- [x] **CAPAPI-02**: CAP developer can start an n8n workflow programmatically with `workflowId` and input payload.
+- [x] **CAPAPI-03**: CAP developer receives a workflow execution identifier or clear result object after a successful start.
 - [ ] **CAPAPI-04**: CAP developer can cancel a running workflow execution by execution ID.
 - [ ] **CAPAPI-05**: CAP developer can query workflow executions by execution ID, workflow ID, business key, tag, or status.
 - [ ] **CAPAPI-06**: CAP developer can page through large execution query results.
@@ -137,9 +137,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Complete |
-| CAPAPI-01 | Phase 2 | Pending |
-| CAPAPI-02 | Phase 2 | Pending |
-| CAPAPI-03 | Phase 2 | Pending |
+| CAPAPI-01 | Phase 2 | Complete |
+| CAPAPI-02 | Phase 2 | Complete |
+| CAPAPI-03 | Phase 2 | Complete |
 | CAPAPI-04 | Phase 3 | Pending |
 | CAPAPI-05 | Phase 3 | Pending |
 | CAPAPI-06 | Phase 3 | Pending |
