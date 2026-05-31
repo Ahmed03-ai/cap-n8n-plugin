@@ -39,10 +39,14 @@ describe('package boundaries', () => {
   it('loads the CAP plugin through its package name', () => {
     const plugin = require('cap-n8n-plugin')
     const service = require('cap-n8n-plugin/service')
+    const mockService = require('cap-n8n-plugin/mock-service')
 
     expect(plugin).toHaveProperty('N8nWorkflowService')
+    expect(plugin).toHaveProperty('MockN8nWorkflowService')
     expect(typeof plugin.N8nWorkflowService).toBe('function')
+    expect(typeof plugin.MockN8nWorkflowService).toBe('function')
     expect(plugin.N8nWorkflowService).toBe(service)
+    expect(plugin.MockN8nWorkflowService).toBe(mockService)
     expect(require.resolve('cap-n8n-plugin/cds-plugin')).toMatch(/cds-plugin\.js$/)
   })
 
