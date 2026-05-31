@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: ready_to_plan
 last_updated: 2026-05-31T22:51:55.714Z
-last_activity: 2026-05-31
+last_activity: 2026-05-31 - Completed quick task 260601-1cn: Update README with Phase 2 manual testing instructions
 progress:
   total_phases: 8
   completed_phases: 2
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 Phase: 3
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-05-31
+Last activity: 2026-05-31 - Completed quick task 260601-1cn: Update README with Phase 2 manual testing instructions
 
 Progress: [██████████] 100%
 
@@ -89,6 +89,12 @@ None yet.
 - Phase 3 should confirm CAP post-commit/outbox behavior before declarative annotation dispatch is planned in detail.
 - Phase 5 should confirm n8n workflow JSON conventions and generated CDS type limits before implementation.
 - Phases 6 and 7 should confirm n8n 2.22.x node scaffolding, credential-test, metadata-loading, and action/function APIs.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260601-1cn | Update README with Phase 2 manual testing instructions | 2026-05-31 | 420ceeb | [260601-1cn-update-readme-with-phase-2-manual-testin](./quick/260601-1cn-update-readme-with-phase-2-manual-testin/) |
 
 ## Deferred Items
 
