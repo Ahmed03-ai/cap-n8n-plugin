@@ -1,4 +1,5 @@
 import {
+  ICredentialTestRequest,
   ICredentialType,
   INodeProperties,
 } from 'n8n-workflow'
@@ -8,7 +9,9 @@ export class SapCapApi implements ICredentialType {
 
   displayName = 'SAP CAP API'
 
-  documentationUrl = 'sapCap'
+  icon = 'file:sapCap.svg' as const
+
+  documentationUrl = 'https://github.com/Ahmed03-ai/cap-n8n-plugin#credentials'
 
   properties: INodeProperties[] = [
     {
@@ -21,4 +24,12 @@ export class SapCapApi implements ICredentialType {
       description: 'Root URL of the CAP OData service, without a trailing slash.',
     },
   ]
+
+  test: ICredentialTestRequest = {
+    request: {
+      baseURL: '={{$credentials.baseUrl}}',
+      url: '/$metadata',
+      method: 'GET',
+    },
+  }
 }

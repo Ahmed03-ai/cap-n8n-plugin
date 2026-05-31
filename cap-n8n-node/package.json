@@ -8,7 +8,7 @@
     "build": "n8n-node build",
     "lint": "n8n-node lint",
     "dev": "n8n-node dev",
-    "test": "npm run build"
+    "test": "npm run lint && npm run build"
   },
   "keywords": [
     "n8n-community-node-package",
@@ -17,8 +17,10 @@
     "cap",
     "odata"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "CAP n8n Plugin Contributors"
+  },
+  "license": "MIT",
   "engines": {
     "node": ">=22.16 <25"
   },

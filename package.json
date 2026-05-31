@@ -10,7 +10,7 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "cap:serve": "npm run start --workspace demo-app",
-    "cap:compile": "cds compile demo-app --to csn",
+    "cap:compile": "cds compile demo-app/db demo-app/srv demo-app/app --to csn",
     "smoke": "npm run build --workspace n8n-nodes-sap-cap && vitest run test/smoke",
     "test": "npm run smoke",
     "n8n:up": "docker compose up -d n8n",

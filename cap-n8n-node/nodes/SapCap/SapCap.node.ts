@@ -8,7 +8,7 @@ export class SapCap implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'SAP CAP',
     name: 'sapCap',
-    icon: 'fa:database',
+    icon: 'file:sapCap.svg',
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
@@ -18,6 +18,7 @@ export class SapCap implements INodeType {
     },
     inputs: [NodeConnectionTypes.Main],
     outputs: [NodeConnectionTypes.Main],
+    usableAsTool: true,
     credentials: [
       {
         name: 'sapCapApi',
@@ -39,7 +40,7 @@ export class SapCap implements INodeType {
           },
         ],
         default: 'validateConfiguration',
-        description: 'CAP OData operations are added in later phases.',
+        description: 'CAP OData operations are added in later phases',
       },
       {
         displayName: 'Phase 1 Loadability Only',

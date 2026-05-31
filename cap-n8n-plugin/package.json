@@ -5,7 +5,9 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./service": "./lib/N8nWorkflowService.js"
+    "./service": "./lib/N8nWorkflowService.js",
+    "./cds-plugin": "./cds-plugin.js",
+    "./cds-plugin.js": "./cds-plugin.js"
   },
   "files": [
     "index.js",

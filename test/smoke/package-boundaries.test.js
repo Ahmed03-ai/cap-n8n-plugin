@@ -43,6 +43,7 @@ describe('package boundaries', () => {
     expect(plugin).toHaveProperty('N8nWorkflowService')
     expect(typeof plugin.N8nWorkflowService).toBe('function')
     expect(plugin.N8nWorkflowService).toBe(service)
+    expect(require.resolve('cap-n8n-plugin/cds-plugin')).toMatch(/cds-plugin\.js$/)
   })
 
   it('loads every n8n manifest-referenced node and credential module after build', async () => {
