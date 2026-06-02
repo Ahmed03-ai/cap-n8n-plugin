@@ -6,6 +6,16 @@ const { createExecutionResult } = require('./result')
 const { INSERT, SELECT, UPDATE } = cds.ql
 const EXECUTIONS = 'cap.n8n.WorkflowExecutions'
 const DISPATCHES = 'cap.n8n.WorkflowDispatches'
+const DEFAULT_PAGE_LIMIT = 50
+const MAX_PAGE_LIMIT = 100
+const MAX_DUPLICATE_MATCHES = 20
+const QUERY_FILTERS = new Set([
+  'executionId',
+  'workflowId',
+  'businessKey',
+  'tag',
+  'status'
+])
 const EXECUTION_STATUSES = new Set([
   'queued',
   'dispatching',
@@ -17,6 +27,7 @@ const EXECUTION_STATUSES = new Set([
   'unknown'
 ])
 const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled'])
+const ACTIVE_STATUSES = new Set(['queued', 'dispatching', 'running', 'cancel_requested'])
 
 function now() {
   return new Date().toISOString()
@@ -37,9 +48,69 @@ function createStatusError(status) {
   return error
 }
 
+function createFilterError(field) {
+  const error = new Error(`Invalid n8n execution query filter "${field}"`)
+  error.code = 'ERR_N8N_EXECUTION_FILTER'
+  error.statusCode = 400
+  error.source = 'n8n'
+  error.allowed = [...QUERY_FILTERS]
+  return error
+}
+
+function createPageError(field) {
+  const error = new Error(`Invalid n8n execution page "${field}"`)
+  error.code = 'ERR_N8N_EXECUTION_PAGE'
+  error.statusCode = 400
+  error.source = 'n8n'
+  return error
+}
+
 function serializeEnvelope(value, sensitiveValues) {
   if (value === undefined || value === null) return undefined
   return JSON.stringify(sanitizeDetails(value, sensitiveValues))
+}
+
+function hasValue(value) {
+  return value !== undefined && value !== null && value !== ''
+}
+
+function normalizeQueryFilters(filters = {}) {
+  if (!filters || typeof filters !== 'object' || Array.isArray(filters)) {
+    throw createFilterError('filters')
+  }
+
+  const normalized = {}
+  for (const [field, value] of Object.entries(filters)) {
+    if (!QUERY_FILTERS.has(field)) throw createFilterError(field)
+    if (!hasValue(value)) continue
+    if (field === 'status' && !EXECUTION_STATUSES.has(value)) {
+      throw createStatusError(value)
+    }
+    normalized[field] = value
+  }
+
+  return normalized
+}
+
+function normalizePage(page = {}) {
+  if (!page || typeof page !== 'object' || Array.isArray(page)) {
+    throw createPageError('page')
+  }
+
+  const limit = page.limit === undefined || page.limit === null || page.limit === ''
+    ? DEFAULT_PAGE_LIMIT
+    : Number(page.limit)
+  const offset = page.offset === undefined || page.offset === null || page.offset === ''
+    ? 0
+    : Number(page.offset)
+
+  if (!Number.isFinite(limit) || limit <= 0) throw createPageError('limit')
+  if (!Number.isFinite(offset) || offset < 0) throw createPageError('offset')
+
+  return {
+    limit: Math.min(Math.trunc(limit), MAX_PAGE_LIMIT),
+    offset: Math.trunc(offset)
+  }
 }
 
 class ExecutionStore {
@@ -118,6 +189,55 @@ class ExecutionStore {
   async getExecution(executionId) {
     const record = await this.db.run(SELECT.one.from(EXECUTIONS).where({ executionId }))
     return record ? createExecutionResult(record) : undefined
+  }
+
+  async queryExecutions(filters = {}, page = {}) {
+    const normalizedFilters = normalizeQueryFilters(filters)
+    const normalizedPage = normalizePage(page)
+    let query = SELECT.from(EXECUTIONS)
+
+    if (Object.keys(normalizedFilters).length > 0) {
+      query = query.where(normalizedFilters)
+    }
+
+    const records = await this.db.run(
+      query
+        .orderBy('updatedAt desc', 'createdAt desc')
+        .limit(normalizedPage.limit + 1, normalizedPage.offset)
+    )
+    const hasMore = records.length > normalizedPage.limit
+
+    return {
+      items: records.slice(0, normalizedPage.limit).map((record) => createExecutionResult(record)),
+      pageInfo: {
+        limit: normalizedPage.limit,
+        offset: normalizedPage.offset,
+        nextOffset: hasMore ? normalizedPage.offset + normalizedPage.limit : undefined,
+        hasMore
+      }
+    }
+  }
+
+  async findActiveDuplicates({ workflowId, correlationId, businessKey, tag } = {}) {
+    if (!hasValue(workflowId)) return []
+
+    const lookups = []
+    if (hasValue(correlationId)) lookups.push({ workflowId, correlationId })
+    if (hasValue(businessKey)) lookups.push({ workflowId, businessKey })
+    if (hasValue(tag)) lookups.push({ workflowId, tag })
+    if (lookups.length === 0) return []
+
+    const duplicates = new Map()
+
+    for (const lookup of lookups) {
+      const records = await this._findActiveExecutions(lookup)
+      for (const record of records) {
+        duplicates.set(record.executionId, createExecutionResult(record))
+        if (duplicates.size >= MAX_DUPLICATE_MATCHES) return [...duplicates.values()]
+      }
+    }
+
+    return [...duplicates.values()]
   }
 
   async getDispatch(executionId) {
@@ -275,9 +395,28 @@ class ExecutionStore {
   async _updateDispatch(executionId, patch) {
     await this.db.run(UPDATE(DISPATCHES).set(patch).where({ executionId }))
   }
+
+  async _findActiveExecutions(filter) {
+    const records = []
+
+    for (const status of ACTIVE_STATUSES) {
+      const rows = await this.db.run(
+        SELECT.from(EXECUTIONS)
+          .where({ ...filter, status })
+          .orderBy('updatedAt desc', 'createdAt desc')
+          .limit(MAX_DUPLICATE_MATCHES)
+      )
+
+      records.push(...rows)
+      if (records.length >= MAX_DUPLICATE_MATCHES) return records.slice(0, MAX_DUPLICATE_MATCHES)
+    }
+
+    return records
+  }
 }
 
 module.exports = {
   ExecutionStore,
+  ACTIVE_STATUSES: [...ACTIVE_STATUSES],
   EXECUTION_STATUSES: [...EXECUTION_STATUSES]
 }

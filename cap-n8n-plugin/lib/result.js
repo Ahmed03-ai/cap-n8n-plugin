@@ -55,6 +55,7 @@ function createStartResult({
   attempts,
   result,
   error,
+  duplicate,
   mock
 }) {
   const startResult = {
@@ -71,12 +72,20 @@ function createStartResult({
   addOptionalValue(startResult, 'attempts', attempts)
   addOptionalValue(startResult, 'result', result)
   addOptionalValue(startResult, 'error', error)
+  addOptionalValue(startResult, 'duplicate', duplicate)
 
   if (mock === true) {
     startResult.mock = true
   }
 
   return startResult
+}
+
+function createExecutionNotFoundResult(executionId) {
+  return {
+    executionId,
+    notFound: true
+  }
 }
 
 function createExecutionResult(record = {}) {
@@ -121,6 +130,16 @@ function createQueryResult(items = [], page = {}) {
   }
 }
 
+function createDuplicateResult({ policy, duplicates = [] } = {}) {
+  return {
+    policy,
+    activeExecutionIds: duplicates
+      .map((execution) => execution.executionId)
+      .filter(Boolean),
+    ambiguous: duplicates.length > 1
+  }
+}
+
 function createCancelResult({
   executionId,
   status,
@@ -143,6 +162,8 @@ function createCancelResult({
 
 module.exports = {
   createCancelResult,
+  createDuplicateResult,
+  createExecutionNotFoundResult,
   createExecutionResult,
   createQueryResult,
   createStartResult,
