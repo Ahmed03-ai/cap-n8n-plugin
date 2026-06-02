@@ -1,6 +1,13 @@
 const cds = require('@sap/cds');
 const { resolveN8nConfig } = require('./lib/config');
 
+function ensureN8nConfig() {
+  if (!cds.env.requires) cds.env.requires = {};
+  if (!cds.env.requires.n8n) cds.env.requires.n8n = {};
+
+  return cds.env.requires.n8n;
+}
+
 function implementationForKind(kind) {
   if (kind === 'mock') {
     return require.resolve('./lib/MockN8nWorkflowService.js');
@@ -9,11 +16,20 @@ function implementationForKind(kind) {
   return require.resolve('./lib/N8nWorkflowService.js');
 }
 
-cds.once('bootstrap', () => {
-  if (!cds.env.requires) cds.env.requires = {};
-  if (!cds.env.requires.n8n) cds.env.requires.n8n = {};
+function registerModel() {
+  const n8nConfig = ensureN8nConfig();
 
-  const n8nConfig = cds.env.requires.n8n;
+  if (!n8nConfig.model) {
+    n8nConfig.model = require.resolve('./index.cds');
+  }
+
+  return n8nConfig;
+}
+
+registerModel();
+
+cds.once('bootstrap', () => {
+  const n8nConfig = registerModel();
   if (n8nConfig.impl) {
     cds.log('n8n').info('cap-n8n-plugin loaded. Preserving explicit n8n service implementation.');
     return;
