@@ -1,9 +1,14 @@
 const cds = require('@sap/cds')
-const { resolveN8nConfig } = require('./config')
+const { normalizeDuplicatePolicy, resolveN8nConfig } = require('./config')
 const { createN8nError, isRetryableStatus } = require('./errors')
 const { ExecutionDispatcher } = require('./ExecutionDispatcher')
 const { ExecutionStore } = require('./ExecutionStore')
-const { createStartResult, normalizeWebhookPath } = require('./result')
+const {
+  createDuplicateResult,
+  createExecutionNotFoundResult,
+  createStartResult,
+  normalizeWebhookPath
+} = require('./result')
 
 function delay(ms) {
   if (!ms) return Promise.resolve()
@@ -47,6 +52,13 @@ function publicOptions(options = {}) {
   return safeOptions
 }
 
+function publicQueryFilters(data = {}) {
+  if (data.filters && typeof data.filters === 'object') return data.filters
+
+  const { page, options, ...filters } = data
+  return filters
+}
+
 function isPostCommitRequest(req) {
   return req && typeof req.on === 'function'
 }
@@ -76,6 +88,11 @@ class N8nWorkflowService extends cds.Service {
     }))
     this.on('dispatchExecution', (req) => this.dispatchPending({ executionId: req.data.executionId }))
     this.on('dispatchPending', (req) => this.dispatchPending(req.data || {}))
+    this.on('getExecution', (req) => this.getExecution(req.data.executionId || req.data))
+    this.on('queryExecutions', (req) => this.queryExecutions(
+      publicQueryFilters(req.data || {}),
+      req.data?.page || {}
+    ))
 
     await super.init()
   }
@@ -84,6 +101,24 @@ class N8nWorkflowService extends cds.Service {
     const safeOptions = publicOptions(options)
     const req = options._req || cds.context
     const workflowPath = normalizeWebhookPath(workflowId)
+    const requestStore = isPostCommitRequest(req) ? this.store.forRequest(req) : this.store
+    const duplicate = await this._findDuplicateSignal({
+      workflowId,
+      options: safeOptions,
+      store: requestStore
+    })
+
+    if (duplicate?.policy === 'reject') {
+      throw this._createDuplicateError({
+        workflowId,
+        duplicate: duplicate.result
+      })
+    }
+
+    if (duplicate?.policy === 'reuseActive') {
+      return this._createStartResult(duplicate.executions[0], duplicate.result)
+    }
+
     const queued = await this._createQueuedExecution({
       workflowId,
       workflowPath,
@@ -91,10 +126,10 @@ class N8nWorkflowService extends cds.Service {
       options: safeOptions,
       req
     })
-    const startResult = this._createStartResult(queued)
+    const startResult = this._createStartResult(queued, duplicate?.result)
     const dispatch = async () => {
       const dispatched = await this.dispatchPending({ executionId: queued.executionId })
-      if (dispatched) Object.assign(startResult, this._createStartResult(dispatched))
+      if (dispatched) Object.assign(startResult, this._createStartResult(dispatched, duplicate?.result))
       return dispatched
     }
 
@@ -104,11 +139,20 @@ class N8nWorkflowService extends cds.Service {
     }
 
     const dispatched = await dispatch()
-    return this._createStartResult(dispatched || queued)
+    return this._createStartResult(dispatched || queued, duplicate?.result)
   }
 
   async dispatchPending(filters = {}) {
     return this.dispatcher.dispatchPending(filters)
+  }
+
+  async getExecution(executionId) {
+    const execution = await this.store.getExecution(executionId)
+    return execution || createExecutionNotFoundResult(executionId)
+  }
+
+  async queryExecutions(filters = {}, page = {}) {
+    return this.store.queryExecutions(filters, page)
   }
 
   async _createQueuedExecution({ workflowId, workflowPath, inputs, options, req }) {
@@ -131,7 +175,7 @@ class N8nWorkflowService extends cds.Service {
     return this.store.transaction((store) => store.createQueued(entry))
   }
 
-  _createStartResult(execution = {}) {
+  _createStartResult(execution = {}, duplicate) {
     return createStartResult({
       workflowId: execution.workflowId,
       executionId: execution.executionId,
@@ -142,7 +186,46 @@ class N8nWorkflowService extends cds.Service {
       status: execution.status,
       attempts: execution.attempts,
       result: execution.result,
-      error: execution.error
+      error: execution.error,
+      duplicate
+    })
+  }
+
+  async _findDuplicateSignal({ workflowId, options = {}, store = this.store } = {}) {
+    const policy = normalizeDuplicatePolicy(
+      options.duplicatePolicy ?? options.duplicates?.policy,
+      this.config.duplicatePolicy,
+      400
+    )
+    const executions = await store.findActiveDuplicates({
+      workflowId,
+      correlationId: options.correlationId,
+      businessKey: options.businessKey,
+      tag: options.tag
+    })
+
+    if (executions.length === 0) return undefined
+
+    return {
+      policy,
+      executions,
+      result: createDuplicateResult({
+        policy,
+        duplicates: executions
+      })
+    }
+  }
+
+  _createDuplicateError({ workflowId, duplicate }) {
+    return createN8nError({
+      message: 'Active n8n execution already exists for this workflow metadata.',
+      statusCode: 409,
+      retryable: false,
+      code: 'ERR_N8N_DUPLICATE_EXECUTION',
+      details: {
+        workflowId,
+        duplicate
+      }
     })
   }
 

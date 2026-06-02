@@ -1,4 +1,6 @@
 const VALID_KINDS = new Set(['mock', 'webhook'])
+const VALID_DUPLICATE_POLICIES = new Set(['warn', 'reject', 'reuseActive'])
+const DEFAULT_DUPLICATE_POLICY = 'warn'
 const DEFAULT_TIMEOUT_MS = 10000
 const DEFAULT_RETRIES = 3
 const DEFAULT_RETRY_DELAY_MS = 250
@@ -20,6 +22,16 @@ function createConfigError(message, details = {}) {
   return error
 }
 
+function createDuplicatePolicyError(policy, statusCode = 500) {
+  const error = createConfigError('Invalid n8n duplicate policy. Expected duplicatePolicy to be warn, reject, or reuseActive.', {
+    field: 'duplicatePolicy',
+    policy,
+    allowed: [...VALID_DUPLICATE_POLICIES]
+  })
+  error.statusCode = statusCode
+  return error
+}
+
 function normalizeNonNegativeInteger(value, fallback) {
   const number = Number(value)
   if (!Number.isFinite(number)) return fallback
@@ -38,6 +50,18 @@ function normalizeKind(kind) {
   }
 
   return normalizedKind
+}
+
+function normalizeDuplicatePolicy(policy, fallback = DEFAULT_DUPLICATE_POLICY, statusCode = 500) {
+  const value = firstConfiguredValue(policy, fallback, DEFAULT_DUPLICATE_POLICY)
+  const normalizedPolicy = String(value).trim()
+  const canonicalPolicy = normalizedPolicy === 'reuseactive' ? 'reuseActive' : normalizedPolicy
+
+  if (!VALID_DUPLICATE_POLICIES.has(canonicalPolicy)) {
+    throw createDuplicatePolicyError(policy, statusCode)
+  }
+
+  return canonicalPolicy
 }
 
 function profileNames(env = {}) {
@@ -113,9 +137,18 @@ function assertWebhookConfig(config) {
 
 function resolveN8nConfig(options = {}, env = process.env) {
   const credentials = options.credentials || {}
+  const duplicateOptions = options.duplicates || {}
+  const duplicateCredentials = credentials.duplicates || {}
   const configuredKind = normalizeKind(firstConfiguredValue(options.kind, options.mode))
   const baseUrl = firstConfiguredValue(credentials.baseUrl, options.baseUrl)
   const apiKey = firstConfiguredValue(credentials.apiKey, options.apiKey)
+  const duplicatePolicy = normalizeDuplicatePolicy(firstConfiguredValue(
+    options.duplicatePolicy,
+    credentials.duplicatePolicy,
+    duplicateOptions.policy,
+    duplicateCredentials.policy,
+    DEFAULT_DUPLICATE_POLICY
+  ))
   const timeoutMs = normalizeNonNegativeInteger(firstConfiguredValue(
     options.timeoutMs,
     credentials.timeoutMs,
@@ -135,6 +168,7 @@ function resolveN8nConfig(options = {}, env = process.env) {
     timeoutMs,
     retries: retry.retries,
     retryDelayMs: retry.retryDelayMs,
+    duplicatePolicy,
     retry,
     profiles: profileNames(env)
   }
@@ -148,5 +182,6 @@ function resolveN8nConfig(options = {}, env = process.env) {
 
 module.exports = {
   assertWebhookConfig,
+  normalizeDuplicatePolicy,
   resolveN8nConfig
 }
