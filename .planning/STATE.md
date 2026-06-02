@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-02T15:01:38.259Z"
+last_updated: "2026-06-02T15:16:33.723Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 10
   percent: 25
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 03 (Execution Store and Transaction-Safe Dispatch) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-02
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████████░░] 75%
 | Phase 02 P03 | 5 min | 4 tasks | 4 files |
 | Phase 02 P04 | 5 min | 4 tasks | 7 files |
 | Phase 03 P01 | 9 min | 3 tasks | 8 files |
+| Phase 03 P02 | 17 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Recent decisions affecting current work:
 - [Phase 03]: [Phase 03 Plan 01]: Execution IDs are plugin-owned UUIDs; n8n-returned IDs are stored separately as n8nExecutionId. — Keeps local query/cancel stable when n8n webhook responses omit or use their own execution identity.
 - [Phase 03]: [Phase 03 Plan 01]: Raw dispatch payloads are stored only in internal WorkflowDispatches records and omitted from public execution DTOs. — Supports later retry dispatch while preserving the public no-raw-payload contract.
 - [Phase 03]: [Phase 03 Plan 01]: The plugin registers index.cds as a consumer model while preserving explicit consumer impl and model overrides. — Ensures consuming CAP apps compile cap.n8n.WorkflowExecutions without breaking custom n8n service bindings.
+- [Phase 03]: [Phase 03 Plan 02]: Dispatch attempts are counted per outbound webhook attempt and persisted on execution plus outbox records. — Provides retry visibility for duplicate and ambiguous execution analysis.
+- [Phase 03]: [Phase 03 Plan 02]: CAP request starts register req.on('succeeded') while standalone starts dispatch only after durable execution/outbox writes complete. — Prevents rollback dispatch and preserves standalone error behavior after durable tracking.
+- [Phase 03]: [Phase 03 Plan 02]: dispatchPending drains queued and failed internal outbox rows from persisted payload state. — Allows after-commit failures to be retried without caller memory or public payload exposure.
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T15:01:38.248Z
+Last session: 2026-06-02T15:15:13.682Z
 Stopped at: Completed 03-01-PLAN.md
 Resume file: None
