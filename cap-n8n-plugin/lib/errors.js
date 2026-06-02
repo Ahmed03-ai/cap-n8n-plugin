@@ -94,9 +94,12 @@ function sanitizeValue(value, sensitiveValues, depth = 0) {
   return sanitized
 }
 
-function sanitizeDetails(details = {}) {
+function sanitizeDetails(details = {}, sensitiveValues = []) {
   if (!details || typeof details !== 'object') return {}
-  return sanitizeValue(details, collectSensitiveValues(details))
+  return sanitizeValue(details, [
+    ...collectSensitiveValues(details),
+    ...sensitiveValues.filter((value) => typeof value === 'string' && value)
+  ])
 }
 
 function createN8nError({ message, statusCode, retryable = false, code, details, cause } = {}) {
@@ -115,5 +118,6 @@ function createN8nError({ message, statusCode, retryable = false, code, details,
 
 module.exports = {
   createN8nError,
-  isRetryableStatus
+  isRetryableStatus,
+  sanitizeDetails
 }

@@ -28,6 +28,22 @@ function addOptionalValue(target, key, value) {
   }
 }
 
+function parseJsonEnvelope(value) {
+  if (value === undefined || value === null || value === '') return undefined
+  if (typeof value !== 'string') return value
+
+  try {
+    return JSON.parse(value)
+  } catch (e) {
+    return { message: value }
+  }
+}
+
+function normalizeTimestamp(value) {
+  if (value instanceof Date) return value.toISOString()
+  return value
+}
+
 function createStartResult({ workflowId, executionId, correlationId, businessKey, result, mock }) {
   const startResult = {
     accepted: true,
@@ -46,7 +62,72 @@ function createStartResult({ workflowId, executionId, correlationId, businessKey
   return startResult
 }
 
+function createExecutionResult(record = {}) {
+  const execution = {}
+
+  for (const key of [
+    'executionId',
+    'n8nExecutionId',
+    'correlationId',
+    'workflowId',
+    'status',
+    'businessKey',
+    'tag',
+    'attempts',
+    'createdAt',
+    'startedAt',
+    'finishedAt',
+    'updatedAt'
+  ]) {
+    addOptionalValue(execution, key, normalizeTimestamp(record[key]))
+  }
+
+  addOptionalValue(execution, 'result', parseJsonEnvelope(record.result))
+  addOptionalValue(execution, 'error', parseJsonEnvelope(record.error))
+
+  return execution
+}
+
+function createQueryResult(items = [], page = {}) {
+  const limit = Number.isFinite(Number(page.limit)) ? Number(page.limit) : items.length
+  const offset = Number.isFinite(Number(page.offset)) ? Number(page.offset) : 0
+  const hasMore = Boolean(page.hasMore)
+
+  return {
+    items: items.map((item) => createExecutionResult(item)),
+    pageInfo: {
+      limit,
+      offset,
+      nextOffset: hasMore ? offset + limit : undefined,
+      hasMore
+    }
+  }
+}
+
+function createCancelResult({
+  executionId,
+  status,
+  cancelled,
+  noOp,
+  unsupported,
+  reason
+} = {}) {
+  const result = {}
+
+  addOptionalValue(result, 'executionId', executionId)
+  addOptionalValue(result, 'status', status)
+  addOptionalValue(result, 'cancelled', cancelled)
+  addOptionalValue(result, 'noOp', noOp)
+  addOptionalValue(result, 'unsupported', unsupported)
+  addOptionalValue(result, 'reason', reason)
+
+  return result
+}
+
 module.exports = {
+  createCancelResult,
+  createExecutionResult,
+  createQueryResult,
   createStartResult,
   normalizeWebhookPath
 }
