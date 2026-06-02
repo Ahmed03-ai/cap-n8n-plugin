@@ -93,7 +93,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 03-03-PLAN.md — Expose query, paging, ordering, and duplicate policy APIs.
+- [x] 03-03-PLAN.md — Expose query, paging, ordering, and duplicate policy APIs.
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -205,7 +205,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
-| 3. Execution Store and Transaction-Safe Dispatch | 2/4 | In Progress|  |
+| 3. Execution Store and Transaction-Safe Dispatch | 3/4 | In Progress|  |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
