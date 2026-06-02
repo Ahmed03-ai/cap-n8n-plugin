@@ -38,6 +38,18 @@ function normalizeNonNegativeInteger(value, fallback) {
   return Math.max(0, Math.trunc(number))
 }
 
+function normalizeBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['true', '1', 'yes', 'on'].includes(normalized)) return true
+    if (['false', '0', 'no', 'off'].includes(normalized)) return false
+  }
+
+  return Boolean(value)
+}
+
 function normalizeKind(kind) {
   if (kind === undefined || kind === null || kind === '') return undefined
 
@@ -139,6 +151,8 @@ function resolveN8nConfig(options = {}, env = process.env) {
   const credentials = options.credentials || {}
   const duplicateOptions = options.duplicates || {}
   const duplicateCredentials = credentials.duplicates || {}
+  const cancelOptions = options.cancel || options.cancellation || options.stop || {}
+  const cancelCredentials = credentials.cancel || credentials.cancellation || credentials.stop || {}
   const configuredKind = normalizeKind(firstConfiguredValue(options.kind, options.mode))
   const baseUrl = firstConfiguredValue(credentials.baseUrl, options.baseUrl)
   const apiKey = firstConfiguredValue(credentials.apiKey, options.apiKey)
@@ -157,6 +171,22 @@ function resolveN8nConfig(options = {}, env = process.env) {
     DEFAULT_TIMEOUT_MS
   ), DEFAULT_TIMEOUT_MS)
   const retry = normalizeRetry(options)
+  const cancelSupported = normalizeBoolean(firstConfiguredValue(
+    cancelOptions.supported,
+    cancelOptions.enabled,
+    cancelCredentials.supported,
+    cancelCredentials.enabled,
+    false
+  ), false)
+  const cancelApiBaseUrl = firstConfiguredValue(
+    cancelOptions.apiBaseUrl,
+    cancelCredentials.apiBaseUrl,
+    cancelOptions.baseUrl,
+    cancelCredentials.baseUrl,
+    options.apiBaseUrl,
+    credentials.apiBaseUrl,
+    cancelSupported ? baseUrl : undefined
+  )
 
   let kind = configuredKind
   if (!kind) {
@@ -169,12 +199,16 @@ function resolveN8nConfig(options = {}, env = process.env) {
     retries: retry.retries,
     retryDelayMs: retry.retryDelayMs,
     duplicatePolicy,
+    cancel: {
+      supported: cancelSupported
+    },
     retry,
     profiles: profileNames(env)
   }
 
   if (baseUrl) config.baseUrl = baseUrl
   if (apiKey) config.apiKey = apiKey
+  if (cancelApiBaseUrl) config.cancel.apiBaseUrl = cancelApiBaseUrl
   if (options.mock) config.mock = options.mock
 
   return assertWebhookConfig(config)

@@ -347,6 +347,34 @@ class ExecutionStore {
     return this.updateStatus(executionId, 'failed', updates)
   }
 
+  async requestCancel(executionId, updates = {}) {
+    const dispatchPatch = {
+      status: 'cancel_requested',
+      updatedAt: now()
+    }
+
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
+    addOptionalValue(dispatchPatch, 'error', serializeEnvelope(updates.error, this.sensitiveValues))
+    await this._updateDispatch(executionId, dispatchPatch)
+
+    return this.updateStatus(executionId, 'cancel_requested', updates)
+  }
+
+  async markCancelled(executionId, updates = {}) {
+    const timestamp = now()
+    const dispatchPatch = {
+      status: 'cancelled',
+      updatedAt: timestamp,
+      finishedAt: timestamp
+    }
+
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
+    addOptionalValue(dispatchPatch, 'error', serializeEnvelope(updates.error, this.sensitiveValues))
+    await this._updateDispatch(executionId, dispatchPatch)
+
+    return this.updateStatus(executionId, 'cancelled', updates)
+  }
+
   async saveResult(executionId, result) {
     await this.db.run(UPDATE(EXECUTIONS).set({
       result: serializeEnvelope(result, this.sensitiveValues),

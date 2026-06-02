@@ -142,20 +142,28 @@ function createDuplicateResult({ policy, duplicates = [] } = {}) {
 
 function createCancelResult({
   executionId,
+  n8nExecutionId,
   status,
   cancelled,
   noOp,
+  notFound,
   unsupported,
-  reason
+  reason,
+  stopResult,
+  error
 } = {}) {
   const result = {}
 
   addOptionalValue(result, 'executionId', executionId)
+  addOptionalValue(result, 'n8nExecutionId', n8nExecutionId)
   addOptionalValue(result, 'status', status)
   addOptionalValue(result, 'cancelled', cancelled)
   addOptionalValue(result, 'noOp', noOp)
+  addOptionalValue(result, 'notFound', notFound)
   addOptionalValue(result, 'unsupported', unsupported)
   addOptionalValue(result, 'reason', reason)
+  addOptionalValue(result, 'stopResult', stopResult)
+  addOptionalValue(result, 'error', error)
 
   return result
 }

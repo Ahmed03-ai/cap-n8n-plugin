@@ -1,14 +1,18 @@
 const cds = require('@sap/cds')
 const { normalizeDuplicatePolicy, resolveN8nConfig } = require('./config')
-const { createN8nError, isRetryableStatus } = require('./errors')
+const { createN8nError, isRetryableStatus, sanitizeDetails } = require('./errors')
 const { ExecutionDispatcher } = require('./ExecutionDispatcher')
 const { ExecutionStore } = require('./ExecutionStore')
 const {
+  createCancelResult,
   createDuplicateResult,
   createExecutionNotFoundResult,
   createStartResult,
   normalizeWebhookPath
 } = require('./result')
+
+const TERMINAL_STATUSES = new Set(['succeeded', 'failed', 'cancelled'])
+const STOPPABLE_STATUSES = new Set(['dispatching', 'running'])
 
 function delay(ms) {
   if (!ms) return Promise.resolve()
@@ -63,6 +67,11 @@ function isPostCommitRequest(req) {
   return req && typeof req.on === 'function'
 }
 
+function publicCancelExecutionId(data) {
+  if (data && typeof data === 'object') return data.executionId
+  return data
+}
+
 class N8nWorkflowService extends cds.Service {
   async init() {
     this.config = resolveN8nConfig({ ...(this.options || {}), kind: 'webhook' })
@@ -71,6 +80,7 @@ class N8nWorkflowService extends cds.Service {
     this.timeoutMs = this.config.timeoutMs
     this.retries = this.config.retries
     this.retryDelayMs = this.config.retryDelayMs
+    this.cancelConfig = this.config.cancel || {}
     this.db = cds.db || await cds.connect.to('db')
     this.store = new ExecutionStore({
       db: this.db,
@@ -93,6 +103,7 @@ class N8nWorkflowService extends cds.Service {
       publicQueryFilters(req.data || {}),
       req.data?.page || {}
     ))
+    this.on('cancel', (req) => this.cancel(publicCancelExecutionId(req.data)))
 
     await super.init()
   }
@@ -155,6 +166,72 @@ class N8nWorkflowService extends cds.Service {
     return this.store.queryExecutions(filters, page)
   }
 
+  async cancel(executionId) {
+    const execution = await this.store.getExecution(executionId)
+
+    if (!execution) {
+      return createCancelResult({
+        executionId,
+        notFound: true,
+        noOp: true,
+        reason: 'n8n execution not found.'
+      })
+    }
+
+    if (execution.status === 'queued') {
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        status: 'cancelled',
+        cancelled: true,
+        reason: 'Queued n8n execution cancelled before dispatch.'
+      })
+
+      await this.store.markCancelled(execution.executionId, { result })
+      return result
+    }
+
+    if (execution.status === 'cancel_requested') {
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        status: 'cancel_requested',
+        noOp: true,
+        unsupported: execution.result?.unsupported === true,
+        reason: execution.result?.reason || 'Cancellation is already requested for this n8n execution.'
+      })
+
+      await this.store.saveResult(execution.executionId, result)
+      return result
+    }
+
+    if (TERMINAL_STATUSES.has(execution.status)) {
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        status: execution.status,
+        noOp: true,
+        cancelled: execution.status === 'cancelled',
+        reason: `n8n execution is already terminal with status "${execution.status}".`
+      })
+
+      await this.store.saveResult(execution.executionId, result)
+      return result
+    }
+
+    if (STOPPABLE_STATUSES.has(execution.status)) {
+      return this._cancelActiveExecution(execution)
+    }
+
+    const result = createCancelResult({
+      executionId: execution.executionId,
+      status: execution.status,
+      noOp: true,
+      unsupported: true,
+      reason: `Cancellation is unsupported for n8n execution status "${execution.status}".`
+    })
+
+    await this.store.saveResult(execution.executionId, result)
+    return result
+  }
+
   async _createQueuedExecution({ workflowId, workflowPath, inputs, options, req }) {
     const entry = {
       workflowId,
@@ -173,6 +250,143 @@ class N8nWorkflowService extends cds.Service {
     }
 
     return this.store.transaction((store) => store.createQueued(entry))
+  }
+
+  async _cancelActiveExecution(execution) {
+    if (!this._supportsN8nStop(execution)) {
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        n8nExecutionId: execution.n8nExecutionId,
+        status: 'cancel_requested',
+        cancelled: false,
+        noOp: true,
+        unsupported: true,
+        reason: this._unsupportedCancelReason(execution)
+      })
+
+      await this.store.requestCancel(execution.executionId, { result })
+      return result
+    }
+
+    try {
+      const stopResult = await this._stopN8nExecution(execution)
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        n8nExecutionId: execution.n8nExecutionId,
+        status: 'cancelled',
+        cancelled: true,
+        reason: 'n8n execution stop confirmed.',
+        stopResult
+      })
+
+      await this.store.markCancelled(execution.executionId, { result })
+      return result
+    } catch (err) {
+      const error = this._createCancelErrorResult(err)
+      const result = createCancelResult({
+        executionId: execution.executionId,
+        n8nExecutionId: execution.n8nExecutionId,
+        status: 'cancel_requested',
+        cancelled: false,
+        noOp: true,
+        reason: 'n8n stop request failed; cancellation remains requested locally.',
+        error
+      })
+
+      await this.store.requestCancel(execution.executionId, { result, error })
+      return result
+    }
+  }
+
+  _supportsN8nStop(execution = {}) {
+    return Boolean(
+      execution.n8nExecutionId &&
+      this.cancelConfig.supported &&
+      this.cancelConfig.apiBaseUrl
+    )
+  }
+
+  _unsupportedCancelReason(execution = {}) {
+    if (!execution.n8nExecutionId) {
+      return 'n8n webhook cancellation is unsupported because no n8nExecutionId is stored for this execution.'
+    }
+
+    return 'n8n webhook cancellation is unsupported because the n8n stop API is not enabled in configuration.'
+  }
+
+  async _stopN8nExecution(execution) {
+    const safeBaseUrl = this.cancelConfig.apiBaseUrl.replace(/\/$/, '')
+    const url = `${safeBaseUrl}/api/v1/executions/${encodeURIComponent(execution.n8nExecutionId)}/stop`
+    const headers = {
+      'Content-Type': 'application/json'
+    }
+
+    if (this.apiKey) {
+      headers['X-N8N-API-KEY'] = this.apiKey
+    }
+
+    const response = await this._fetchN8nStop(url, headers)
+    const responseText = await response.text()
+
+    if (!response.ok) {
+      throw createN8nError({
+        message: `n8n execution stop request failed with status ${response.status}.`,
+        statusCode: response.status,
+        retryable: isRetryableStatus(response.status),
+        code: 'ERR_N8N_CANCEL_HTTP_STATUS',
+        details: {
+          executionId: execution.executionId,
+          n8nExecutionId: execution.n8nExecutionId,
+          statusCode: response.status,
+          response: parseSafeErrorResponse(responseText),
+          sensitiveValues: [this.apiKey].filter(Boolean)
+        }
+      })
+    }
+
+    return sanitizeDetails(parseWebhookResponse(responseText), [this.apiKey].filter(Boolean))
+  }
+
+  async _fetchN8nStop(url, headers) {
+    const controller = new AbortController()
+    const timeout = this.timeoutMs > 0
+      ? setTimeout(() => controller.abort(), this.timeoutMs)
+      : undefined
+
+    try {
+      return await fetch(url, {
+        method: 'POST',
+        headers,
+        signal: controller.signal
+      })
+    } finally {
+      if (timeout) clearTimeout(timeout)
+    }
+  }
+
+  _createCancelErrorResult(err) {
+    const error = err && err.source === 'n8n'
+      ? err
+      : createN8nError({
+          message: err?.name === 'AbortError'
+            ? 'n8n execution stop request timed out.'
+            : 'n8n execution stop request failed before a response was received.',
+          retryable: true,
+          code: err?.name === 'AbortError' ? 'ERR_N8N_CANCEL_TIMEOUT' : 'ERR_N8N_CANCEL_NETWORK',
+          details: {
+            sensitiveValues: [this.apiKey].filter(Boolean)
+          },
+          cause: err
+        })
+
+    return sanitizeDetails({
+      source: error.source || 'n8n',
+      statusCode: error.statusCode,
+      retryable: Boolean(error.retryable),
+      code: error.code,
+      message: error.message,
+      details: error.details
+    }, [this.apiKey].filter(Boolean))
   }
 
   _createStartResult(execution = {}, duplicate) {
