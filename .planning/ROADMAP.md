@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Package Foundations and Tooling** - Developers can consume both packages and run pinned local tooling without hidden global dependencies. (completed 2026-05-31)
 - [x] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability. (completed 2026-05-31)
 - [x] **Phase 3: Execution Store and Transaction-Safe Dispatch** - CAP developers can track, query, and cancel correlated workflow executions safely. (completed 2026-06-02)
-- [ ] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models.
+- [x] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models. (completed 2026-06-02)
 - [ ] **Phase 5: Workflow Import and Build Validation** - CAP developers can import workflows into typed local artifacts and validate mappings during build.
 - [ ] **Phase 6: n8n Credentials, Metadata Discovery, and Read Operations** - n8n workflow designers can securely discover and read CAP OData data.
 - [ ] **Phase 7: n8n Mutations and CAP Actions/Functions** - n8n workflow designers can write CAP data and invoke CAP business operations.
@@ -82,7 +82,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-04-PLAN.md - Move demo evidence to CDS annotations and run aggregate Phase 4 verification.
+- [x] 04-04-PLAN.md - Move demo evidence to CDS annotations and run aggregate Phase 4 verification.
 
 ### Phase 3: Execution Store and Transaction-Safe Dispatch
 
@@ -223,7 +223,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
 | 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
-| 4. Declarative CAP Annotations | 3/4 | In Progress|  |
+| 4. Declarative CAP Annotations | 4/4 | Complete   | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
 | 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |

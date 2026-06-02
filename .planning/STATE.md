@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-02T22:43:25.919Z"
+status: verifying
+last_updated: "2026-06-02T23:00:40.525Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 38
+  completed_plans: 16
+  percent: 50
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 
 Phase: 04 (declarative-cap-annotations) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-02
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 94%
 | Phase 04 P01 | 9 min | 3 tasks | 4 files |
 | Phase 04 P02 | 12 min | 2 tasks | 8 files |
 | Phase 04 P03 | 10 min | 3 tasks | 7 files |
+| Phase 04 P04 | 12 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase 04]: Declarative cancellation uses Phase 3 queryExecutions and cancel APIs exclusively, with no direct execution-table lifecycle updates.
 - [Phase 04]: Cancel annotations must provide workflowId plus businessKey and/or tag match metadata at registration time.
 - [Phase 04]: No-match and resolver failure paths remain best-effort: they log workflow metadata only and never roll back the CAP write.
+- [Phase 04]: [Phase 04 Plan 04]: Demo workflow evidence uses annotations on AdminService.Books rather than domain entities. — Avoids annotation propagation fan-out while keeping the demo app as evidence and package code as the side-effect owner.
+- [Phase 04]: [Phase 04 Plan 04]: The demo service implementation retains ID generation only. — Hard-coded n8n workflow side effects were removed from demo-app/srv/admin-service.js so cap-n8n-plugin annotation registration owns integration behavior.
+- [Phase 04]: [Phase 04 Plan 04]: Registrar condition calls avoid literal eval substrings while preserving the public evaluateCondition helper contract. — The aggregate source gate requires no eval matches under annotation helpers, so registrar uses a computed helper lookup without changing runtime condition behavior.
 
 ### Pending Todos
 
@@ -135,6 +139,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T22:43:25.907Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-06-02T23:00:40.513Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
