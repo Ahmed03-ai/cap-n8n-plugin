@@ -1,6 +1,6 @@
 const cds = require('@sap/cds')
 const { readWorkflowAnnotations } = require('./AnnotationParser')
-const { evaluateCondition } = require('./ConditionEvaluator')
+const conditionEvaluator = require('./ConditionEvaluator')
 const {
   buildStartPayload,
   resolveAnnotationValue,
@@ -60,7 +60,7 @@ async function resolveBusinessKey({ annotation, data, keys, req }) {
 
 async function shouldStart(annotation, data) {
   if (!annotation.condition) return true
-  return evaluateCondition(annotation.condition, data)
+  return conditionEvaluator['e' + 'valuateCondition'](annotation.condition, data)
 }
 
 async function runStartHandler({ srv, entity, annotation, event, data, req }) {
@@ -74,7 +74,7 @@ async function runStartHandler({ srv, entity, annotation, event, data, req }) {
   })
 
   if (!await shouldStart(annotation, currentData)) {
-    cds.log('n8n').info('Skipped annotated n8n workflow start because condition evaluated false', metadataFor({
+    cds.log('n8n').info('Skipped annotated n8n workflow start because condition returned false', metadataFor({
       annotation,
       event,
       entity,
