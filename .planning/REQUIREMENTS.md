@@ -42,7 +42,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
 - [x] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
 - [x] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
-- [ ] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
+- [x] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
 - [x] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
 
 ### Workflow Import and Build Validation
@@ -155,7 +155,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANNO-03 | Phase 4 | Complete |
 | ANNO-04 | Phase 4 | Complete |
 | ANNO-05 | Phase 4 | Complete |
-| ANNO-06 | Phase 4 | Pending |
+| ANNO-06 | Phase 4 | Complete |
 | ANNO-07 | Phase 4 | Complete |
 | IMPORT-01 | Phase 5 | Pending |
 | IMPORT-02 | Phase 5 | Pending |

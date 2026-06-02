@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-02T22:30:43.167Z"
+last_updated: "2026-06-02T22:43:25.919Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 38
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 04 (declarative-cap-annotations) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-02
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [█████████░] 88%
 | Phase 03 P04 | 12 min | 3 tasks | 7 files |
 | Phase 04 P01 | 9 min | 3 tasks | 4 files |
 | Phase 04 P02 | 12 min | 2 tasks | 8 files |
+| Phase 04 P03 | 10 min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,9 @@ Recent decisions affecting current work:
 - [Phase 04]: [Phase 04 Plan 02]: Annotated starts pass a bestEffort option into the Phase 3 request-context start path so post-commit n8n failures persist failure evidence without rejecting the CAP write. — Keeps ANNO-07 non-rollback behavior while reusing the existing execution/outbox path.
 - [Phase 04]: [Phase 04 Plan 02]: Annotation registration is idempotent per served CAP service via a symbol guard to avoid duplicate handlers on repeated served lifecycle emissions. — Prevents duplicate workflow starts if the CAP served lifecycle is emitted more than once in tests or runtime setup.
 - [Phase 04]: [Phase 04 Plan 02]: Service-projection UPDATE and DELETE keys are resolved from CAP req.subject where clauses so mapped payloads and business keys work for normal service requests. — CAP service writes do not always place key values in data; service-projection subjects are the reliable source.
+- [Phase 04]: Declarative cancellation uses Phase 3 queryExecutions and cancel APIs exclusively, with no direct execution-table lifecycle updates.
+- [Phase 04]: Cancel annotations must provide workflowId plus businessKey and/or tag match metadata at registration time.
+- [Phase 04]: No-match and resolver failure paths remain best-effort: they log workflow metadata only and never roll back the CAP write.
 
 ### Pending Todos
 
@@ -131,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T22:30:43.153Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-06-02T22:43:25.907Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None

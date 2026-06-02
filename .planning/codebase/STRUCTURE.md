@@ -52,8 +52,8 @@ cap-n8n-plugin/
 
 **`cap-n8n-plugin/lib/annotations/`:**
 - Purpose: Holds package-owned declarative annotation helper contracts.
-- Contains: Served-service annotation registration, flattened CSN annotation parsing, safe condition compilation/evaluation, and scalar payload construction.
-- Key files: `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js`, `cap-n8n-plugin/lib/annotations/AnnotationParser.js`, `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`, `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`
+- Contains: Served-service annotation registration, flattened CSN annotation parsing, safe condition compilation/evaluation, scalar payload construction, and declarative cancellation matching.
+- Key files: `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js`, `cap-n8n-plugin/lib/annotations/AnnotationParser.js`, `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`, `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`, `cap-n8n-plugin/lib/annotations/CancellationResolver.js`
 
 **`cap-n8n-node/`:**
 - Purpose: Package boundary for n8n community node functionality.
@@ -139,6 +139,7 @@ cap-n8n-plugin/
 - `cap-n8n-plugin/lib/annotations/AnnotationParser.js`: Declarative n8n annotation reconstruction and validation.
 - `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`: Safe scalar CXN condition parsing and evaluation.
 - `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`: Scalar workflow payload and CAP event metadata construction.
+- `cap-n8n-plugin/lib/annotations/CancellationResolver.js`: Declarative cancellation matching through Phase 3 execution query and cancel APIs.
 - `cap-n8n-plugin/cds-plugin.js`: Runtime default binding of the n8n service implementation.
 - `demo-app/db/schema.cds`: Bookshop domain model.
 - `demo-app/srv/admin-service.cds`: Admin service OData model.
@@ -161,6 +162,8 @@ cap-n8n-plugin/
 **Testing and Manual Verification:**
 - `demo-app/test.http`: Manual HTTP request for creating a Book through `AdminService`.
 - `test/integration/n8n-annotation-contract.test.js`: Annotation parser, condition, and payload contract integration tests.
+- `test/integration/n8n-annotations-start.test.js`: Annotated CREATE/UPDATE/DELETE start integration tests.
+- `test/integration/n8n-annotations-cancel.test.js`: Declarative cancellation integration tests for default DELETE, explicit UPDATE, no-match, and non-rollback behavior.
 - `test-workflows/workflows.json`: Imported n8n webhook workflow used by the demo trigger.
 - `mockups/n8n-node-mockup.html`: Static mockup for n8n node UI requirements.
 - Automated test directories/files: Not detected.

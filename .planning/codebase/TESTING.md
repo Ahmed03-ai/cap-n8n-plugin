@@ -22,7 +22,7 @@ npm start --workspace demo-app        # Starts the CAP demo app for manual verif
 
 **Location:**
 - Automated test files live under `test/smoke/` and `test/integration/`.
-- Current integration coverage includes CAP service contracts, mock/profile behavior, webhook runtime behavior, execution tracking, query/cancel behavior, transaction-safe dispatch, annotation helper contracts, and annotated CREATE/UPDATE/DELETE start behavior.
+- Current integration coverage includes CAP service contracts, mock/profile behavior, webhook runtime behavior, execution tracking, query/cancel behavior, transaction-safe dispatch, annotation helper contracts, annotated CREATE/UPDATE/DELETE start behavior, and declarative annotation cancellation behavior.
 - Manual request verification lives in `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 
@@ -119,6 +119,8 @@ test-workflows/
 **Integration Tests:**
 - Implemented for package boundaries, CAP service start contract, mock runtime, profile/config behavior, bootstrap runtime selection, execution tracking, query/cancel behavior, transaction-safe dispatch, and Phase 4 annotation helper contracts.
 - `test/integration/n8n-annotation-contract.test.js` covers flattened annotation reconstruction, scalar validation, safe CXN conditions, and deterministic payload construction without requiring Docker n8n.
+- `test/integration/n8n-annotations-start.test.js` covers package-owned annotation registration for CREATE, UPDATE, DELETE starts and non-rollback failed dispatch.
+- `test/integration/n8n-annotations-cancel.test.js` covers declarative cancellation matching, default DELETE registration, explicit UPDATE registration, no-match warnings, cancel-all behavior, and non-rollback failures.
 - Manual integration path: `demo-app/test.http` sends `POST http://localhost:3000/odata/v4/admin/Books`, which exercises `demo-app/srv/admin-service.js` and the configured n8n service in `demo-app/package.json`.
 - Root scripts support n8n workflow import/export for integration setup: `npm run n8n:import` and `npm run n8n:export` in `package.json`.
 - Requirements documents repeatedly call for integration coverage across CAP-to-n8n and n8n-to-CAP flows: `N8N_REQUIREMENTS.md`, `cap_n8n_requirements_v2.md`.
