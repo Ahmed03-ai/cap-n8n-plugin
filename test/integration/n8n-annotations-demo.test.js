@@ -23,6 +23,8 @@ const workflowId = 'webhook-test/cap-test-trigger'
 const serviceName = 'AdminService'
 const sourceBooks = 'sap.capire.bookshop.Books'
 const sourceAuthors = 'sap.capire.bookshop.Authors'
+const demoGenreId = '10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+const originalModel = cds.model
 const originalN8nConfig = cds.env.requires?.n8n
 const forbiddenDemoTriggerPatterns = [
   /cds\.connect\.to\('n8n'\)/,
@@ -59,6 +61,7 @@ async function loadDemoModel() {
 
 async function serveDemoAdminService() {
   const csn = await loadDemoModel()
+  cds.model = cds.compile.for.nodejs(csn)
   db = await cds.deploy(csn).to('sqlite::memory:')
   const srv = await cds.serve(serviceName).from(csn).with(require(adminServiceImpl))
 
@@ -104,6 +107,7 @@ async function disconnectDb() {
 
   await cds.disconnect(db)
   db = undefined
+  cds.model = originalModel
 }
 
 async function createWebhookServer(respond) {
@@ -163,7 +167,8 @@ async function seedBook(id, authorId, data = {}) {
     ID: id,
     title: data.title || `Demo Book ${id}`,
     stock: data.stock ?? 1,
-    author_ID: authorId
+    author_ID: authorId,
+    genre_ID: data.genre_ID || demoGenreId
   }))
 }
 
@@ -191,7 +196,7 @@ function adminRun(srv, query) {
     roles: ['admin']
   })
 
-  return srv.tx({ user }).run(query)
+  return cds.tx({ user }, () => srv.run(query))
 }
 
 function expectEventMetadata(body, eventName, keys) {
@@ -251,7 +256,8 @@ describe('demo AdminService n8n annotations', () => {
         ID: createId,
         title: 'Annotated Demo Create',
         stock: 5,
-        author_ID: authorId
+        author: { ID: authorId },
+        genre: { ID: demoGenreId }
       }))
       expect(server.requests).toHaveLength(1)
       expect(server.requests[0]).toMatchObject({
