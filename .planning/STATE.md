@@ -2,9 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready
-stopped_at: Phase 3 complete; next step discuss Phase 4
-last_updated: "2026-06-02T15:55:12.496Z"
+status: Ready to discuss
+last_updated: "2026-06-02T21:08:06.515Z"
 last_activity: 2026-06-02
 progress:
   total_phases: 8
@@ -124,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T15:55:12.496Z
-Stopped at: Phase 3 complete; next step discuss Phase 4
-Resume file: .planning/ROADMAP.md
+Last session: 2026-06-02T21:08:06.501Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/phases/04-declarative-cap-annotations/04-CONTEXT.md
