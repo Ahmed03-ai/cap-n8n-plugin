@@ -1,8 +1,8 @@
 # Phase 04: Declarative CAP Annotations - Pattern Map
 
 **Mapped:** 2026-06-02
-**Files analyzed:** 9 new/modified files
-**Analogs found:** 9 / 9
+**Files analyzed:** 12 new/modified files
+**Analogs found:** 12 / 12
 
 ## File Classification
 
@@ -16,7 +16,10 @@
 | `cap-n8n-plugin/lib/annotations/CancellationResolver.js` | service/utility | event-driven, CRUD | `cap-n8n-plugin/lib/N8nWorkflowService.js` | exact behavior analog |
 | `demo-app/srv/admin-service.cds` | route/model | CRUD | `demo-app/app/admin-books/fiori-service.cds` | role-match |
 | `demo-app/srv/admin-service.js` | service | event-driven, CRUD | `demo-app/srv/admin-service.js` | exact |
-| `test/integration/n8n-annotations.test.js` | test | CRUD, event-driven, request-response | `test/integration/n8n-dispatch-and-duplicates.test.js` | exact test style |
+| `test/integration/n8n-annotation-contract.test.js` | test | transform, validation, request-response | `test/integration/n8n-dispatch-and-duplicates.test.js` | exact test style |
+| `test/integration/n8n-annotations-start.test.js` | test | CRUD, event-driven, request-response | `test/integration/n8n-dispatch-and-duplicates.test.js` | exact test style |
+| `test/integration/n8n-annotations-cancel.test.js` | test | CRUD, event-driven, request-response | `test/integration/n8n-cancel-and-mock.test.js` | exact test style |
+| `test/integration/n8n-annotations-demo.test.js` | test | CRUD, event-driven, request-response, source-gate | `test/integration/n8n-dispatch-and-duplicates.test.js` | exact test style |
 
 ## Pattern Assignments
 
@@ -467,7 +470,9 @@ this.after ('CREATE', Books, async (data, req) => {
 
 ---
 
-### `test/integration/n8n-annotations.test.js` (test, CRUD/event-driven/request-response)
+### Split annotation integration tests (test, CRUD/event-driven/request-response)
+
+**Files:** `test/integration/n8n-annotation-contract.test.js`, `test/integration/n8n-annotations-start.test.js`, `test/integration/n8n-annotations-cancel.test.js`, `test/integration/n8n-annotations-demo.test.js`
 
 **Analogs:** `test/integration/n8n-dispatch-and-duplicates.test.js`, `test/integration/n8n-cancel-and-mock.test.js`, `test/integration/n8n-query-and-duplicates.test.js`
 
@@ -611,7 +616,7 @@ await expect(n8n.queryExecutions({ status: 'not-valid' })).rejects.toMatchObject
 })
 ```
 
-**Apply to Phase 4:** Add integration coverage for annotated CREATE/UPDATE/DELETE starts, scalar mapping, default keys-plus-metadata payloads, invalid annotation startup failures, conditional skip/start behavior, non-rollback side effects, declarative cancellation matching multiple active executions, and public DTO sanitization.
+**Apply to Phase 4:** The four split annotation test files inherit the same Vitest/CAP/local-webhook analog that was originally mapped for a single `n8n-annotations.test.js` suite. Add integration coverage for annotation contract parsing, annotated CREATE/UPDATE/DELETE starts, scalar mapping, default keys-plus-metadata payloads, invalid annotation startup failures, conditional skip/start behavior, non-rollback side effects, declarative cancellation matching multiple active executions, demo service-projection evidence, and public DTO sanitization.
 
 ## Shared Patterns
 

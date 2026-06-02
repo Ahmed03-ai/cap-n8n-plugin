@@ -499,17 +499,17 @@ async function cancelMatchingExecutions(n8n, { workflowId, businessKey, tag }) {
 | A2 | The recommended helper filenames under `lib/annotations/` are acceptable implementation boundaries. | Recommended Project Structure | If wrong, planner can rename modules while preserving capability boundaries. |
 | A3 | Service projection annotations should be preferred for demo evidence to avoid propagation fan-out. | Common Pitfalls | If wrong, domain-level annotations may trigger on more services than intended or require deduplication policy. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should Phase 4 support non-key DELETE input mappings through pre-delete snapshots?**
    - What we know: Locked decisions require DELETE keys plus metadata by default and scalar-only mappings. [VERIFIED: .planning/phases/04-declarative-cap-annotations/04-CONTEXT.md]
-   - What's unclear: The context does not explicitly say whether non-key DELETE mappings must work. [VERIFIED: .planning/phases/04-declarative-cap-annotations/04-CONTEXT.md]
-   - Recommendation: Plan keys-only DELETE for Phase 4 and reject non-key DELETE mappings unless a plan task explicitly captures rows before delete. [ASSUMED]
+   - Resolution: Phase 4 rejects non-key DELETE input mappings because D-07 defines DELETE keys plus metadata by default, D-11 keeps mappings scalar-only, and no locked Phase 4 decision adds pre-delete snapshots. A future phase may add snapshot support explicitly. [RESOLVED: 2026-06-02]
+   - Planning impact: Current plans already require key-only DELETE payloads and registration-time rejection for non-key DELETE mappings, so no scope change is needed. [VERIFIED: .planning/phases/04-declarative-cap-annotations/04-01-PLAN.md]
 
 2. **Should annotations on domain entities be supported as propagated service annotations?**
    - What we know: CAP propagates annotations to projections, and runtime handlers register on served service entities. [CITED: https://cap.cloud.sap/docs/cds/cdl] [CITED: https://cap.cloud.sap/docs/node.js/core-services]
-   - What's unclear: The Phase 4 context does not lock whether domain annotations should trigger every projection or only service-level annotations. [VERIFIED: .planning/phases/04-declarative-cap-annotations/04-CONTEXT.md]
-   - Recommendation: Support what appears on served entity definitions, but demo and docs should use service projection annotations to avoid accidental fan-out. [ASSUMED]
+   - Resolution: Phase 4 registers annotations present on served entity definitions. Demo evidence must place annotations on the service projection `AdminService.Books` to avoid accidental fan-out from domain-level annotation propagation. [RESOLVED: 2026-06-02]
+   - Planning impact: Current plans already use service projection annotations for demo evidence and scan served entity definitions for runtime registration, so no scope change is needed. [VERIFIED: .planning/phases/04-declarative-cap-annotations/04-04-PLAN.md]
 
 ## Environment Availability
 
