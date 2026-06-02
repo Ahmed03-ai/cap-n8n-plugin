@@ -1,11 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 const require = createRequire(import.meta.url)
 const cds = require('@sap/cds')
 
 const originalN8nConfig = cds.env.requires?.n8n
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const pluginModel = path.join(repoRoot, 'cap-n8n-plugin', 'index.cds')
+
+let db
 
 function configureN8n(baseUrl) {
   cds.env.requires ??= {}
@@ -30,6 +36,18 @@ async function resetN8nService() {
   } else if (cds.env.requires) {
     delete cds.env.requires.n8n
   }
+}
+
+async function deployExecutionModel() {
+  const csn = await cds.load(pluginModel)
+  db = await cds.deploy(csn).to('sqlite::memory:')
+}
+
+async function disconnectDb() {
+  if (!db) return
+
+  await cds.disconnect(db)
+  db = undefined
 }
 
 async function createWebhookServer(respond) {
@@ -67,8 +85,13 @@ async function createWebhookServer(respond) {
   }
 }
 
+function expectUuid(value) {
+  expect(value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+}
+
 afterEach(async () => {
   await resetN8nService()
+  await disconnectDb()
 })
 
 describe('N8nWorkflowService contract', () => {
@@ -81,6 +104,7 @@ describe('N8nWorkflowService contract', () => {
   })
 
   it('connects through CAP and starts workflows with metadata', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true, executionId: 'exec-1' })
     }))
@@ -107,14 +131,17 @@ describe('N8nWorkflowService contract', () => {
       expect(result).toMatchObject({
         accepted: true,
         workflowId: 'cap-test-trigger',
-        executionId: 'exec-1',
+        n8nExecutionId: 'exec-1',
         correlationId: 'corr-1',
         businessKey: 'book-1',
+        status: 'succeeded',
         result: {
           received: true,
           executionId: 'exec-1'
         }
       })
+      expectUuid(result.executionId)
+      expect(result.executionId).not.toBe('exec-1')
       expect(result.result).toBeTypeOf('object')
     } finally {
       await server.close()
@@ -122,6 +149,7 @@ describe('N8nWorkflowService contract', () => {
   })
 
   it('preserves CAP send compatibility for start events', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true })
     }))
@@ -144,14 +172,17 @@ describe('N8nWorkflowService contract', () => {
       expect(result).toMatchObject({
         accepted: true,
         workflowId: 'cap-test-trigger',
+        status: 'succeeded',
         result: { received: true }
       })
+      expectUuid(result.executionId)
     } finally {
       await server.close()
     }
   })
 
   it('accepts successful webhook responses without an executionId', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true })
     }))
@@ -165,15 +196,18 @@ describe('N8nWorkflowService contract', () => {
       expect(result).toMatchObject({
         accepted: true,
         workflowId: 'no-execution-id-workflow',
+        status: 'succeeded',
         result: { received: true }
       })
-      expect(result).not.toHaveProperty('executionId')
+      expectUuid(result.executionId)
+      expect(result).not.toHaveProperty('n8nExecutionId')
     } finally {
       await server.close()
     }
   })
 
   it('preserves explicit webhook-test paths', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true })
     }))

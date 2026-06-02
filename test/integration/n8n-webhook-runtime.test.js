@@ -1,11 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 
 const require = createRequire(import.meta.url)
 const cds = require('@sap/cds')
 
 const originalN8nConfig = cds.env.requires?.n8n
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+const pluginModel = path.join(repoRoot, 'cap-n8n-plugin', 'index.cds')
+
+let db
 
 function configureN8n(baseUrl, options = {}) {
   const { credentials = {}, ...serviceOptions } = options
@@ -35,6 +41,18 @@ async function resetN8nService() {
   } else if (cds.env.requires) {
     delete cds.env.requires.n8n
   }
+}
+
+async function deployExecutionModel() {
+  const csn = await cds.load(pluginModel)
+  db = await cds.deploy(csn).to('sqlite::memory:')
+}
+
+async function disconnectDb() {
+  if (!db) return
+
+  await cds.disconnect(db)
+  db = undefined
 }
 
 async function createWebhookServer(respond) {
@@ -86,12 +104,18 @@ function timeoutGuard(ms) {
   })
 }
 
+function expectUuid(value) {
+  expect(value).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+}
+
 afterEach(async () => {
   await resetN8nService()
+  await disconnectDb()
 })
 
 describe('N8nWorkflowService webhook runtime reliability', () => {
   it('sends X-N8N-API-KEY only when an apiKey is configured', async () => {
+    await deployExecutionModel()
     const secretApiKey = 'test-secret-api-key'
     const authedServer = await createWebhookServer(() => ({
       body: JSON.stringify({ received: true })
@@ -128,6 +152,7 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
   })
 
   it('retries HTTP 502 responses and preserves correlation metadata on success', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer((request, count) => {
       if (count === 1) {
         return {
@@ -158,15 +183,19 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
       expect(result).toMatchObject({
         accepted: true,
         workflowId: 'retry-workflow',
-        executionId: 'exec-after-retry',
+        n8nExecutionId: 'exec-after-retry',
+        status: 'succeeded',
         correlationId: 'corr-retry-1'
       })
+      expectUuid(result.executionId)
+      expect(result.executionId).not.toBe('exec-after-retry')
     } finally {
       await server.close()
     }
   })
 
   it('does not retry HTTP 400 responses', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => ({
       statusCode: 400,
       body: JSON.stringify({ error: 'invalid workflow input' })
@@ -192,6 +221,7 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
   })
 
   it('aborts never-responding webhook requests after the configured timeout', async () => {
+    await deployExecutionModel()
     const server = await createWebhookServer(() => undefined)
 
     try {
@@ -218,6 +248,7 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
   })
 
   it('throws sanitized structured errors for HTTP 500 responses', async () => {
+    await deployExecutionModel()
     const secretApiKey = 'test-secret-api-key'
     const server = await createWebhookServer(() => ({
       statusCode: 500,
