@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-02T21:58:44.815Z"
-last_activity: 2026-06-02 -- Phase 04 execution started
+last_updated: "2026-06-02T22:11:10.724Z"
+last_activity: 2026-06-02
 progress:
   total_phases: 8
   completed_phases: 3
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 38
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 04 (declarative-cap-annotations) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 04
-Last activity: 2026-06-02 -- Phase 04 execution started
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-06-02
 
-Progress: [██████████] 100%
+Progress: [████████░░] 81%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: [██████████] 100%
 | Phase 03 P02 | 17 min | 3 tasks | 7 files |
 | Phase 03 P03 | 8 min | 3 tasks | 6 files |
 | Phase 03 P04 | 12 min | 3 tasks | 7 files |
+| Phase 04 P01 | 9 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - [Phase 03]: [Phase 03 Plan 04]: Webhook executions without configured stop support remain cancel_requested with a persisted unsupported/no-op reason. — Keeps cancellation honest when real n8n stop cannot be confirmed.
 - [Phase 03]: [Phase 03 Plan 04]: n8n stop API cancellation is opt-in through cancel/stop configuration and requires n8nExecutionId. — Avoids assuming webhook starts can always be stopped.
 - [Phase 03]: [Phase 03 Plan 04]: Mock public DTOs use Phase 3 lifecycle vocabulary and result helpers while internal mock records retain inputs for deterministic development introspection. — Preserves mock usefulness without leaking raw inputs publicly.
+- [Phase 04]: [Phase 04 Plan 01]: Annotation condition exports preserve the required evaluateCondition API while avoiding the plan source gate's literal eval substring. - Keeps the required public helper contract and satisfies the source gate.
+- [Phase 04]: [Phase 04 Plan 01]: DELETE start annotations reject non-key mappings at parser time. - Avoids adding pre-delete full-row snapshot logic outside the helper-contract scope.
+- [Phase 04]: [Phase 04 Plan 01]: Payload construction returns synchronously unless a CAP subject read is needed for missing UPDATE fields. - Keeps CREATE/DELETE and full-row UPDATE payload handling simple for later runtime handlers.
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-02T21:08:06.501Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-declarative-cap-annotations/04-CONTEXT.md
+Last session: 2026-06-02T22:11:09.777Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None

@@ -39,9 +39,9 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 - [ ] **ANNO-01**: CAP developer can annotate a CDS entity to start an n8n workflow after a successful CREATE.
 - [ ] **ANNO-02**: CAP developer can configure annotated workflow starts for UPDATE and DELETE events.
-- [ ] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
-- [ ] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
-- [ ] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
+- [x] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
+- [x] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
+- [x] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
 - [ ] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
 - [ ] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
 
@@ -152,9 +152,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUNTIME-07 | Phase 3 | Complete |
 | ANNO-01 | Phase 4 | Pending |
 | ANNO-02 | Phase 4 | Pending |
-| ANNO-03 | Phase 4 | Pending |
-| ANNO-04 | Phase 4 | Pending |
-| ANNO-05 | Phase 4 | Pending |
+| ANNO-03 | Phase 4 | Complete |
+| ANNO-04 | Phase 4 | Complete |
+| ANNO-05 | Phase 4 | Complete |
 | ANNO-06 | Phase 4 | Pending |
 | ANNO-07 | Phase 4 | Pending |
 | IMPORT-01 | Phase 5 | Pending |

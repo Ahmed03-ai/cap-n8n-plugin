@@ -9,6 +9,7 @@ cap-n8n-plugin/
 |-- .planning/                  # GSD planning and generated codebase maps
 |-- cap-n8n-plugin/             # CAP plugin package for CAP -> n8n integration
 |   |-- lib/                    # Reusable CAP service implementations
+|   |   `-- annotations/        # Declarative annotation helper contracts
 |   |-- cds-plugin.js           # CAP bootstrap hook
 |   |-- index.js                # Empty package main entry
 |   `-- package.json            # Plugin package metadata
@@ -46,8 +47,13 @@ cap-n8n-plugin/
 
 **`cap-n8n-plugin/lib/`:**
 - Purpose: Holds plugin-owned implementation modules.
-- Contains: Reusable CAP service classes.
-- Key files: `cap-n8n-plugin/lib/N8nWorkflowService.js`
+- Contains: Reusable CAP service classes and helper modules.
+- Key files: `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cap-n8n-plugin/lib/ExecutionStore.js`
+
+**`cap-n8n-plugin/lib/annotations/`:**
+- Purpose: Holds package-owned declarative annotation helper contracts.
+- Contains: Flattened CSN annotation parsing, safe condition compilation/evaluation, and scalar payload construction.
+- Key files: `cap-n8n-plugin/lib/annotations/AnnotationParser.js`, `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`, `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`
 
 **`cap-n8n-node/`:**
 - Purpose: Package boundary for n8n community node functionality.
@@ -129,6 +135,9 @@ cap-n8n-plugin/
 
 **Core Logic:**
 - `cap-n8n-plugin/lib/N8nWorkflowService.js`: Outbound webhook transport to n8n.
+- `cap-n8n-plugin/lib/annotations/AnnotationParser.js`: Declarative n8n annotation reconstruction and validation.
+- `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`: Safe scalar CXN condition parsing and evaluation.
+- `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`: Scalar workflow payload and CAP event metadata construction.
 - `cap-n8n-plugin/cds-plugin.js`: Runtime default binding of the n8n service implementation.
 - `demo-app/db/schema.cds`: Bookshop domain model.
 - `demo-app/srv/admin-service.cds`: Admin service OData model.
@@ -150,6 +159,7 @@ cap-n8n-plugin/
 
 **Testing and Manual Verification:**
 - `demo-app/test.http`: Manual HTTP request for creating a Book through `AdminService`.
+- `test/integration/n8n-annotation-contract.test.js`: Annotation parser, condition, and payload contract integration tests.
 - `test-workflows/workflows.json`: Imported n8n webhook workflow used by the demo trigger.
 - `mockups/n8n-node-mockup.html`: Static mockup for n8n node UI requirements.
 - Automated test directories/files: Not detected.
@@ -219,6 +229,7 @@ cap-n8n-plugin/
 
 **Utilities:**
 - Plugin-shared helpers: add under `cap-n8n-plugin/lib/`.
+- Declarative annotation helpers: add under `cap-n8n-plugin/lib/annotations/`.
 - Demo app-only helpers: keep beside the consuming service in `demo-app/srv/` unless reused across multiple demo services.
 - Avoid adding helpers to root unless they coordinate workspaces or developer tooling.
 
