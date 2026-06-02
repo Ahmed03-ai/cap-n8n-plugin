@@ -35,6 +35,14 @@ function hasFunctionExport(moduleNamespace) {
   return exportedValues.some((value) => typeof value === 'function')
 }
 
+function exportedConstructor(moduleNamespace, name) {
+  return moduleNamespace[name] ?? moduleNamespace.default?.[name]
+}
+
+function propertyByName(properties, name) {
+  return properties.find((property) => property.name === name)
+}
+
 describe('package boundaries', () => {
   it('loads the CAP plugin through its package name', () => {
     const plugin = require('cap-n8n-plugin')
@@ -63,5 +71,61 @@ describe('package boundaries', () => {
 
     expect(nodeModules.some(hasFunctionExport)).toBe(true)
     expect(credentialModules.some(hasFunctionExport)).toBe(true)
+  })
+
+  it('exposes SAP CAP credentials and CRUD operation metadata', async () => {
+    const [nodeModule] = await importManifestModules(['dist/nodes/SapCap/SapCap.node.js'])
+    const [credentialModule] = await importManifestModules(['dist/credentials/SapCapApi.credentials.js'])
+    const SapCap = exportedConstructor(nodeModule, 'SapCap')
+    const SapCapApi = exportedConstructor(credentialModule, 'SapCapApi')
+    const node = new SapCap()
+    const credential = new SapCapApi()
+    const operation = propertyByName(node.description.properties, 'operation')
+    const operationValues = operation.options.map((option) => option.value)
+    const credentialFields = credential.properties.map((property) => property.name)
+
+    expect(operationValues).toEqual([
+      'create',
+      'delete',
+      'query',
+      'read',
+      'update',
+    ])
+    expect(propertyByName(node.description.properties, 'servicePath')).toMatchObject({
+      default: '/odata/v4/admin',
+    })
+    expect(propertyByName(node.description.properties, 'entitySet')).toMatchObject({
+      placeholder: 'Books',
+    })
+    expect(propertyByName(node.description.properties, 'entityKey')).toMatchObject({
+      placeholder: 'ID=201,IsActiveEntity=true',
+    })
+    expect(credentialFields).toEqual(expect.arrayContaining([
+      'baseUrl',
+      'metadataPath',
+      'authType',
+      'username',
+      'password',
+      'tokenUrl',
+      'clientId',
+      'clientSecret',
+      'scope',
+    ]))
+    expect(propertyByName(credential.properties, 'baseUrl')).toMatchObject({
+      placeholder: 'http://host.docker.internal:3000',
+    })
+    expect(propertyByName(credential.properties, 'metadataPath')).toMatchObject({
+      default: '/odata/v4/admin/$metadata',
+    })
+    expect(propertyByName(credential.properties, 'authType').options.map((option) => option.value)).toEqual([
+      'basicAuth',
+      'oauth2',
+      'none',
+    ])
+    expect(credential.test.request).toMatchObject({
+      baseURL: '={{$credentials.baseUrl}}',
+      url: '={{$credentials.metadataPath}}',
+      method: 'GET',
+    })
   })
 })

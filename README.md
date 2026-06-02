@@ -197,6 +197,67 @@ cds.connect.to('n8n')
 
 Use this active-workflow snippet when the n8n workflow is activated. Use the demo-app create request when the Webhook node is in test mode.
 
+### 6. Test n8n -> CAP With The SAP CAP Node
+
+Use this path to manually validate the n8n community node against the CAP demo app. It covers the current n8n -> CAP node slice for credentials, Query, Read, Create, Update, Delete, and OData response cleanup.
+
+First build the node package and start the CAP demo app:
+
+```bash
+npm run build --workspace n8n-nodes-sap-cap
+npm run cap:serve
+```
+
+In n8n, configure the `SAP CAP API` credentials:
+
+- Base URL: `http://host.docker.internal:3000`
+- Authentication: `Basic Auth`
+- Username: `alice`
+- Password: leave empty for the local demo user
+- Metadata Path: `/odata/v4/admin/$metadata`
+
+For each SAP CAP node operation, use:
+
+- Service Path: `/odata/v4/admin`
+- Entity Set: `Books`
+
+Create:
+
+```json
+{ "ID": 202, "title": "Dune", "stock": 10 }
+```
+
+Read:
+
+```text
+ID=201,IsActiveEntity=true
+```
+
+Update:
+
+```text
+ID=201,IsActiveEntity=true
+```
+
+```json
+{ "stock": 99 }
+```
+
+Delete:
+
+```text
+ID=201,IsActiveEntity=true
+```
+
+Expected result:
+
+- Query returns one n8n item per CAP entity.
+- Read returns the selected CAP entity.
+- Create returns the created entity.
+- Update returns the updated entity.
+- Delete returns a `{ "deleted": true }` confirmation.
+- Returned items do not include raw `@odata.*` metadata fields.
+
 ## Runtime Configuration
 
 The CAP binding is configured under `cds.requires.n8n`.
