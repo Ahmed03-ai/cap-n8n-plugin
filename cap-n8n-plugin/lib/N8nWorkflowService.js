@@ -139,9 +139,25 @@ class N8nWorkflowService extends cds.Service {
     })
     const startResult = this._createStartResult(queued, duplicate?.result)
     const dispatch = async () => {
-      const dispatched = await this.dispatchPending({ executionId: queued.executionId })
-      if (dispatched) Object.assign(startResult, this._createStartResult(dispatched, duplicate?.result))
-      return dispatched
+      try {
+        const dispatched = await this.dispatchPending({ executionId: queued.executionId })
+        if (dispatched) Object.assign(startResult, this._createStartResult(dispatched, duplicate?.result))
+        return dispatched
+      } catch (err) {
+        if (!safeOptions.bestEffort) throw err
+
+        if (err.execution) {
+          Object.assign(startResult, this._createStartResult(err.execution, duplicate?.result))
+          return err.execution
+        }
+
+        cds.log('n8n').error('Best-effort n8n workflow dispatch failed without persisted execution state', {
+          workflowId,
+          reason: err.message,
+          code: err.code,
+          statusCode: err.statusCode
+        })
+      }
     }
 
     if (isPostCommitRequest(req)) {

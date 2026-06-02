@@ -1,5 +1,6 @@
 const cds = require('@sap/cds');
 const { resolveN8nConfig } = require('./lib/config');
+const { registerN8nAnnotations } = require('./lib/annotations/AnnotationRegistrar');
 
 function ensureN8nConfig() {
   if (!cds.env.requires) cds.env.requires = {};
@@ -27,6 +28,19 @@ function registerModel() {
 }
 
 registerModel();
+
+function servedServices(services) {
+  if (!services) return [];
+  if (Array.isArray(services)) return services;
+  if (typeof services[Symbol.iterator] === 'function') return [...services];
+  return Object.values(services);
+}
+
+cds.on('served', (services) => {
+  for (const srv of servedServices(services)) {
+    registerN8nAnnotations(srv);
+  }
+});
 
 cds.once('bootstrap', () => {
   const n8nConfig = registerModel();

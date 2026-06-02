@@ -78,6 +78,8 @@ function ensurePluginLifecycle() {
   require(pluginLifecycle)
 }
 
+ensurePluginLifecycle()
+
 async function serveAnnotatedService(annotations) {
   const csn = await loadModel(annotations)
   db = await cds.deploy(csn).to('sqlite::memory:')
@@ -149,7 +151,7 @@ async function createWebhookServer(respond) {
     }
 
     requests.push(request)
-    const response = await respond(request, requests.length)
+    const response = await respond(request, requests.length) || {}
 
     res.statusCode = response.statusCode ?? 200
     res.setHeader('content-type', response.contentType ?? 'application/json')
@@ -427,7 +429,7 @@ describe('n8n annotation start integration', () => {
 
     await expect(serveAnnotatedService(startAnnotation({
       workflowId: 'annotation-invalid-condition',
-      condition: "substring(title, 1, 2) = 'CA'"
+      condition: 'stock >'
     }))).rejects.toMatchObject(expectAnnotationError())
   })
 

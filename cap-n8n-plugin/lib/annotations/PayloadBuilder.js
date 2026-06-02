@@ -29,6 +29,58 @@ function valueFromParams(params, key) {
   }
 }
 
+function keyFromRef(ref) {
+  if (!Array.isArray(ref) || ref.length !== 1) return undefined
+  return ref[0]
+}
+
+function valueFromToken(token) {
+  if (!token || typeof token !== 'object' || !Object.prototype.hasOwnProperty.call(token, 'val')) {
+    return undefined
+  }
+
+  return token.val
+}
+
+function addWhereKeys(keys, where, keySet) {
+  if (!Array.isArray(where)) return
+
+  for (let index = 0; index < where.length - 2; index += 1) {
+    const left = where[index]
+    const operator = where[index + 1]
+    const right = where[index + 2]
+
+    if (operator !== '=') continue
+
+    const leftKey = keyFromRef(left?.ref)
+    const rightKey = keyFromRef(right?.ref)
+    const rightValue = valueFromToken(right)
+    const leftValue = valueFromToken(left)
+
+    if (keySet.has(leftKey) && rightValue !== undefined) {
+      keys[leftKey] = rightValue
+    }
+    if (keySet.has(rightKey) && leftValue !== undefined) {
+      keys[rightKey] = leftValue
+    }
+  }
+}
+
+function keysFromSubject(entity, subject) {
+  const keys = {}
+  const keySet = new Set(keyNames(entity))
+  if (!keySet.size || !subject || typeof subject !== 'object') return keys
+
+  if (Array.isArray(subject.ref)) {
+    for (const segment of subject.ref) {
+      if (segment?.where) addWhereKeys(keys, segment.where, keySet)
+    }
+  }
+  if (subject.SELECT?.where) addWhereKeys(keys, subject.SELECT.where, keySet)
+
+  return keys
+}
+
 function resolveKeys(entity, data = {}, req = {}) {
   const keys = {}
 
@@ -49,36 +101,24 @@ function resolveKeys(entity, data = {}, req = {}) {
     }
   }
 
-  return keys
-}
-
-function serviceName(service) {
-  if (typeof service === 'string') return service
-  return service?.name
-}
-
-function eventMetadata({ event, entity, service, keys, timestamp }) {
-  const metadata = {
-    name: event,
-    entity: entity?.name,
-    keys,
-    timestamp: timestamp || new Date().toISOString()
+  return {
+    ...keysFromSubject(entity, req?.subject),
+    ...keys
   }
+}
 
-  const name = serviceName(service)
-  if (name) metadata.service = name
-
-  return metadata
+function hasSubjectQuery(subject) {
+  return Boolean(subject?.SELECT || subject?.ref)
 }
 
 function subjectObjectValue(subject, path) {
   if (!subject || typeof subject !== 'object') return undefined
-  if (subject.SELECT) return undefined
+  if (hasSubjectQuery(subject)) return undefined
   return ownValue(subject, path)
 }
 
 function subjectRunner(req) {
-  if (!req || !req.subject?.SELECT) return undefined
+  if (!req || !hasSubjectQuery(req.subject)) return undefined
   if (typeof req.run === 'function') return req
   const tx = cds.tx?.(req)
   return tx && typeof tx.run === 'function' ? tx : undefined
@@ -119,6 +159,25 @@ function resolveAnnotationValue({ value, data = {}, keys = {}, req } = {}) {
 function appendEvent(payload, metadata) {
   payload.event = metadata
   return payload
+}
+
+function serviceName(service) {
+  if (typeof service === 'string') return service
+  return service?.name
+}
+
+function eventMetadata({ event, entity, service, keys, timestamp }) {
+  const metadata = {
+    name: event,
+    entity: entity?.name,
+    keys,
+    timestamp: timestamp || new Date().toISOString()
+  }
+
+  const name = serviceName(service)
+  if (name) metadata.service = name
+
+  return metadata
 }
 
 function buildMappedPayload({ annotation, data, keys, req }) {
