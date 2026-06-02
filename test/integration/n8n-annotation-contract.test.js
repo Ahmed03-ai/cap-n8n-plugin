@@ -18,7 +18,10 @@ function payloadBuilder() {
 
 function compileEntity(source, name = 'test.Books') {
   const csn = cds.compile.to.csn(source)
-  return csn.definitions[name]
+  return {
+    name,
+    ...csn.definitions[name]
+  }
 }
 
 function annotationError() {
