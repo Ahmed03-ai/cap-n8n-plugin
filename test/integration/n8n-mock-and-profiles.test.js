@@ -150,6 +150,7 @@ describe('MockN8nWorkflowService', () => {
       executionId: 'mock-exec-1',
       correlationId: 'corr-1',
       businessKey: 'book-1',
+      status: 'succeeded',
       mock: true
     })
     expect(sendResult).toMatchObject({
@@ -157,14 +158,17 @@ describe('MockN8nWorkflowService', () => {
       workflowId: 'webhook-test/debug-trigger',
       executionId: 'mock-exec-2',
       businessKey: 'book-2',
+      status: 'succeeded',
       mock: true
     })
+    expect(JSON.stringify(result.result)).not.toContain('inputs')
+    expect(JSON.stringify(sendResult.result)).not.toContain('inputs')
     expect(n8n.executions).toHaveLength(2)
     expect(n8n.executions[0]).toMatchObject({
       executionId: 'mock-exec-1',
       workflowId: 'cap-test-trigger',
       inputs: { event: 'BookCreated' },
-      status: 'success',
+      status: 'succeeded',
       correlationId: 'corr-1',
       businessKey: 'book-1'
     })
@@ -172,7 +176,7 @@ describe('MockN8nWorkflowService', () => {
     expect(n8n.executions[0].finishedAt).toEqual(expect.any(String))
   })
 
-  it('supports explicit opt-in mock failures without adding query or cancel APIs', async () => {
+  it('supports explicit opt-in mock failures plus query and cancel APIs', async () => {
     configureMockN8n({
       mock: {
         failWorkflows: ['fail-me']
@@ -183,6 +187,7 @@ describe('MockN8nWorkflowService', () => {
 
     await expect(n8n.start('ok-workflow', { event: 'BookCreated' })).resolves.toMatchObject({
       executionId: 'mock-exec-1',
+      status: 'succeeded',
       mock: true
     })
     let failure
@@ -207,9 +212,29 @@ describe('MockN8nWorkflowService', () => {
       status: 'failed'
     })
 
+    await expect(n8n.getExecution('mock-exec-1')).resolves.toMatchObject({
+      executionId: 'mock-exec-1',
+      workflowId: 'ok-workflow',
+      status: 'succeeded'
+    })
+    await expect(n8n.queryExecutions({ workflowId: 'ok-workflow' })).resolves.toMatchObject({
+      items: [
+        expect.objectContaining({
+          executionId: 'mock-exec-1',
+          status: 'succeeded'
+        })
+      ]
+    })
+    await expect(n8n.cancel('mock-exec-1')).resolves.toMatchObject({
+      executionId: 'mock-exec-1',
+      status: 'succeeded',
+      noOp: true
+    })
+
     const MockN8nWorkflowService = require('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js')
-    expect(MockN8nWorkflowService.prototype).not.toHaveProperty('query')
-    expect(MockN8nWorkflowService.prototype).not.toHaveProperty('cancel')
+    expect(typeof MockN8nWorkflowService.prototype.getExecution).toBe('function')
+    expect(typeof MockN8nWorkflowService.prototype.queryExecutions).toBe('function')
+    expect(typeof MockN8nWorkflowService.prototype.cancel).toBe('function')
   })
 })
 
