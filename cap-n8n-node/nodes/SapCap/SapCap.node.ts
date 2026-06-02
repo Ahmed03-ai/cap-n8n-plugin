@@ -6,8 +6,77 @@ import type {
   INodeTypeDescription,
   IDataObject,
   ICredentialDataDecryptedObject,
+  ILoadOptionsFunctions,
+  INodePropertyOptions,
 } from 'n8n-workflow';
 import { NodeOperationError } from 'n8n-workflow';
+
+function extractCapMessage(error: Error): string | undefined {
+  const anyErr = error as any;
+
+  // Try every known location n8n versions place the response body
+  const body =
+    anyErr?.response?.data ??
+    anyErr?.response?.body ??
+    anyErr?.cause?.response?.data ??
+    anyErr?.cause?.response?.body ??
+    anyErr?.description ??
+    null;
+
+  if (body) {
+    let parsed = body;
+    if (typeof body === 'string') {
+      try { parsed = JSON.parse(body); } catch { return body; }
+    }
+    if (parsed?.error?.message) return parsed.error.message as string;
+  }
+
+  // Last resort: extract JSON from the error message string itself
+  const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed?.error?.message) return parsed.error.message as string;
+    } catch { /* ignore */ }
+  }
+
+  return undefined;
+}
+
+const OPERATION_LABELS: Record<string, string> = {
+  query: 'Query', read: 'Read', create: 'Create',
+  update: 'Update', delete: 'Delete', action: 'Invoke Action/Function',
+};
+
+function buildErrorMessage(error: Error, operation: string, url: string): string {
+  const raw = error.message;
+  const statusMatch = raw.match(/status code (\d+)/i);
+  const status = statusMatch ? parseInt(statusMatch[1]) : null;
+  const capMsg = extractCapMessage(error);
+  const capDetail = capMsg ? ` — "${capMsg}"` : '';
+  const opLabel = OPERATION_LABELS[operation] ?? operation;
+
+  switch (status) {
+    case 400:
+      return `Bad request for ${opLabel}${capDetail}. Check your input parameters.`;
+    case 401:
+      return `Authentication failed (HTTP 401). Check your username and password in the SAP CAP credential.`;
+    case 403:
+      return `Access denied (HTTP 403). Your user does not have permission for this operation.${capDetail}`;
+    case 404:
+      return `Not found (HTTP 404)${capDetail || ` — the resource at ${url} does not exist`}.`;
+    case 405:
+      return `Operation not allowed (HTTP 405). "${opLabel}" is not supported on this entity set — it may be read-only.`;
+    case 409:
+      return `Conflict (HTTP 409). The operation conflicts with existing data.${capDetail}`;
+    case 500:
+      return `CAP service internal error (HTTP 500)${capDetail}. Check the CAP server logs.`;
+    case 503:
+      return `CAP service unavailable (HTTP 503). The service may be starting up or overloaded.`;
+    default:
+      return capMsg ? `${raw}${capDetail}` : raw;
+  }
+}
 
 function stripODataMeta(obj: IDataObject): IDataObject {
   return Object.fromEntries(
@@ -68,6 +137,7 @@ export class SapCap implements INodeType {
         options: [
           { name: 'Create', value: 'create', action: 'Create an entity' },
           { name: 'Delete', value: 'delete', action: 'Delete an entity' },
+          { name: 'Invoke Action / Function', value: 'action', action: 'Invoke a CAP action or function' },
           { name: 'Query', value: 'query', action: 'Query entities' },
           { name: 'Read', value: 'read', action: 'Read a single entity' },
           { name: 'Update', value: 'update', action: 'Update an entity' },
@@ -85,11 +155,63 @@ export class SapCap implements INodeType {
       {
         displayName: 'Entity Set',
         name: 'entitySet',
+        type: 'options',
+        typeOptions: {
+          loadOptionsMethod: 'getEntitySets',
+        },
+        default: '',
+        description: 'Name of the OData entity set. Loaded from the CAP service $metadata.',
+        required: true,
+        displayOptions: { show: { operation: ['query', 'read', 'create', 'update', 'delete'] } },
+      },
+      // Action / Function fields
+      {
+        displayName: 'Action / Function Name',
+        name: 'actionName',
+        type: 'options',
+        typeOptions: {
+          loadOptionsMethod: 'getActions',
+        },
+        default: '',
+        description: 'The action or function to invoke. Loaded from the CAP service $metadata.',
+        required: true,
+        displayOptions: { show: { operation: ['action'] } },
+      },
+      {
+        displayName: 'Is Bound',
+        name: 'isBound',
+        type: 'boolean',
+        default: false,
+        description: 'Whether this action is bound to a specific entity instance',
+        displayOptions: { show: { operation: ['action'] } },
+      },
+      {
+        displayName: 'Binding Entity Set',
+        name: 'bindingEntitySet',
         type: 'string',
         default: '',
         placeholder: 'Books',
-        description: 'Name of the OData entity set',
+        description: 'Entity set the action is bound to (e.g. Books)',
+        displayOptions: { show: { operation: ['action'], isBound: [true] } },
         required: true,
+      },
+      {
+        displayName: 'Binding Entity Key',
+        name: 'bindingKey',
+        type: 'string',
+        default: '',
+        placeholder: 'ID=201,IsActiveEntity=true',
+        description: 'Key of the entity instance to bind to',
+        displayOptions: { show: { operation: ['action'], isBound: [true] } },
+        required: true,
+      },
+      {
+        displayName: 'Parameters (JSON)',
+        name: 'actionParams',
+        type: 'json',
+        default: '{}',
+        description: 'Input parameters for the action or function as a JSON object',
+        displayOptions: { show: { operation: ['action'] } },
       },
       // Query options 
       {
@@ -158,6 +280,78 @@ export class SapCap implements INodeType {
     ],
   };
 
+  methods = {
+    loadOptions: {
+      async getEntitySets(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const credentials = await this.getCredentials('sapCapApi');
+        const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+        const servicePath = ((this.getCurrentNodeParameter('servicePath') as string) ?? '').replace(/\/$/, '');
+
+        const headers: Record<string, string> = { Accept: 'application/xml' };
+        if (credentials.authType === 'basicAuth') {
+          const token = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
+          headers['Authorization'] = `Basic ${token}`;
+        }
+
+        let xml: string;
+        try {
+          xml = await this.helpers.httpRequest({
+            method: 'GET',
+            url: `${baseUrl}${servicePath}/$metadata`,
+            headers,
+          }) as string;
+        } catch (error) {
+          throw new Error(`Failed to fetch $metadata from ${baseUrl}${servicePath}/$metadata — check your Base URL, Service Path and credentials. (${(error as Error).message})`);
+        }
+
+        const matches = [...xml.matchAll(/EntitySet[^>]+Name="([^"]+)"/g)];
+        if (matches.length === 0) {
+          throw new Error('No EntitySets found in $metadata. Make sure the Service Path points to a valid CAP OData service.');
+        }
+
+        return matches.map((m) => ({ name: m[1], value: m[1] }));
+      },
+
+      async getActions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const credentials = await this.getCredentials('sapCapApi');
+        const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
+        const servicePath = ((this.getCurrentNodeParameter('servicePath') as string) ?? '').replace(/\/$/, '');
+
+        const headers: Record<string, string> = { Accept: 'application/xml' };
+        if (credentials.authType === 'basicAuth') {
+          const token = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
+          headers['Authorization'] = `Basic ${token}`;
+        }
+
+        let xml: string;
+        try {
+          xml = await this.helpers.httpRequest({
+            method: 'GET',
+            url: `${baseUrl}${servicePath}/$metadata`,
+            headers,
+          }) as string;
+        } catch (error) {
+          throw new Error(`Failed to fetch $metadata from ${baseUrl}${servicePath}/$metadata — check your Base URL, Service Path and credentials. (${(error as Error).message})`);
+        }
+
+        const options: INodePropertyOptions[] = [];
+
+        for (const m of xml.matchAll(/ActionImport[^>]+Name="([^"]+)"/g)) {
+          options.push({ name: `${m[1]} (Action)`, value: `action::${m[1]}` });
+        }
+        for (const m of xml.matchAll(/FunctionImport[^>]+Name="([^"]+)"/g)) {
+          options.push({ name: `${m[1]} (Function)`, value: `function::${m[1]}` });
+        }
+
+        if (options.length === 0) {
+          throw new Error('No Actions or Functions found in $metadata for this service path.');
+        }
+
+        return options;
+      },
+    },
+  };
+
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
@@ -186,14 +380,42 @@ export class SapCap implements INodeType {
     for (let i = 0; i < items.length; i++) {
       const operation = this.getNodeParameter('operation', i) as string;
       const servicePath = (this.getNodeParameter('servicePath', i) as string).replace(/\/$/, '');
-      const entitySet = this.getNodeParameter('entitySet', i) as string;
+      const entitySet = operation !== 'action' ? this.getNodeParameter('entitySet', i) as string : '';
 
       let url = `${baseUrl}${servicePath}/${entitySet}`;
       let method: IHttpRequestMethods = 'GET';
       let bodyStr: string | undefined;
 
       try {
-        if (operation === 'query') {
+        if (operation === 'action') {
+          const actionValue = this.getNodeParameter('actionName', i) as string;
+          const [actionType, actionName] = actionValue.split('::');
+          const isBound = this.getNodeParameter('isBound', i) as boolean;
+          const paramsStr = this.getNodeParameter('actionParams', i, '{}') as string;
+          const params = JSON.parse(paramsStr) as IDataObject;
+
+          if (isBound) {
+            const bindingEntitySet = this.getNodeParameter('bindingEntitySet', i) as string;
+            const bindingKey = this.getNodeParameter('bindingKey', i) as string;
+            url = `${baseUrl}${servicePath}/${bindingEntitySet}(${bindingKey})/${actionName}`;
+          } else {
+            url = `${baseUrl}${servicePath}/${actionName}`;
+          }
+
+          if (actionType === 'function') {
+            // Functions use GET with parameters in the URL
+            const paramStr = Object.entries(params)
+              .map(([k, v]) => `${k}=${typeof v === 'string' ? `'${v}'` : v}`)
+              .join(',');
+            if (paramStr) url += `(${paramStr})`;
+            method = 'GET';
+          } else {
+            // Actions use POST with parameters in the body
+            method = 'POST';
+            bodyStr = paramsStr;
+          }
+
+        } else if (operation === 'query') {
           const filter = this.getNodeParameter('filter', i, '') as string;
           const top = this.getNodeParameter('top', i, 100) as number;
           const skip = this.getNodeParameter('skip', i, 0) as number;
@@ -240,15 +462,19 @@ export class SapCap implements INodeType {
           returnData.push(...records.map((r) => ({ json: stripODataMeta(r) })));
         } else if (operation === 'delete') {
           returnData.push({ json: { deleted: true, key: this.getNodeParameter('entityKey', i) } });
+        } else if (operation === 'action') {
+          const result = response ?? { success: true };
+          returnData.push({ json: stripODataMeta(result as IDataObject) });
         } else {
           returnData.push({ json: stripODataMeta(response as IDataObject) });
         }
       } catch (error) {
+        const friendlyMessage = buildErrorMessage(error as Error, operation, url);
         if (this.continueOnFail()) {
-          returnData.push({ json: { error: (error as Error).message }, pairedItem: i });
+          returnData.push({ json: { error: friendlyMessage }, pairedItem: i });
           continue;
         }
-        throw new NodeOperationError(this.getNode(), error as Error, { itemIndex: i });
+        throw new NodeOperationError(this.getNode(), friendlyMessage, { itemIndex: i });
       }
     }
 
