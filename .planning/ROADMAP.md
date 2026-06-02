@@ -65,7 +65,24 @@ Plans:
   4. Production startup fails with a clear sanitized error when required n8n base URL or credentials are missing.
   5. CAP developer receives structured sanitized CDS errors and configurable timeout/retry behavior for n8n communication failures.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md - Create annotation parser, condition, and payload helper contracts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-02-PLAN.md - Register annotated CREATE/UPDATE/DELETE workflow starts through the CAP plugin lifecycle.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-03-PLAN.md - Add declarative cancellation matching through Phase 3 query and cancel APIs.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 04-04-PLAN.md - Move demo evidence to CDS annotations and run aggregate Phase 4 verification.
 
 ### Phase 3: Execution Store and Transaction-Safe Dispatch
 
@@ -206,7 +223,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
 | 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
-| 4. Declarative CAP Annotations | 0/TBD | Not started | - |
+| 4. Declarative CAP Annotations | 0/4 | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
 | 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
