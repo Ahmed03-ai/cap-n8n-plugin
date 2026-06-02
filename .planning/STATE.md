@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-last_updated: "2026-06-02T23:00:40.525Z"
+status: ready_to_plan
+last_updated: 2026-06-02T23:09:36.547Z
 last_activity: 2026-06-02
 progress:
   total_phases: 8
@@ -11,6 +11,7 @@ progress:
   total_plans: 16
   completed_plans: 16
   percent: 50
+stopped_at: Phase 04 complete (4/4) — ready to discuss Phase 5
 ---
 
 # Project State
@@ -20,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** CAP developers can add reliable n8n workflow automation to CAP applications without repeatedly hand-writing integration glue.
-**Current focus:** Phase 04 — declarative-cap-annotations
+**Current focus:** Phase 5 — workflow import and build validation
 
 ## Current Position
 
-Phase: 04 (declarative-cap-annotations) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
+Phase: 5
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-06-02
 
 Progress: [██████████] 100%
@@ -35,7 +36,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 12
+- Total plans completed: 16
 - Average duration: n/a
 - Total execution time: 0.0 hours
 
@@ -47,6 +48,7 @@ Progress: [██████████] 100%
 | 01 | 4 | - | - |
 | 02 | 4 | - | - |
 | 03 | 4 | - | - |
+| 04 | 4 | - | - |
 
 **Recent Trend:**
 
