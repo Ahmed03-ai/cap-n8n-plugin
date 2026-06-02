@@ -189,11 +189,13 @@ function cancelAnnotation({
   workflowId = 'annotation-cancel',
   on,
   businessKey = 'ID',
-  tag = 'admin-books'
+  tag = 'admin-books',
+  omitBusinessKey = false,
+  omitTag = false
 } = {}) {
   const onBlock = on === undefined ? '' : `on: ${on},`
-  const businessKeyBlock = businessKey === undefined ? '' : `businessKey: '${businessKey}',`
-  const tagBlock = tag === undefined ? '' : `tag: '${tag}',`
+  const businessKeyBlock = omitBusinessKey ? '' : `businessKey: '${businessKey}',`
+  const tagBlock = omitTag ? '' : `tag: '${tag}',`
 
   return `
     annotate AnnotationCancelService.Books with @n8n.workflow.cancel: {
@@ -577,8 +579,8 @@ describe('n8n annotation cancellation integration', () => {
 
     await expect(serveAnnotatedService(cancelAnnotation({
       workflowId: 'annotation-cancel-invalid',
-      businessKey: undefined,
-      tag: undefined
+      omitBusinessKey: true,
+      omitTag: true
     }))).rejects.toMatchObject(expectAnnotationError())
   })
 })

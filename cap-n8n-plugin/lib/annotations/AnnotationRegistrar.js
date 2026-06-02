@@ -6,6 +6,7 @@ const {
   resolveAnnotationValue,
   resolveKeys
 } = require('./PayloadBuilder')
+const { cancelMatchingExecutions } = require('./CancellationResolver')
 
 const REGISTERED = Symbol.for('cap-n8n-plugin.annotations.registered')
 
@@ -101,6 +102,35 @@ async function runStartHandler({ srv, entity, annotation, event, data, req }) {
   })
 }
 
+async function runCancelHandler({ srv, entity, annotation, event, data, req }) {
+  const currentData = runtimeData(data)
+  const keys = resolveKeys(entity, currentData, req)
+  const businessKey = await resolveBusinessKey({
+    annotation,
+    data: currentData,
+    keys,
+    req
+  })
+  const n8n = await cds.connect.to('n8n')
+  const result = await cancelMatchingExecutions(n8n, {
+    workflowId: annotation.workflowId,
+    businessKey,
+    tag: annotation.tag
+  })
+
+  if (result.noMatch) {
+    cds.log('n8n').warn('No active n8n executions matched annotated cancellation', metadataFor({
+      annotation,
+      event,
+      entity,
+      srv,
+      businessKey
+    }))
+  }
+
+  return result
+}
+
 function registerStartHandler(srv, entity, annotation, event) {
   srv.after(event, entity, async (data, req) => {
     let businessKey
@@ -136,15 +166,60 @@ function registerStartHandler(srv, entity, annotation, event) {
   })
 }
 
+function registerCancelHandler(srv, entity, annotation, event) {
+  srv.after(event, entity, async (data, req) => {
+    let businessKey
+
+    try {
+      const currentData = runtimeData(data)
+      const keys = resolveKeys(entity, currentData, req)
+      businessKey = await resolveBusinessKey({
+        annotation,
+        data: currentData,
+        keys,
+        req
+      })
+
+      await runCancelHandler({
+        srv,
+        entity,
+        annotation,
+        event,
+        data,
+        req
+      })
+    } catch (err) {
+      cds.log('n8n').error('Annotated n8n workflow cancellation failed', metadataFor({
+        annotation,
+        event,
+        entity,
+        srv,
+        businessKey,
+        err
+      }))
+    }
+  })
+}
+
 function registerEntityAnnotations(srv, entity) {
   const annotations = readWorkflowAnnotations(entity, { entity })
-  if (!annotations.start) return 0
+  let count = 0
 
-  for (const event of annotations.start.on) {
-    registerStartHandler(srv, entity, annotations.start, event)
+  if (annotations.start) {
+    for (const event of annotations.start.on) {
+      registerStartHandler(srv, entity, annotations.start, event)
+      count += 1
+    }
   }
 
-  return annotations.start.on.length
+  if (annotations.cancel) {
+    for (const event of annotations.cancel.on) {
+      registerCancelHandler(srv, entity, annotations.cancel, event)
+      count += 1
+    }
+  }
+
+  return count
 }
 
 function registerN8nAnnotations(srv) {
@@ -161,7 +236,7 @@ function registerN8nAnnotations(srv) {
   })
 
   if (count > 0) {
-    cds.log('n8n').info('Registered annotated n8n workflow starts', {
+    cds.log('n8n').info('Registered annotated n8n workflow handlers', {
       service: serviceName(srv),
       handlers: count
     })

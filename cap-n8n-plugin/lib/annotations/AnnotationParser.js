@@ -299,6 +299,14 @@ function normalizeCancel(config, entity) {
 
   const businessKey = normalizeBusinessKey(config.businessKey, CANCEL_PREFIX, entity)
   const tag = normalizeTag(config.tag, CANCEL_PREFIX, entity)
+  if (!businessKey && !tag) {
+    throw createAnnotationError('n8n workflow cancel annotation requires businessKey or tag match metadata.', {
+      annotation: CANCEL_PREFIX,
+      fields: ['businessKey', 'tag'],
+      entity: entityName(entity)
+    })
+  }
+
   if (businessKey) cancel.businessKey = businessKey
   if (tag) cancel.tag = tag
 
