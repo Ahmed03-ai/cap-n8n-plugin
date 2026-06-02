@@ -54,6 +54,24 @@ class ExecutionStore {
     }
   }
 
+  withDb(db) {
+    return new ExecutionStore({
+      db,
+      sensitiveValues: this.sensitiveValues
+    })
+  }
+
+  forRequest(req) {
+    if (!req || typeof this.db.tx !== 'function') return this
+    return this.withDb(this.db.tx(req))
+  }
+
+  async transaction(fn) {
+    if (typeof this.db.tx !== 'function') return fn(this)
+
+    return this.db.tx(async (tx) => fn(this.withDb(tx)))
+  }
+
   async createQueued({
     executionId = randomUUID(),
     workflowId,
@@ -102,6 +120,30 @@ class ExecutionStore {
     return record ? createExecutionResult(record) : undefined
   }
 
+  async getDispatch(executionId) {
+    return this.db.run(SELECT.one.from(DISPATCHES).where({ executionId }))
+  }
+
+  async findDispatches({ executionId, limit = 100 } = {}) {
+    if (executionId) {
+      const dispatch = await this.getDispatch(executionId)
+      return dispatch ? [dispatch] : []
+    }
+
+    const safeLimit = Math.max(1, Math.trunc(Number(limit) || 100))
+    const queued = await this.db.run(
+      SELECT.from(DISPATCHES).where({ status: 'queued' }).limit(safeLimit)
+    )
+
+    if (queued.length >= safeLimit) return queued
+
+    const failed = await this.db.run(
+      SELECT.from(DISPATCHES).where({ status: 'failed' }).limit(safeLimit - queued.length)
+    )
+
+    return [...queued, ...failed]
+  }
+
   async updateStatus(executionId, status, updates = {}) {
     this._assertValidStatus(status)
 
@@ -123,29 +165,47 @@ class ExecutionStore {
   }
 
   async markDispatching(executionId, updates = {}) {
-    await this._updateDispatch(executionId, {
+    const timestamp = now()
+    const dispatchPatch = {
       status: 'dispatching',
-      updatedAt: now(),
-      lastAttemptAt: now()
+      updatedAt: timestamp,
+      lastAttemptAt: timestamp
+    }
+
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
+
+    await this._updateDispatch(executionId, {
+      ...dispatchPatch
     })
 
     return this.updateStatus(executionId, 'dispatching', updates)
   }
 
   async markRunning(executionId, updates = {}) {
-    await this._updateDispatch(executionId, {
+    const dispatchPatch = {
       status: 'running',
       updatedAt: now()
-    })
+    }
+
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
+
+    await this._updateDispatch(executionId, dispatchPatch)
 
     return this.updateStatus(executionId, 'running', updates)
   }
 
   async markSucceeded(executionId, updates = {}) {
-    await this._updateDispatch(executionId, {
+    const timestamp = now()
+    const dispatchPatch = {
       status: 'succeeded',
-      updatedAt: now(),
-      finishedAt: now()
+      updatedAt: timestamp,
+      finishedAt: timestamp
+    }
+
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
+
+    await this._updateDispatch(executionId, {
+      ...dispatchPatch
     })
 
     return this.updateStatus(executionId, 'succeeded', updates)
@@ -161,6 +221,7 @@ class ExecutionStore {
     }
 
     if (error !== undefined) dispatchPatch.error = error
+    addOptionalValue(dispatchPatch, 'attempts', updates.attempts)
     await this._updateDispatch(executionId, dispatchPatch)
 
     return this.updateStatus(executionId, 'failed', updates)

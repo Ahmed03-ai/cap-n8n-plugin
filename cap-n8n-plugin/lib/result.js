@@ -44,16 +44,33 @@ function normalizeTimestamp(value) {
   return value
 }
 
-function createStartResult({ workflowId, executionId, correlationId, businessKey, result, mock }) {
+function createStartResult({
+  workflowId,
+  executionId,
+  n8nExecutionId,
+  correlationId,
+  businessKey,
+  tag,
+  status,
+  attempts,
+  result,
+  error,
+  mock
+}) {
   const startResult = {
     accepted: true,
     workflowId
   }
 
   addOptionalValue(startResult, 'executionId', executionId)
+  addOptionalValue(startResult, 'n8nExecutionId', n8nExecutionId)
   addOptionalValue(startResult, 'correlationId', correlationId)
   addOptionalValue(startResult, 'businessKey', businessKey)
+  addOptionalValue(startResult, 'tag', tag)
+  addOptionalValue(startResult, 'status', status)
+  addOptionalValue(startResult, 'attempts', attempts)
   addOptionalValue(startResult, 'result', result)
+  addOptionalValue(startResult, 'error', error)
 
   if (mock === true) {
     startResult.mock = true

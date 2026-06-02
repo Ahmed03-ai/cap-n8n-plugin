@@ -1,6 +1,8 @@
 const cds = require('@sap/cds')
 const { resolveN8nConfig } = require('./config')
 const { createN8nError, isRetryableStatus } = require('./errors')
+const { ExecutionDispatcher } = require('./ExecutionDispatcher')
+const { ExecutionStore } = require('./ExecutionStore')
 const { createStartResult, normalizeWebhookPath } = require('./result')
 
 function delay(ms) {
@@ -31,6 +33,24 @@ function parseSafeErrorResponse(responseText) {
   }
 }
 
+function publicStartOptions(data = {}) {
+  const options = data.options ? { ...data.options } : { ...data }
+
+  delete options.workflowId
+  delete options.inputs
+
+  return options
+}
+
+function publicOptions(options = {}) {
+  const { _req, ...safeOptions } = options || {}
+  return safeOptions
+}
+
+function isPostCommitRequest(req) {
+  return req && typeof req.on === 'function'
+}
+
 class N8nWorkflowService extends cds.Service {
   async init() {
     this.config = resolveN8nConfig({ ...(this.options || {}), kind: 'webhook' })
@@ -39,17 +59,107 @@ class N8nWorkflowService extends cds.Service {
     this.timeoutMs = this.config.timeoutMs
     this.retries = this.config.retries
     this.retryDelayMs = this.config.retryDelayMs
+    this.db = cds.db || await cds.connect.to('db')
+    this.store = new ExecutionStore({
+      db: this.db,
+      sensitiveValues: [this.apiKey].filter(Boolean)
+    })
+    this.dispatcher = new ExecutionDispatcher({
+      service: this,
+      store: this.store,
+      sensitiveValues: [this.apiKey].filter(Boolean)
+    })
 
-    this.on('start', (req) => this.start(req.data.workflowId, req.data.inputs, req.data.options || req.data))
+    this.on('start', (req) => this.start(req.data.workflowId, req.data.inputs, {
+      ...publicStartOptions(req.data),
+      _req: req
+    }))
+    this.on('dispatchExecution', (req) => this.dispatchPending({ executionId: req.data.executionId }))
+    this.on('dispatchPending', (req) => this.dispatchPending(req.data || {}))
 
     await super.init()
   }
 
   async start(workflowId, inputs = {}, options = {}) {
-    return this._triggerWebhook(workflowId, inputs, options)
+    const safeOptions = publicOptions(options)
+    const req = options._req || cds.context
+    const workflowPath = normalizeWebhookPath(workflowId)
+    const queued = await this._createQueuedExecution({
+      workflowId,
+      workflowPath,
+      inputs,
+      options: safeOptions,
+      req
+    })
+    const startResult = this._createStartResult(queued)
+    const dispatch = async () => {
+      const dispatched = await this.dispatchPending({ executionId: queued.executionId })
+      if (dispatched) Object.assign(startResult, this._createStartResult(dispatched))
+      return dispatched
+    }
+
+    if (isPostCommitRequest(req)) {
+      req.on('succeeded', dispatch)
+      return startResult
+    }
+
+    const dispatched = await dispatch()
+    return this._createStartResult(dispatched || queued)
+  }
+
+  async dispatchPending(filters = {}) {
+    return this.dispatcher.dispatchPending(filters)
+  }
+
+  async _createQueuedExecution({ workflowId, workflowPath, inputs, options, req }) {
+    const entry = {
+      workflowId,
+      correlationId: options.correlationId,
+      businessKey: options.businessKey,
+      tag: options.tag,
+      inputs,
+      dispatch: {
+        workflowPath,
+        payload: inputs
+      }
+    }
+
+    if (isPostCommitRequest(req)) {
+      return this.store.forRequest(req).createQueued(entry)
+    }
+
+    return this.store.transaction((store) => store.createQueued(entry))
+  }
+
+  _createStartResult(execution = {}) {
+    return createStartResult({
+      workflowId: execution.workflowId,
+      executionId: execution.executionId,
+      n8nExecutionId: execution.n8nExecutionId,
+      correlationId: execution.correlationId,
+      businessKey: execution.businessKey,
+      tag: execution.tag,
+      status: execution.status,
+      attempts: execution.attempts,
+      result: execution.result,
+      error: execution.error
+    })
   }
 
   async _triggerWebhook(workflowId, inputs = {}, options = {}) {
+    const webhook = await this._dispatchWebhook(workflowId, inputs, options)
+
+    return createStartResult({
+      workflowId,
+      executionId: webhook.n8nExecutionId,
+      correlationId: options.correlationId,
+      businessKey: options.businessKey,
+      tag: options.tag,
+      result: webhook.result
+    })
+  }
+
+  async _dispatchWebhook(workflowId, inputs = {}, options = {}) {
     const safeBaseUrl = this.baseUrl.replace(/\/$/, '')
     const safePath = normalizeWebhookPath(workflowId)
     const url = `${safeBaseUrl}/${safePath}`
@@ -66,6 +176,15 @@ class N8nWorkflowService extends cds.Service {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
       try {
+        if (typeof options.onAttempt === 'function') {
+          await options.onAttempt({
+            attempt,
+            maxAttempts,
+            workflowId,
+            correlationId: options.correlationId
+          })
+        }
+
         cds.log('n8n').info(`Triggering n8n workflow at ${url}`)
         const response = await this._fetchWebhook(url, headers, inputs)
         const responseText = await response.text()
@@ -83,13 +202,11 @@ class N8nWorkflowService extends cds.Service {
 
         const result = parseWebhookResponse(responseText)
 
-        return createStartResult({
+        return {
           workflowId,
-          executionId: result && typeof result === 'object' ? result.executionId : undefined,
-          correlationId: options.correlationId,
-          businessKey: options.businessKey,
+          n8nExecutionId: result && typeof result === 'object' ? result.executionId : undefined,
           result
-        })
+        }
       } catch (err) {
         lastError = this._normalizeTransportError(err, {
           workflowId,
@@ -147,6 +264,7 @@ class N8nWorkflowService extends cds.Service {
       code: retryable ? 'ERR_N8N_RETRYABLE_STATUS' : 'ERR_N8N_HTTP_STATUS',
       details: {
         workflowId,
+        executionId: options.executionId,
         statusCode,
         attempt,
         attempts: maxAttempts,
@@ -169,6 +287,7 @@ class N8nWorkflowService extends cds.Service {
       code: timedOut ? 'ERR_N8N_TIMEOUT' : 'ERR_N8N_NETWORK',
       details: {
         workflowId,
+        executionId: options.executionId,
         attempt,
         attempts: maxAttempts,
         timeoutMs: this.timeoutMs,
@@ -187,6 +306,7 @@ class N8nWorkflowService extends cds.Service {
   _logRetry({ workflowId, options, attempt, maxAttempts, error }) {
     cds.log('n8n').warn('Retrying n8n workflow start after transient failure', {
       workflowId,
+      executionId: options.executionId,
       attempt,
       attempts: maxAttempts,
       reason: error.code,
