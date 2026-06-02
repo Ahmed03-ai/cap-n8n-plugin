@@ -452,4 +452,56 @@ describe('n8n tracked dispatch integration', () => {
       await server.close()
     }
   })
+
+  it('warns about active duplicate starts by default while preserving dispatch', async () => {
+    const server = await createWebhookServer(() => ({
+      body: JSON.stringify({
+        received: true,
+        executionId: 'n8n-duplicate-warn'
+      })
+    }))
+
+    try {
+      configureN8n(server.baseUrl)
+
+      const n8n = await cds.connect.to('n8n')
+      const active = await n8n.store.createQueued({
+        workflowId: 'duplicate-warn-workflow',
+        correlationId: 'corr-duplicate-warn',
+        businessKey: 'book-duplicate-warn',
+        tag: 'admin-create'
+      })
+      await n8n.store.markRunning(active.executionId)
+
+      const result = await n8n.start('duplicate-warn-workflow', {
+        event: 'DuplicateWarned',
+        secret: 'raw-dispatch-input-secret'
+      }, {
+        correlationId: 'corr-duplicate-warn',
+        businessKey: 'book-duplicate-warn',
+        tag: 'admin-create'
+      })
+
+      expect(server.requests).toHaveLength(1)
+      expect(result.executionId).not.toBe(active.executionId)
+      expect(result).toMatchObject({
+        accepted: true,
+        workflowId: 'duplicate-warn-workflow',
+        status: 'succeeded',
+        duplicate: {
+          policy: 'warn',
+          activeExecutionIds: [active.executionId],
+          ambiguous: false
+        }
+      })
+      expectPublicDtoIsSanitized(result)
+
+      const executions = await selectAll('cap.n8n.WorkflowExecutions', {
+        workflowId: 'duplicate-warn-workflow'
+      })
+      expect(executions).toHaveLength(2)
+    } finally {
+      await server.close()
+    }
+  })
 })
