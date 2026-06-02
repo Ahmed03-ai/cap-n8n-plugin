@@ -328,7 +328,7 @@ describe('declarative cancellation resolver matching', () => {
 })
 
 describe('n8n annotation cancellation integration', () => {
-  it('cancels matching active executions on DELETE when cancel on is omitted', async () => {
+  it('cancels active executions on DELETE when cancel on is omitted', async () => {
     configureN8n('http://127.0.0.1:1')
     const srv = await serveAnnotatedService(cancelAnnotation({
       workflowId: 'annotation-cancel-delete'
@@ -377,7 +377,7 @@ describe('n8n annotation cancellation integration', () => {
     expectPublicDtoIsSanitized(queryResult)
   })
 
-  it('cancels all matching queued running and cancel-requested executions', async () => {
+  it('cancels all eligible queued running and cancel-requested executions', async () => {
     configureN8n('http://127.0.0.1:1')
     const srv = await serveAnnotatedService(cancelAnnotation({
       workflowId: 'annotation-cancel-many'
@@ -438,7 +438,7 @@ describe('n8n annotation cancellation integration', () => {
     }
   })
 
-  it('warns without rolling back DELETE when no active execution matches', async () => {
+  it('warns without rolling back DELETE when active execution lookup is empty', async () => {
     configureN8n('http://127.0.0.1:1')
     const logger = cds.log('n8n')
     const warn = vi.spyOn(logger, 'warn').mockImplementation(() => {})
