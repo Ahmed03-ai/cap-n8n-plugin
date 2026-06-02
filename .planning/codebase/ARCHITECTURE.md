@@ -42,6 +42,7 @@
 | CAP plugin bootstrap | Preserves explicit `cds.env.requires.n8n.impl` values and fills missing implementations from resolved `kind: 'mock' | 'webhook'`. | `cap-n8n-plugin/cds-plugin.js` |
 | Runtime config resolver | Resolves mock/webhook mode, credentials, timeout/retry defaults, and sanitized missing-`baseUrl` errors. | `cap-n8n-plugin/lib/config.js` |
 | n8n workflow service | Implements the webhook CAP service used by `cds.connect.to('n8n')`, validates webhook config, exposes a `start` event, normalizes webhook paths, posts JSON to n8n, and returns parsed webhook responses. | `cap-n8n-plugin/lib/N8nWorkflowService.js` |
+| Annotation registrar | Scans served CAP entities for `@n8n.workflow.start`, registers CREATE/UPDATE/DELETE after-handlers, builds scalar payloads, and routes starts through the transaction-safe n8n service path. | `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js` |
 | Mock n8n workflow service | Implements deterministic offline `start` behavior with in-memory start records and explicit opt-in failures. | `cap-n8n-plugin/lib/MockN8nWorkflowService.js` |
 | Plugin package entry | Public package entry that exports `N8nWorkflowService` and `MockN8nWorkflowService`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
 | n8n node package entry | Package `main` target for the planned n8n community node; currently empty. | `cap-n8n-node/index.js` |
@@ -79,7 +80,7 @@
 **CAP Plugin Layer:**
 - Purpose: Provides the reusable CAP-to-n8n service implementation.
 - Location: `cap-n8n-plugin/`
-- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
+- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, declarative annotation registration under `cap-n8n-plugin/lib/annotations/`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
 - Depends on: `@sap/cds` at runtime from the consuming CAP app and global `fetch` from the Node runtime.
 - Used by: `demo-app/package.json` through `cds.requires.n8n.impl` and by `demo-app/srv/admin-service.js` through `cds.connect.to('n8n')`.
 

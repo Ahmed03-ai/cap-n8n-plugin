@@ -22,7 +22,7 @@ npm start --workspace demo-app        # Starts the CAP demo app for manual verif
 
 **Location:**
 - Automated test files live under `test/smoke/` and `test/integration/`.
-- Current integration coverage includes CAP service contracts, mock/profile behavior, webhook runtime behavior, execution tracking, query/cancel behavior, transaction-safe dispatch, and annotation helper contracts.
+- Current integration coverage includes CAP service contracts, mock/profile behavior, webhook runtime behavior, execution tracking, query/cancel behavior, transaction-safe dispatch, annotation helper contracts, and annotated CREATE/UPDATE/DELETE start behavior.
 - Manual request verification lives in `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 

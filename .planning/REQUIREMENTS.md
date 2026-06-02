@@ -37,13 +37,13 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### CAP Declarative Triggers
 
-- [ ] **ANNO-01**: CAP developer can annotate a CDS entity to start an n8n workflow after a successful CREATE.
-- [ ] **ANNO-02**: CAP developer can configure annotated workflow starts for UPDATE and DELETE events.
+- [x] **ANNO-01**: CAP developer can annotate a CDS entity to start an n8n workflow after a successful CREATE.
+- [x] **ANNO-02**: CAP developer can configure annotated workflow starts for UPDATE and DELETE events.
 - [x] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
 - [x] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
 - [x] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
 - [ ] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
-- [ ] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
+- [x] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
 
 ### Workflow Import and Build Validation
 
@@ -84,7 +84,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 ### Verification
 
 - [x] **VERIFY-01**: Developer can run integration tests for the CAP programmatic API, authentication, errors, retry behavior, and mock runtime.
-- [ ] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
+- [x] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
 - [ ] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
 - [ ] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
 - [ ] **VERIFY-05**: Developer can run a documented smoke test covering the demo CAP app, local n8n, and exported workflow fixture.
@@ -150,13 +150,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUNTIME-05 | Phase 2 | Complete |
 | RUNTIME-06 | Phase 3 | Complete |
 | RUNTIME-07 | Phase 3 | Complete |
-| ANNO-01 | Phase 4 | Pending |
-| ANNO-02 | Phase 4 | Pending |
+| ANNO-01 | Phase 4 | Complete |
+| ANNO-02 | Phase 4 | Complete |
 | ANNO-03 | Phase 4 | Complete |
 | ANNO-04 | Phase 4 | Complete |
 | ANNO-05 | Phase 4 | Complete |
 | ANNO-06 | Phase 4 | Pending |
-| ANNO-07 | Phase 4 | Pending |
+| ANNO-07 | Phase 4 | Complete |
 | IMPORT-01 | Phase 5 | Pending |
 | IMPORT-02 | Phase 5 | Pending |
 | IMPORT-03 | Phase 5 | Pending |
@@ -185,7 +185,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-06 | Phase 8 | Pending |
 | DOCS-07 | Phase 8 | Pending |
 | VERIFY-01 | Phase 2 | Complete |
-| VERIFY-02 | Phase 4 | Pending |
+| VERIFY-02 | Phase 4 | Complete |
 | VERIFY-03 | Phase 5 | Pending |
 | VERIFY-04 | Phase 7 | Pending |
 | VERIFY-05 | Phase 8 | Pending |

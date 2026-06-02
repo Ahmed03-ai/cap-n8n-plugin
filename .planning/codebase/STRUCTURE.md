@@ -52,8 +52,8 @@ cap-n8n-plugin/
 
 **`cap-n8n-plugin/lib/annotations/`:**
 - Purpose: Holds package-owned declarative annotation helper contracts.
-- Contains: Flattened CSN annotation parsing, safe condition compilation/evaluation, and scalar payload construction.
-- Key files: `cap-n8n-plugin/lib/annotations/AnnotationParser.js`, `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`, `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`
+- Contains: Served-service annotation registration, flattened CSN annotation parsing, safe condition compilation/evaluation, and scalar payload construction.
+- Key files: `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js`, `cap-n8n-plugin/lib/annotations/AnnotationParser.js`, `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`, `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`
 
 **`cap-n8n-node/`:**
 - Purpose: Package boundary for n8n community node functionality.
@@ -135,6 +135,7 @@ cap-n8n-plugin/
 
 **Core Logic:**
 - `cap-n8n-plugin/lib/N8nWorkflowService.js`: Outbound webhook transport to n8n.
+- `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js`: Served CAP entity scanner and after-handler registration for declarative n8n starts.
 - `cap-n8n-plugin/lib/annotations/AnnotationParser.js`: Declarative n8n annotation reconstruction and validation.
 - `cap-n8n-plugin/lib/annotations/ConditionEvaluator.js`: Safe scalar CXN condition parsing and evaluation.
 - `cap-n8n-plugin/lib/annotations/PayloadBuilder.js`: Scalar workflow payload and CAP event metadata construction.
