@@ -80,7 +80,24 @@ Plans:
   4. CAP developer can detect duplicate or ambiguous workflow start attempts through persisted correlation rather than raw logs alone.
   5. CAP workflow dispatch has a clear post-commit or outbox-style path for later declarative triggers.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Create plugin-owned execution model, durable store, and sanitized result contract.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Wrap starts with transaction-safe tracking, internal outbox payloads, and post-commit dispatch.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — Expose query, paging, ordering, and duplicate policy APIs.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-04-PLAN.md — Add state-aware cancellation, mock parity, and aggregate Phase 3 verification.
 
 ### Phase 4: Declarative CAP Annotations
 
@@ -188,7 +205,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
-| 3. Execution Store and Transaction-Safe Dispatch | 0/TBD | Not started | - |
+| 3. Execution Store and Transaction-Safe Dispatch | 0/4 | Planned    |  |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
