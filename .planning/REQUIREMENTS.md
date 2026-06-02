@@ -192,6 +192,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERIFY-06 | Phase 8 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 58 total
 - Mapped to phases: 58
 - Unmapped: 0
