@@ -11,11 +11,10 @@ const {
   compileCondition,
   evaluateCondition
 } = require('../../cap-n8n-plugin/lib/annotations/ConditionEvaluator.js')
-const {
-  buildStartPayload,
-  resolveAnnotationValue,
-  resolveKeys
-} = require('../../cap-n8n-plugin/lib/annotations/PayloadBuilder.js')
+
+function payloadBuilder() {
+  return require('../../cap-n8n-plugin/lib/annotations/PayloadBuilder.js')
+}
 
 function compileEntity(source, name = 'test.Books') {
   const csn = cds.compile.to.csn(source)
@@ -230,6 +229,7 @@ describe('annotation parser contract', () => {
 
 describe('annotation payload contract', () => {
   it('D-06 D-08 D-10 D-11 builds mapped CREATE payloads with event metadata', () => {
+    const { buildStartPayload } = payloadBuilder()
     const entity = bookEntity()
     const annotation = readWorkflowAnnotations({
       ...entity,
@@ -262,6 +262,7 @@ describe('annotation payload contract', () => {
   })
 
   it('D-06 D-08 builds UPDATE payloads from patch data and req.subject fallback without full rows', async () => {
+    const { buildStartPayload } = payloadBuilder()
     const entity = bookEntity()
     const annotation = readWorkflowAnnotations({
       ...entity,
@@ -303,6 +304,7 @@ describe('annotation payload contract', () => {
   })
 
   it('D-06 D-08 omits full rows when inputs are absent and sends keys plus metadata', () => {
+    const { buildStartPayload } = payloadBuilder()
     const entity = bookEntity()
     const annotation = readWorkflowAnnotations({
       ...entity,
@@ -332,6 +334,7 @@ describe('annotation payload contract', () => {
   })
 
   it('D-07 rejects DELETE non-key mappings and builds key-only DELETE payloads', () => {
+    const { buildStartPayload } = payloadBuilder()
     const entity = bookEntity()
 
     expect(() => readWorkflowAnnotations({
@@ -369,6 +372,7 @@ describe('annotation payload contract', () => {
   })
 
   it('D-08 resolves keys and scalar annotation values for event metadata', () => {
+    const { resolveAnnotationValue, resolveKeys } = payloadBuilder()
     const entity = bookEntity()
     const keys = resolveKeys(entity, { ID: 105 })
 
