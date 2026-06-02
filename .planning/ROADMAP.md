@@ -85,7 +85,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Create plugin-owned execution model, durable store, and sanitized result contract.
+- [x] 03-01-PLAN.md — Create plugin-owned execution model, durable store, and sanitized result contract.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -205,7 +205,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
-| 3. Execution Store and Transaction-Safe Dispatch | 0/4 | Planned    |  |
+| 3. Execution Store and Transaction-Safe Dispatch | 1/4 | In Progress|  |
 | 4. Declarative CAP Annotations | 0/TBD | Not started | - |
 | 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |

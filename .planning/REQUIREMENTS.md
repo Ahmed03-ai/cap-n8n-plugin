@@ -33,7 +33,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **RUNTIME-04**: CAP developer receives structured, sanitized CDS errors for n8n communication failures.
 - [x] **RUNTIME-05**: Transient n8n HTTP failures use configurable timeout and retry behavior.
 - [ ] **RUNTIME-06**: Workflow starts and retries are correlated so duplicate or ambiguous executions can be detected.
-- [ ] **RUNTIME-07**: Workflow execution state is persisted or otherwise tracked enough to support query, cancellation, retry, and business-key lookup.
+- [x] **RUNTIME-07**: Workflow execution state is persisted or otherwise tracked enough to support query, cancellation, retry, and business-key lookup.
 
 ### CAP Declarative Triggers
 
@@ -149,7 +149,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUNTIME-04 | Phase 2 | Complete |
 | RUNTIME-05 | Phase 2 | Complete |
 | RUNTIME-06 | Phase 3 | Pending |
-| RUNTIME-07 | Phase 3 | Pending |
+| RUNTIME-07 | Phase 3 | Complete |
 | ANNO-01 | Phase 4 | Pending |
 | ANNO-02 | Phase 4 | Pending |
 | ANNO-03 | Phase 4 | Pending |
