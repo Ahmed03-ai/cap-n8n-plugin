@@ -167,14 +167,23 @@ export async function sapCapApiRequest(
       url,
       headers,
       body: input.body,
-      encoding: responseFormat === 'text' ? 'text' : 'json',
-      json: responseFormat === 'json',
+      encoding: 'text',
       returnFullResponse: true,
       ignoreHttpStatusErrors: true,
     }) as FullHttpResponse
 
     if (response.statusCode >= 400) {
       throw createHttpStatusError(response.statusCode, input.errorContext ?? 'odata')
+    }
+
+    if (responseFormat === 'json') {
+      try {
+        return JSON.parse(String(response.body ?? ''))
+      } catch (err) {
+        throw createSapCapRequestError('CAP response did not match the expected OData shape.', {
+          category: 'responseShape',
+        })
+      }
     }
 
     return response.body

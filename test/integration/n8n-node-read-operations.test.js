@@ -758,6 +758,32 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
+  it('classifies malformed successful JSON responses as response-shape errors', async () => {
+    const server = await createCapServer(() => ({
+      contentType: 'text/html',
+      body: '<html><body>Login required</body></html>',
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters(),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(1)
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'CAP response did not match the expected OData shape.',
+          category: 'responseShape',
+        },
+        pairedItem: { item: 0 },
+      },
+    ])
+    expectNoSecrets(result)
+  })
+
   it('keeps built node metadata and runtime source inside Phase 6 read-only scope', async () => {
     const SapCap = await importSapCapNode()
     const node = new SapCap()
