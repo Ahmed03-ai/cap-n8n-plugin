@@ -42,6 +42,34 @@ type MutationRequestInput = ReadRequestInput & {
 
 type DeleteRequestInput = ReadRequestInput
 
+type ActionFunctionDescriptorInput = {
+  kind?: unknown
+  name?: unknown
+  qualifiedName?: unknown
+  importName?: unknown
+  isBound?: unknown
+  bindingType?: unknown
+  entitySet?: unknown
+  parameters?: unknown
+}
+
+type ActionFunctionRequestInput = ReadRequestInput & {
+  operationSource?: unknown
+  operationDescriptor?: unknown
+  operationKind?: unknown
+  operationName?: unknown
+  operationBinding?: unknown
+  parameters: unknown
+}
+
+type ResolvedActionFunctionDescriptor = {
+  kind: 'action' | 'function'
+  name: string
+  qualifiedName?: string
+  importName?: string
+  isBound: boolean
+}
+
 type MetadataKeyDescriptor = {
   name: unknown
   type?: unknown
@@ -60,7 +88,7 @@ type SapCapApiRequestInput = {
   body?: IDataObject
   headers?: IDataObject
   responseFormat?: 'json' | 'text'
-  errorContext?: 'metadata' | 'odata' | 'read' | 'delete'
+  errorContext?: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction'
 }
 
 type FullHttpResponse = {
@@ -280,6 +308,38 @@ export function buildDeleteRequest(input: DeleteRequestInput) {
   }
 }
 
+export function buildActionFunctionRequest(input: ActionFunctionRequestInput) {
+  const servicePath = normalizeServicePath(input.servicePath)
+  const descriptor = resolveActionFunctionDescriptor(input)
+  const parameters = parseJsonObjectParameter(input.parameters, 'Parameters')
+  const operationSegment = normalizeActionFunctionPathSegment(
+    descriptor.isBound
+      ? descriptor.qualifiedName ?? descriptor.name
+      : descriptor.importName ?? descriptor.name
+  )
+  const operationPath = descriptor.isBound
+    ? buildBoundActionFunctionPath(servicePath, input, operationSegment)
+    : `${servicePath}/${operationSegment}`
+
+  if (descriptor.kind === 'action') {
+    return {
+      method: 'POST' as IHttpRequestMethods,
+      path: operationPath,
+      body: parameters,
+      headers: {
+        Prefer: 'return=representation',
+      },
+    }
+  }
+
+  const query = buildFunctionQuery(parameters)
+
+  return {
+    method: 'GET' as IHttpRequestMethods,
+    path: `${operationPath}${query ? `?${query}` : ''}`,
+  }
+}
+
 export function parseJsonObjectParameter(value: unknown, fieldName: string) {
   if (typeof value === 'string' && !value.trim()) {
     throwJsonObjectParameterError(fieldName)
@@ -300,6 +360,152 @@ export function parseJsonObjectParameter(value: unknown, fieldName: string) {
   }
 
   return parsed as IDataObject
+}
+
+export function isActionFunctionRequestBound(input: ActionFunctionRequestInput) {
+  return resolveActionFunctionDescriptor(input).isBound
+}
+
+function resolveActionFunctionDescriptor(input: ActionFunctionRequestInput): ResolvedActionFunctionDescriptor {
+  const operationSource = typeof input.operationSource === 'string' ? input.operationSource : 'metadata'
+
+  if (operationSource === 'metadata') {
+    return normalizeActionFunctionDescriptor(parseActionFunctionDescriptor(input.operationDescriptor))
+  }
+
+  if (operationSource === 'manual') {
+    const kind = normalizeActionFunctionKind(input.operationKind)
+    const name = normalizeActionFunctionPathSegment(input.operationName)
+    const binding = typeof input.operationBinding === 'string' ? input.operationBinding : 'unbound'
+
+    if (binding !== 'unbound' && binding !== 'bound') {
+      throw createSapCapRequestError('Action/Function binding must be Bound or Unbound.', {
+        category: 'validation',
+      })
+    }
+
+    return {
+      kind,
+      name,
+      qualifiedName: name,
+      isBound: binding === 'bound',
+    }
+  }
+
+  throw createSapCapRequestError('Action/Function source must use Metadata or Manual.', {
+    category: 'validation',
+  })
+}
+
+function parseActionFunctionDescriptor(value: unknown): ActionFunctionDescriptorInput {
+  if (isPlainObject(value)) return value as ActionFunctionDescriptorInput
+
+  if (typeof value !== 'string' || !value.trim()) {
+    throw createSapCapRequestError('Select an Action/Function operation or use manual operation fields.', {
+      category: 'validation',
+    })
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+
+    if (isPlainObject(parsed)) return parsed as ActionFunctionDescriptorInput
+  } catch (err) {
+    // Fall through to the sanitized validation error below.
+  }
+
+  throw createSapCapRequestError('Select an Action/Function operation or use manual operation fields.', {
+    category: 'validation',
+  })
+}
+
+function normalizeActionFunctionDescriptor(
+  descriptor: ActionFunctionDescriptorInput
+): ResolvedActionFunctionDescriptor {
+  const kind = normalizeActionFunctionKind(descriptor.kind)
+  const name = normalizeActionFunctionPathSegment(descriptor.name)
+  const qualifiedName = descriptor.qualifiedName === undefined
+    ? undefined
+    : normalizeActionFunctionPathSegment(descriptor.qualifiedName)
+  const importName = descriptor.importName === undefined
+    ? undefined
+    : normalizeActionFunctionPathSegment(descriptor.importName)
+
+  return {
+    kind,
+    name,
+    ...(qualifiedName ? { qualifiedName } : {}),
+    ...(importName ? { importName } : {}),
+    isBound: descriptor.isBound === true,
+  }
+}
+
+function normalizeActionFunctionKind(value: unknown) {
+  if (value === 'action' || value === 'function') return value
+
+  throw createSapCapRequestError('Action/Function kind must be Action or Function.', {
+    category: 'validation',
+  })
+}
+
+function normalizeActionFunctionPathSegment(value: unknown) {
+  const segment = requireString(value, 'Action/Function name is required.')
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(segment)) {
+    throw createSapCapRequestError('Action/Function name is required.', {
+      category: 'validation',
+    })
+  }
+
+  return segment
+}
+
+function buildBoundActionFunctionPath(
+  servicePath: string,
+  input: ActionFunctionRequestInput,
+  operationSegment: string
+) {
+  const entitySetName = normalizeEntitySetName(input.entitySetName)
+  const keyPredicate = resolveKeyPredicate(input)
+
+  return `${servicePath}/${entitySetName}${keyPredicate}/${operationSegment}`
+}
+
+function buildFunctionQuery(parameters: IDataObject) {
+  const params = new URLSearchParams()
+
+  for (const [name, value] of Object.entries(parameters)) {
+    const parameterName = normalizeFunctionParameterName(name)
+
+    if (!isPrimitiveFunctionParameterValue(value)) {
+      throw createSapCapRequestError('Function parameter values must be primitive JSON values.', {
+        category: 'validation',
+      })
+    }
+
+    params.set(parameterName, value === null ? 'null' : String(value))
+  }
+
+  return params.toString().replace(/\+/g, '%20')
+}
+
+function normalizeFunctionParameterName(value: unknown) {
+  const name = requireString(value, 'Function parameter names are invalid.')
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+    throw createSapCapRequestError('Function parameter names are invalid.', {
+      category: 'validation',
+    })
+  }
+
+  return name
+}
+
+function isPrimitiveFunctionParameterValue(value: unknown) {
+  return value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
 }
 
 export async function sapCapApiRequest(
@@ -621,7 +827,7 @@ function setIntegerQueryParam(
   params.set(key, String(numberValue))
 }
 
-function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read' | 'delete') {
+function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction') {
   const category = categoryForStatus(statusCode)
   const message = messageForStatus(statusCode, category, context)
 
@@ -640,7 +846,7 @@ function categoryForStatus(statusCode: number) {
   return 'validation'
 }
 
-function messageForStatus(statusCode: number, category: string, context: 'metadata' | 'odata' | 'read' | 'delete') {
+function messageForStatus(statusCode: number, category: string, context: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction') {
   if (context === 'metadata') {
     if (statusCode === 401) return 'Authentication failed for CAP metadata. Check the SAP CAP API credential.'
     if (statusCode === 403) return 'CAP metadata access is forbidden for this credential.'
@@ -657,6 +863,10 @@ function messageForStatus(statusCode: number, category: string, context: 'metada
     return 'CAP entity was not found for Delete. Check the selected entity set and key.'
   }
 
+  if (context === 'actionFunction' && statusCode === 404) {
+    return 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.'
+  }
+
   if (category === 'authentication') return 'CAP authentication failed. Check the SAP CAP API credential.'
   if (category === 'authorization') return 'CAP authorization failed. This credential cannot access the CAP service.'
   if (category === 'server') return 'CAP service returned a server error. Try again or check the CAP service logs.'
@@ -664,7 +874,7 @@ function messageForStatus(statusCode: number, category: string, context: 'metada
   return 'CAP rejected the OData request. Check the OData options.'
 }
 
-function networkMessage(context: 'metadata' | 'odata' | 'read' | 'delete') {
+function networkMessage(context: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction') {
   if (context === 'metadata') {
     return 'Could not reach CAP metadata endpoint. Check Base URL and network access from n8n.'
   }

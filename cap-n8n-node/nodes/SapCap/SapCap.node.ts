@@ -13,10 +13,12 @@ import {
 import {
   buildCreateRequest,
   buildDeleteRequest,
+  buildActionFunctionRequest,
   buildQueryRequest,
   buildReadRequest,
   buildUpdateRequest,
   createSapCapRequestError,
+  isActionFunctionRequestBound,
   normalizeMetadataPath,
   parseJsonObjectParameter,
   resolveEntitySetName,
@@ -25,6 +27,7 @@ import {
 import {
   extractEntityKeyDescriptors,
   extractEntitySetOptions,
+  loadActionFunctionOptions,
   loadEntitySetOptions,
 } from './ODataMetadata'
 import {
@@ -34,7 +37,7 @@ import {
   toNodeOperationError,
 } from './ODataResponse'
 
-type SapCapOperation = 'query' | 'read' | 'create' | 'update' | 'delete'
+type SapCapOperation = 'query' | 'read' | 'create' | 'update' | 'delete' | 'actionFunction'
 
 export class SapCap implements INodeType {
   description: INodeTypeDescription = {
@@ -95,6 +98,12 @@ export class SapCap implements INodeType {
             description: 'Delete one CAP entity by key.',
             action: 'Delete a CAP entity',
           },
+          {
+            name: 'Action/Function',
+            value: 'actionFunction',
+            description: 'Invoke a CAP action or function using metadata or manual operation details.',
+            action: 'Invoke a CAP action or function',
+          },
         ],
         default: 'query',
         description: 'CAP OData operation to run.',
@@ -154,6 +163,110 @@ export class SapCap implements INodeType {
         displayOptions: {
           show: {
             entitySetSource: ['manual'],
+          },
+        },
+      },
+      {
+        displayName: 'Operation Source',
+        name: 'operationSource',
+        type: 'options',
+        options: [
+          {
+            name: 'From Metadata',
+            value: 'metadata',
+          },
+          {
+            name: 'Manual',
+            value: 'manual',
+          },
+        ],
+        default: 'metadata',
+        required: true,
+        description: 'Choose whether to load CAP actions/functions from metadata or enter operation details manually.',
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+          },
+        },
+      },
+      {
+        displayName: 'Action/Function',
+        name: 'actionFunction',
+        type: 'options',
+        default: '',
+        required: true,
+        placeholder: 'Select an action or function',
+        description: 'Loaded from $metadata as a combined list of CAP actions and functions.',
+        typeOptions: {
+          loadOptionsMethod: 'getActionFunctions',
+        },
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+            operationSource: ['metadata'],
+          },
+        },
+      },
+      {
+        displayName: 'Operation Kind',
+        name: 'actionFunctionKind',
+        type: 'options',
+        options: [
+          {
+            name: 'Action',
+            value: 'action',
+          },
+          {
+            name: 'Function',
+            value: 'function',
+          },
+        ],
+        default: 'action',
+        required: true,
+        description: 'Manual operation kind to invoke.',
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+            operationSource: ['manual'],
+          },
+        },
+      },
+      {
+        displayName: 'Operation Name',
+        name: 'actionFunctionName',
+        type: 'string',
+        default: '',
+        required: true,
+        placeholder: 'submitOrder',
+        description: 'Manual CAP operation name. Use a qualified name such as CatalogService.restock for bound operations when required.',
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+            operationSource: ['manual'],
+          },
+        },
+      },
+      {
+        displayName: 'Operation Binding',
+        name: 'actionFunctionBinding',
+        type: 'options',
+        options: [
+          {
+            name: 'Unbound',
+            value: 'unbound',
+          },
+          {
+            name: 'Bound to Entity',
+            value: 'bound',
+          },
+        ],
+        default: 'unbound',
+        required: true,
+        description: 'Whether the manual action/function is invoked at the service root or against a keyed entity.',
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+            operationSource: ['manual'],
           },
         },
       },
@@ -239,7 +352,7 @@ export class SapCap implements INodeType {
         description: 'Choose metadata-derived key parts or a manual OData key predicate.',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete'],
+            operation: ['read', 'update', 'delete', 'actionFunction'],
           },
         },
       },
@@ -253,7 +366,7 @@ export class SapCap implements INodeType {
         description: 'JSON object containing values for every key part from CAP metadata.',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete'],
+            operation: ['read', 'update', 'delete', 'actionFunction'],
             keyInputMode: ['metadata'],
           },
         },
@@ -268,7 +381,7 @@ export class SapCap implements INodeType {
         description: 'OData key predicate. Parentheses are optional; examples: ID=201 or ID=201,IsActiveEntity=true.',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete'],
+            operation: ['read', 'update', 'delete', 'actionFunction'],
             keyInputMode: ['manual'],
           },
         },
@@ -287,12 +400,27 @@ export class SapCap implements INodeType {
           },
         },
       },
+      {
+        displayName: 'Parameters (JSON)',
+        name: 'parameters',
+        type: 'json',
+        default: '{}',
+        required: true,
+        placeholder: '{ "book": 201, "quantity": 1 }',
+        description: 'Explicit JSON object sent as action parameters or encoded as function query parameters.',
+        displayOptions: {
+          show: {
+            operation: ['actionFunction'],
+          },
+        },
+      },
     ],
   }
 
   methods = {
     loadOptions: {
       getEntitySets: loadEntitySetOptions,
+      getActionFunctions: loadActionFunctionOptions,
     },
     credentialTest: {
       async sapCapApiCredentialTest(
@@ -350,10 +478,18 @@ export class SapCap implements INodeType {
           : await sapCapApiRequest(this, {
             ...request,
             responseFormat: 'json',
-            errorContext: operation === 'read' ? 'read' : 'odata',
+            errorContext: operation === 'read'
+              ? 'read'
+              : operation === 'actionFunction'
+                ? 'actionFunction'
+                : 'odata',
           })
 
-        returnData.push(...normalizeODataItems(operation, response, itemIndex))
+        returnData.push(...normalizeODataItems(
+          operation === 'actionFunction' ? 'read' : operation,
+          response,
+          itemIndex
+        ))
       } catch (err) {
         const safeError = classifySapCapError(err, { operation })
 
@@ -397,6 +533,27 @@ async function buildOperationRequest(
     })
   }
 
+  if (operation === 'actionFunction') {
+    const actionFunctionInput = {
+      servicePath,
+      operationSource: context.getNodeParameter('operationSource', itemIndex, 'metadata'),
+      operationDescriptor: context.getNodeParameter('actionFunction', itemIndex, ''),
+      operationKind: context.getNodeParameter('actionFunctionKind', itemIndex, 'action'),
+      operationName: context.getNodeParameter('actionFunctionName', itemIndex, ''),
+      operationBinding: context.getNodeParameter('actionFunctionBinding', itemIndex, 'unbound'),
+      entitySetName,
+      parameters: context.getNodeParameter('parameters', itemIndex),
+    }
+    const keyInput = isActionFunctionRequestBound(actionFunctionInput)
+      ? await resolveKeyInput(context, itemIndex, entitySetName)
+      : {}
+
+    return buildActionFunctionRequest({
+      ...actionFunctionInput,
+      ...keyInput,
+    })
+  }
+
   const keyInput = await resolveKeyInput(context, itemIndex, entitySetName)
 
   if (operation === 'read') {
@@ -416,10 +573,16 @@ async function buildOperationRequest(
     })
   }
 
-  return buildDeleteRequest({
-    servicePath,
-    entitySetName,
-    ...keyInput,
+  if (operation === 'delete') {
+    return buildDeleteRequest({
+      servicePath,
+      entitySetName,
+      ...keyInput,
+    })
+  }
+
+  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query, Read, Create, Update, Delete, or Action/Function.', {
+    category: 'validation',
   })
 }
 
@@ -498,11 +661,17 @@ function extractKeyFromPath(path: string, entitySetName: string) {
 }
 
 function resolveOperation(value: unknown): SapCapOperation {
-  if (value === 'query' || value === 'read' || value === 'create' || value === 'update' || value === 'delete') {
+  if (value === 'query' ||
+    value === 'read' ||
+    value === 'create' ||
+    value === 'update' ||
+    value === 'delete' ||
+    value === 'actionFunction'
+  ) {
     return value
   }
 
-  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query, Read, Create, Update, or Delete.', {
+  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query, Read, Create, Update, Delete, or Action/Function.', {
     category: 'validation',
   })
 }
