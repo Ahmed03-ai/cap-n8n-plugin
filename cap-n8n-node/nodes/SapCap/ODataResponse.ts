@@ -5,7 +5,7 @@ import {
   NodeOperationError,
 } from 'n8n-workflow'
 
-type ODataOperation = 'query' | 'read' | 'create' | 'update' | 'delete'
+type ODataOperation = 'query' | 'read' | 'create' | 'update' | 'delete' | 'actionFunction'
 
 export type SapCapErrorCategory =
   | 'authentication'
@@ -73,6 +73,10 @@ export function normalizeODataItems(
     return [toDeleteConfirmationItem(response, itemIndex)]
   }
 
+  if (operation === 'actionFunction') {
+    return [toActionFunctionItem(response, itemIndex)]
+  }
+
   return [toEntityItem(response, itemIndex)]
 }
 
@@ -89,6 +93,32 @@ function toEntityItem(response: unknown, itemIndex: number): INodeExecutionData 
 
   return {
     json: cleaned as IDataObject,
+    pairedItem: {
+      item: itemIndex,
+    },
+  }
+}
+
+function toActionFunctionItem(response: unknown, itemIndex: number): INodeExecutionData {
+  const cleaned = stripODataMetadata(response)
+
+  if (isPlainObject(cleaned)) {
+    if (Object.keys(cleaned).length === 0) {
+      throw createResponseShapeError()
+    }
+
+    return {
+      json: cleaned as IDataObject,
+      pairedItem: {
+        item: itemIndex,
+      },
+    }
+  }
+
+  return {
+    json: {
+      value: cleaned as IDataObject[keyof IDataObject],
+    },
     pairedItem: {
       item: itemIndex,
     },
@@ -267,6 +297,10 @@ function messageForCategory(
 
     if (operation === 'delete') {
       return 'CAP entity was not found for Delete. Check the selected entity set and key.'
+    }
+
+    if (operation === 'actionFunction') {
+      return 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.'
     }
 
     return 'CAP OData endpoint was not found. Check the service path and entity set.'

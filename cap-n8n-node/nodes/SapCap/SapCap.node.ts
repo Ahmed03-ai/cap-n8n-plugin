@@ -485,11 +485,7 @@ export class SapCap implements INodeType {
                 : 'odata',
           })
 
-        returnData.push(...normalizeODataItems(
-          operation === 'actionFunction' ? 'read' : operation,
-          response,
-          itemIndex
-        ))
+        returnData.push(...normalizeODataItems(operation, response, itemIndex))
       } catch (err) {
         const safeError = classifySapCapError(err, { operation })
 
