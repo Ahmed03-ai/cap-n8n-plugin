@@ -25,7 +25,7 @@ Implemented and demoable from the current repository:
 - Generated `demo-app/n8n` artifacts provide sanitized workflow JSON, a sidecar input schema, manifests, and generated CDS.
 - `cap-n8n validate` checks CDS annotations against generated workflow artifacts and returns sanitized text or JSON diagnostics.
 - CAP build validation uses the same workflow annotation validator.
-- The SAP CAP n8n community node package builds and includes the Phase 6 read-side slice: SAP CAP API credentials, Basic Auth, OAuth2 Client Credentials, `$metadata` Test Connection, dynamic entity-set discovery, Query mode, Read mode, OData response cleanup, and sanitized errors.
+- The SAP CAP n8n community node package builds and includes the Phase 7 node slice: SAP CAP API credentials, Basic Auth, OAuth2 Client Credentials, `$metadata` Test Connection, dynamic entity-set discovery, Query, Read, Create, Update, Delete, composite-key handling, Action/Function mode, JSON Body input, JSON Parameters input, OData response cleanup, and sanitized errors.
 
 ## What Not To Showcase As Finished Yet
 
@@ -35,7 +35,8 @@ Be precise about these limitations:
 - The visual n8n demo proves "CAP sent an annotated payload to n8n"; it does not show a rich downstream workflow.
 - Declarative cancellation is implemented, but there is no no-harness visual demo that seeds a long-running/stoppable n8n execution and shows cancellation in the n8n UI.
 - The SAP CAP n8n community node is not installed or mounted into the default Docker n8n container. Do not claim that the SAP CAP node appears automatically in the Docker n8n UI.
-- Create, Update, Delete, CAP actions/functions, and polling triggers are not implemented in the current n8n community node surface. They are deferred to the mutation/action phase.
+- Real installed n8n custom-node E2E in a live n8n editor/runtime remains Phase 8 release-readiness evidence. Phase 7 has deterministic built-node integration verification.
+- Polling triggers are not implemented in the current n8n community node surface.
 - To-one and to-many annotation input mappings are deferred. Scalar mappings are implemented.
 - The Phase 5 package CLI is implemented, but there is no deep `cds import --from n8n` command yet.
 - Live workflow import requires a reachable n8n API and credentials from CAP config/environment. Do not pass or display literal API keys.
@@ -292,7 +293,7 @@ PowerShell:
 ```powershell
 curl.exe -X POST "http://localhost:3000/odata/v4/admin/Books" `
   -H "Content-Type: application/json" `
-  -H "Authorization: Basic YWxpY2U6" `
+  -H "Authorization: Basic <base64-demo-basic-auth>" `
   -d '{"ID":1021,"IsActiveEntity":true,"title":"Manual n8n Trigger Book","author_ID":101,"genre_ID":"10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","price":25.50,"stock":100}'
 ```
 
@@ -301,7 +302,7 @@ Bash:
 ```bash
 curl -X POST "http://localhost:3000/odata/v4/admin/Books" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic YWxpY2U6" \
+  -H "Authorization: Basic <base64-demo-basic-auth>" \
   -d '{"ID":1021,"IsActiveEntity":true,"title":"Manual n8n Trigger Book","author_ID":101,"genre_ID":"10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","price":25.50,"stock":100}'
 ```
 
@@ -351,7 +352,7 @@ PowerShell:
 ```powershell
 curl.exe -X PATCH "http://localhost:3000/odata/v4/admin/Books(ID=1021,IsActiveEntity=true)" `
   -H "Content-Type: application/json" `
-  -H "Authorization: Basic YWxpY2U6" `
+  -H "Authorization: Basic <base64-demo-basic-auth>" `
   -d '{"stock":101}'
 ```
 
@@ -360,7 +361,7 @@ Bash:
 ```bash
 curl -X PATCH "http://localhost:3000/odata/v4/admin/Books(ID=1021,IsActiveEntity=true)" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Basic YWxpY2U6" \
+  -H "Authorization: Basic <base64-demo-basic-auth>" \
   -d '{"stock":101}'
 ```
 
@@ -448,7 +449,7 @@ Presenter wording:
 The cancellation feature is implemented and verified, but the current local visual fixture is not yet reviewer-friendly. The follow-up roadmap item is to add a no-harness visual cancellation showcase with a long-running n8n workflow and documented stop API configuration.
 ```
 
-## Step 9: Show Execution Tracking, Build Validation, And Non-Rollback Behavior
+## Step 9: Show Execution Tracking, Build Validation, Phase 7 Node Verification, And Non-Rollback Behavior
 
 Run the aggregate integration suite:
 
@@ -458,8 +459,8 @@ npm run test:integration
 
 Expected result:
 
-- The Phase 2, Phase 3, Phase 4, and Phase 5 integration tests pass.
-- The suite includes execution storage, dispatch retry, duplicate handling, query/paging, cancellation, annotation start, annotation cancel, demo annotation evidence, workflow import, generated CDS, direct validation, and CAP build validation.
+- The Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 integration tests pass.
+- The suite includes execution storage, dispatch retry, duplicate handling, query/paging, cancellation, annotation start, annotation cancel, demo annotation evidence, workflow import, generated CDS, direct validation, CAP build validation, SAP CAP node credentials, metadata discovery, Query, Read, Create, Update, Delete, Action/Function, composite keys, response cleanup, and sanitized errors.
 
 For a shorter Phase 5 check:
 
@@ -491,16 +492,20 @@ The integration tests use CAP, CDS models, SQLite, and fake HTTP webhook servers
 
 ## Step 10: Show The n8n Community Node Status Carefully
 
-The n8n node package is buildable:
+The n8n node package is buildable and has deterministic Phase 7 verification:
 
 ```bash
 npm run build --workspace n8n-nodes-sap-cap
+npx vitest run test/integration/n8n-node-read-operations.test.js test/integration/n8n-node-metadata-discovery.test.js test/integration/n8n-node-response-cleanup.test.js test/smoke/package-boundaries.test.js
+npm test
 ```
 
 Expected result:
 
 - `n8n-node build` succeeds.
 - The build may print the known Node `DEP0190` warning.
+- The focused integration and smoke suites pass.
+- `npm test` passes and proves `VERIFY-04` through the default local verification path.
 
 Current implemented code includes:
 
@@ -509,17 +514,62 @@ Current implemented code includes:
 - Dynamic entity-set discovery from CAP `$metadata`.
 - Query mode.
 - Read mode.
+- Create mode with one explicit Body (JSON) field.
+- Update mode with one explicit Body (JSON) field and metadata/manual key input.
+- Delete mode with metadata/manual key input, no request body, and no extra confirmation checkbox.
+- Composite-key handling through metadata-derived Key Parts JSON plus Manual Key Predicate fallback.
+- Combined Action/Function mode with metadata-backed operation choices, manual fallback, bound key input, and one explicit Parameters (JSON) field.
 - Plain n8n item output with OData metadata stripped.
 - Sanitized n8n-native errors for authentication, authorization, validation, not-found, server, network, configuration, and response-shape failures.
 
+If the local community node has been separately installed or mounted into live n8n, open an SAP CAP node and check that the operation selector visibly offers:
+
+- Query
+- Read
+- Create
+- Update
+- Delete
+- Action/Function
+
+Presenter checks for the visible node controls:
+
+- Create shows a single Body (JSON) field. Example:
+
+```json
+{
+  "title": "Workflow Demo Book",
+  "price": 19.99,
+  "stock": 25
+}
+```
+
+- Update shows key input plus a single Body (JSON) field. Example key: `ID=201,IsActiveEntity=true`. Example body:
+
+```json
+{
+  "price": 24.99
+}
+```
+
+- Read, Update, Delete, and bound Action/Function can use metadata-derived Key Parts JSON such as `{"ID":201,"IsActiveEntity":true}` or Manual Key Predicate fallback such as `ID=201,IsActiveEntity=true`.
+- Delete shows key input only. It sends no body, has no confirmation checkbox, returns one success confirmation, and reports not-found as a concise n8n-native error by default.
+- Action/Function shows metadata/manual operation selection and one Parameters (JSON) field. Example:
+
+```json
+{
+  "book": 201,
+  "quantity": 1
+}
+```
+
 But do not run a live n8n UI demo of the SAP CAP node from the default Docker setup unless you have separately installed or mounted the local community node into n8n. The repository's `docker-compose.yml` currently starts plain n8n with workflow fixtures; it does not install `cap-n8n-node` into that container.
 
-Do not claim Create, Update, Delete, CAP actions/functions, or polling trigger support from the current n8n node. Those modes are the next n8n-node slice.
+Do not present the default Docker container as real installed custom-node E2E evidence. That remains Phase 8 release-readiness work, where the local community node is mounted or installed into n8n and exercised through the live editor/runtime.
 
 Presenter wording:
 
 ```text
-The package builds and the read-side node slice is implemented: credentials, metadata discovery, Query, Read, cleanup, and safe errors. The default Docker n8n does not install the custom node yet, and mutation/action modes are still future work.
+The package builds and the Phase 7 node slice is implemented: credentials, metadata discovery, Query, Read, Create, Update, Delete, composite keys, Action/Function, cleanup, and safe errors. The default Docker n8n does not install the custom node, so real installed custom-node E2E remains Phase 8 evidence.
 ```
 
 ## Recommended Five-Minute Demo Script
@@ -536,7 +586,8 @@ Use this when time is short.
 8. Show the n8n Webhook request payload.
 9. Run the update command for book `1021`.
 10. Show the second n8n Webhook request payload.
-11. Run the Phase 5 or Phase 4 tests, or show the latest passing output for validation, cancellation, and non-rollback behavior.
+11. Run the Phase 7 focused node verification command, or show the latest passing output for `VERIFY-04`.
+12. Run the Phase 5 or Phase 4 tests, or show the latest passing output for validation, cancellation, and non-rollback behavior.
 
 ## Troubleshooting
 
@@ -555,10 +606,10 @@ Check:
 Use Basic auth:
 
 ```text
-Authorization: Basic YWxpY2U6
+Authorization: Basic <base64-demo-basic-auth>
 ```
 
-This is the local demo credential for user `alice` with an empty password.
+This placeholder represents the local demo user `alice` with an empty password. Generate the value locally when running curl; do not commit encoded credentials.
 
 ### CAP Create Fails With Validation
 
@@ -603,13 +654,16 @@ The presenter can claim:
 - Workflow import writes deterministic sanitized app-root artifacts.
 - `cap-n8n validate` and CAP build validation use generated workflow manifests and typed sidecar schemas.
 - Phase 5 integration tests cover local import, fake-live import, generated CDS, direct validation, CAP build validation, and sanitization gates.
-- Phase 6 integration tests cover SAP CAP credentials, OAuth2 Client Credentials, metadata discovery, Query, Read, OData response cleanup, and sanitized n8n errors.
+- Phase 6 and Phase 7 integration tests cover SAP CAP credentials, OAuth2 Client Credentials, metadata discovery, Query, Read, Create, Update, Delete, Action/Function, composite keys, OData response cleanup, and sanitized n8n errors.
+- The SAP CAP n8n node supports Create and Update through explicit Body JSON, Delete through explicit key input with no body, and Action/Function through explicit Parameters JSON.
+- Real installed custom-node E2E in live n8n remains separate Phase 8 evidence unless the local community node has been mounted or installed for the demo.
 
 The presenter should not claim yet:
 
 - To-one/to-many annotation mappings are implemented.
 - The SAP CAP n8n node is automatically installed in local Docker n8n.
-- The SAP CAP n8n node supports Create, Update, Delete, CAP actions/functions, or polling triggers.
+- The default Docker n8n container proves real installed SAP CAP custom-node E2E.
+- The SAP CAP n8n node supports polling triggers.
 - Declarative cancellation has a polished no-harness visual UI walkthrough.
 - Local n8n fixtures demonstrate a rich workflow beyond receiving a webhook.
 - A deep `cds import --from n8n` command exists.
