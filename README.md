@@ -59,6 +59,7 @@ Use this README as the entry point, then follow the focused Phase 8 docs for eac
 
 - [Manual Visual Showcase Guide](docs/manual-visual-showcase.md) - local CAP demo, local n8n webhook, annotation-driven starts, cancellation showcase, and presenter checklist.
 - [Local n8n Custom-Node E2E Runbook](docs/local-n8n-custom-node-e2e.md) - real n8n custom-node E2E with the local `SAP CAP` node installed in the isolated review profile.
+- [Cloud n8n Runbook](docs/cloud-n8n-runbook.md) - local CAP demo configured through `CDS_CONFIG` to send annotation webhooks to a reachable cloud n8n instance.
 - [SAP BTP Deployment Advisory Guide](docs/btp-deployment-guide.md) - Cloud Foundry and Kyma considerations for routing, credentials, connectivity, and secrets.
 - [Release Readiness Evidence](docs/release-readiness.md) - requirement, GitHub story, mockup, fixture, command, and manual evidence traceability.
 
@@ -69,7 +70,8 @@ Run paths are intentionally separate:
 - Local CAP demo and mock/test commands are automated and local-first.
 - `npm run review:local` is automated review evidence only.
 - Real n8n custom-node E2E and cancellation browser checks remain checklist evidence until a reviewer completes them. If they have not been run in the current review environment, record `manual UAT required`.
-- BTP/cloud guidance is advisory and does not claim Cloud Foundry, Kyma, or cloud n8n runtime validation.
+- Cloud n8n has a concrete local-CAP-to-cloud-n8n runbook, but runtime validation remains manual UAT until a reviewer completes it against a real cloud n8n instance.
+- BTP guidance is advisory and does not claim Cloud Foundry or Kyma runtime validation.
 
 ### 1. Baseline Verification
 

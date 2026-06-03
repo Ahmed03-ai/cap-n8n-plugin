@@ -93,6 +93,37 @@ describe('n8n mock runtime and profile configuration', () => {
     expect(config.apiKey).toBeUndefined()
   })
 
+  it('resolves env placeholders for webhook and cancellation credentials', () => {
+    const { resolveN8nConfig } = loadConfig()
+    const config = resolveN8nConfig({
+      kind: 'webhook',
+      credentials: {
+        baseUrl: '{env.N8N_CLOUD_BASE_URL}',
+        apiKey: '{env.N8N_CLOUD_API_KEY}'
+      },
+      cancel: {
+        supported: '{env.N8N_CANCEL_SUPPORTED}',
+        apiBaseUrl: '{env.N8N_CLOUD_API_BASE_URL}'
+      }
+    }, {
+      NODE_ENV: 'production',
+      N8N_CLOUD_BASE_URL: 'https://cloud-n8n.example',
+      N8N_CLOUD_API_KEY: 'cloud-api-key-value',
+      N8N_CANCEL_SUPPORTED: 'true',
+      N8N_CLOUD_API_BASE_URL: 'https://cloud-n8n.example/api'
+    })
+
+    expect(config).toMatchObject({
+      kind: 'webhook',
+      baseUrl: 'https://cloud-n8n.example',
+      apiKey: 'cloud-api-key-value',
+      cancel: {
+        supported: true,
+        apiBaseUrl: 'https://cloud-n8n.example/api'
+      }
+    })
+  })
+
   it('throws a sanitized baseUrl error for production webhook mode without credentials', () => {
     const { resolveN8nConfig } = loadConfig()
     const secretApiKey = 'secret-api-key-value'

@@ -12,6 +12,24 @@ function firstConfiguredValue(...values) {
   }
 }
 
+function resolveEnvPlaceholders(value, env = process.env) {
+  if (typeof value === 'string') {
+    const match = value.match(/^\{env\.([A-Za-z_][A-Za-z0-9_]*)\}$/)
+    if (match) return env[match[1]]
+    return value
+  }
+
+  if (Array.isArray(value)) return value.map((entry) => resolveEnvPlaceholders(entry, env))
+  if (!value || typeof value !== 'object') return value
+
+  const resolved = {}
+  for (const [key, child] of Object.entries(value)) {
+    const resolvedChild = resolveEnvPlaceholders(child, env)
+    if (resolvedChild !== undefined) resolved[key] = resolvedChild
+  }
+  return resolved
+}
+
 function createConfigError(message, details = {}) {
   const error = new Error(message)
   error.code = 'ERR_N8N_CONFIG'
@@ -148,29 +166,30 @@ function assertWebhookConfig(config) {
 }
 
 function resolveN8nConfig(options = {}, env = process.env) {
-  const credentials = options.credentials || {}
-  const duplicateOptions = options.duplicates || {}
+  const resolvedOptions = resolveEnvPlaceholders(options, env) || {}
+  const credentials = resolvedOptions.credentials || {}
+  const duplicateOptions = resolvedOptions.duplicates || {}
   const duplicateCredentials = credentials.duplicates || {}
-  const cancelOptions = options.cancel || options.cancellation || options.stop || {}
+  const cancelOptions = resolvedOptions.cancel || resolvedOptions.cancellation || resolvedOptions.stop || {}
   const cancelCredentials = credentials.cancel || credentials.cancellation || credentials.stop || {}
-  const configuredKind = normalizeKind(firstConfiguredValue(options.kind, options.mode))
-  const baseUrl = firstConfiguredValue(credentials.baseUrl, options.baseUrl)
-  const apiKey = firstConfiguredValue(credentials.apiKey, options.apiKey)
+  const configuredKind = normalizeKind(firstConfiguredValue(resolvedOptions.kind, resolvedOptions.mode))
+  const baseUrl = firstConfiguredValue(credentials.baseUrl, resolvedOptions.baseUrl)
+  const apiKey = firstConfiguredValue(credentials.apiKey, resolvedOptions.apiKey)
   const duplicatePolicy = normalizeDuplicatePolicy(firstConfiguredValue(
-    options.duplicatePolicy,
+    resolvedOptions.duplicatePolicy,
     credentials.duplicatePolicy,
     duplicateOptions.policy,
     duplicateCredentials.policy,
     DEFAULT_DUPLICATE_POLICY
   ))
   const timeoutMs = normalizeNonNegativeInteger(firstConfiguredValue(
-    options.timeoutMs,
+    resolvedOptions.timeoutMs,
     credentials.timeoutMs,
-    options.timeout,
+    resolvedOptions.timeout,
     credentials.timeout,
     DEFAULT_TIMEOUT_MS
   ), DEFAULT_TIMEOUT_MS)
-  const retry = normalizeRetry(options)
+  const retry = normalizeRetry(resolvedOptions)
   const cancelSupported = normalizeBoolean(firstConfiguredValue(
     cancelOptions.supported,
     cancelOptions.enabled,
@@ -183,7 +202,7 @@ function resolveN8nConfig(options = {}, env = process.env) {
     cancelCredentials.apiBaseUrl,
     cancelOptions.baseUrl,
     cancelCredentials.baseUrl,
-    options.apiBaseUrl,
+    resolvedOptions.apiBaseUrl,
     credentials.apiBaseUrl,
     cancelSupported ? baseUrl : undefined
   )
@@ -209,7 +228,7 @@ function resolveN8nConfig(options = {}, env = process.env) {
   if (baseUrl) config.baseUrl = baseUrl
   if (apiKey) config.apiKey = apiKey
   if (cancelApiBaseUrl) config.cancel.apiBaseUrl = cancelApiBaseUrl
-  if (options.mock) config.mock = options.mock
+  if (resolvedOptions.mock) config.mock = resolvedOptions.mock
 
   return assertWebhookConfig(config)
 }
@@ -217,5 +236,6 @@ function resolveN8nConfig(options = {}, env = process.env) {
 module.exports = {
   assertWebhookConfig,
   normalizeDuplicatePolicy,
+  resolveEnvPlaceholders,
   resolveN8nConfig
 }

@@ -11,6 +11,7 @@ const btpGuidePath = resolve(repoRoot, 'docs', 'btp-deployment-guide.md')
 const releaseReadinessPath = resolve(repoRoot, 'docs', 'release-readiness.md')
 const manualShowcasePath = resolve(repoRoot, 'docs', 'manual-visual-showcase.md')
 const localCustomNodePath = resolve(repoRoot, 'docs', 'local-n8n-custom-node-e2e.md')
+const cloudN8nRunbookPath = resolve(repoRoot, 'docs', 'cloud-n8n-runbook.md')
 const workflowFixturePath = resolve(repoRoot, 'test-workflows', 'workflows.json')
 const cancellationFixturePath = resolve(repoRoot, 'test-workflows', 'cancellation-workflows.json')
 
@@ -86,6 +87,7 @@ const envKeys = [
   'N8N_REVIEW_USER',
   'N8N_REVIEW_PASSWORD',
   'N8N_CLOUD_BASE_URL',
+  'N8N_CLOUD_API_KEY',
   'BTP_CAP_BASE_URL',
   'BTP_N8N_BASE_URL',
   'BTP_DESTINATION_NAME',
@@ -182,6 +184,7 @@ describe('release readiness smoke gates', () => {
     for (const doc of [
       'docs/manual-visual-showcase.md',
       'docs/local-n8n-custom-node-e2e.md',
+      'docs/cloud-n8n-runbook.md',
       'docs/btp-deployment-guide.md',
       'docs/release-readiness.md',
     ]) {
@@ -205,7 +208,7 @@ describe('release readiness smoke gates', () => {
       expect(envExample, `.env.example must include ${key}`).toContain(`${key}=`)
     }
 
-    for (const key of ['N8N_API_KEY', 'SAP_CAP_PASSWORD', 'N8N_REVIEW_USER', 'N8N_REVIEW_PASSWORD', 'BTP_DESTINATION_NAME']) {
+    for (const key of ['N8N_API_KEY', 'SAP_CAP_PASSWORD', 'N8N_REVIEW_USER', 'N8N_REVIEW_PASSWORD', 'N8N_CLOUD_API_KEY', 'BTP_DESTINATION_NAME']) {
       const value = envValue(envExample, key)
       expect(value, `${key} must use an empty or angle-bracket placeholder`).toMatch(/^$|^<[^>\r\n]+>$/)
     }
@@ -217,6 +220,8 @@ describe('release readiness smoke gates', () => {
     expect(envValue(envExample, 'SAP_CAP_BASE_URL')).toBe('http://host.docker.internal:3000')
     expect(envValue(envExample, 'SAP_CAP_USERNAME')).toBe('alice')
     expect(envValue(envExample, 'N8N_CLOUD_BASE_URL')).toBe('https://<your-n8n-host>')
+    expect(envExample).toContain('credentials.baseUrl')
+    expect(envExample).toContain('credentials.apiKey')
     expect(envValue(envExample, 'BTP_CAP_BASE_URL')).toBe('https://<cap-app-route>')
     expect(envValue(envExample, 'BTP_N8N_BASE_URL')).toBe('https://<n8n-route>')
   })
@@ -237,6 +242,7 @@ describe('release readiness smoke gates', () => {
     expect(releaseReadiness).toContain('test-workflows/workflows.json')
     expect(releaseReadiness).toContain('test-workflows/cancellation-workflows.json')
     expect(releaseReadiness).toContain('docs/local-n8n-custom-node-e2e.md')
+    expect(releaseReadiness).toContain('docs/cloud-n8n-runbook.md')
     expect(releaseReadiness).toContain('docs/manual-visual-showcase.md')
     expect(releaseReadiness).toMatch(/Issue #(?:19|20|21|22|23|24|25|26|27)/)
     expect(releaseReadiness).toContain('GitHub project/user-story statuses move only after evidence is documented')
@@ -262,6 +268,24 @@ describe('release readiness smoke gates', () => {
     }
 
     expect(guide).not.toMatch(/Phase 8 (?:provides|adds|ships).*(?:mta\.yaml|Helm chart|Kyma descriptor|production Dockerfile)/i)
+  })
+
+  it('documents a concrete local CAP to cloud n8n run path', () => {
+    const runbook = readSource(cloudN8nRunbookPath)
+
+    expect(runbook).toContain('manual UAT')
+    expect(runbook).toContain('CDS_CONFIG')
+    expect(runbook).toContain('N8N_CLOUD_BASE_URL')
+    expect(runbook).toContain('N8N_CLOUD_API_KEY')
+    expect(runbook).toContain('credentials.baseUrl')
+    expect(runbook).toContain('credentials.apiKey')
+    expect(runbook).toContain('resolveN8nConfig')
+    expect(runbook).toContain('npm run cap:serve')
+    expect(runbook).toContain('webhook-test/cap-test-trigger')
+    expect(runbook).toContain('http://localhost:3000/odata/v4/admin/Books')
+    expect(runbook).toContain('Cloud n8n Trigger Book')
+    expect(runbook).toContain('Remove-Item Env:CDS_CONFIG')
+    expect(runbook).toContain('unset CDS_CONFIG')
   })
 
   it('keeps docs, env examples, cancellation fixtures, and review scripts free of real-looking secrets', () => {
@@ -310,6 +334,7 @@ describe('release readiness smoke gates', () => {
     const manual = readSource(manualShowcasePath)
 
     expect(manual).toContain('docs/local-n8n-custom-node-e2e.md')
+    expect(manual).toContain('docs/cloud-n8n-runbook.md')
     expect(manual).toContain('docs/btp-deployment-guide.md')
     expect(manual).toContain('docs/release-readiness.md')
     expect(readSource(localCustomNodePath)).toContain('manual UAT required')

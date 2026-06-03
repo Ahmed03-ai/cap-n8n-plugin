@@ -5,6 +5,7 @@ This guide is for someone who has not worked in this codebase before and needs t
 Related Phase 8 runbooks and evidence:
 
 - `docs/local-n8n-custom-node-e2e.md` - installed local SAP CAP custom-node E2E in a real n8n editor/runtime.
+- `docs/cloud-n8n-runbook.md` - local CAP demo configured against a reachable cloud n8n webhook.
 - `docs/btp-deployment-guide.md` - advisory Cloud Foundry and Kyma deployment considerations.
 - `docs/release-readiness.md` - requirement, GitHub story, mockup, fixture, command, and manual evidence traceability.
 

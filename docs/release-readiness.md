@@ -33,7 +33,7 @@ Current warning classification:
 | Requirement | Evidence state | Implementation and evidence |
 |-------------|----------------|-----------------------------|
 | DOCS-01 | automated verified | `README.md`, `docs/manual-visual-showcase.md`, `docker-compose.yml`, `test-workflows/workflows.json`, and `npm run review:local` document and check the local CAP plus local n8n path. |
-| DOCS-02 | manual UAT required | `README.md`, `.env.example`, and `docs/btp-deployment-guide.md` document cloud n8n placeholders and connectivity decisions; no cloud n8n runtime validation is claimed. |
+| DOCS-02 | manual UAT required | `README.md`, `.env.example`, and `docs/cloud-n8n-runbook.md` document how local CAP maps `N8N_CLOUD_BASE_URL` and `N8N_CLOUD_API_KEY` into `cds.requires.n8n.credentials`; no cloud n8n runtime validation is claimed until a reviewer runs the checklist. |
 | DOCS-03 | manual UAT required | `docker-compose.n8n-node.yml`, `scripts/prepare-n8n-custom-node.js`, and `docs/local-n8n-custom-node-e2e.md` provide the real installed custom-node runbook. Browser execution remains manual UAT until recorded. |
 | DOCS-04 | automated verified | `.env.example` covers CAP demo/mock, local n8n webhook, real n8n custom-node E2E, cancellation stop API, cloud n8n, and BTP advisory placeholders. |
 | DOCS-05 | manual UAT required | `docs/btp-deployment-guide.md` covers Cloud Foundry and Kyma advisory considerations, with no runtime validation claim. |
@@ -47,7 +47,7 @@ Current warning classification:
 
 | Phase 8 success criterion | Evidence state | Evidence |
 |---------------------------|----------------|----------|
-| Run CAP demo with local n8n, cloud n8n, mock mode, and n8n node against CAP | manual UAT required | README run paths plus `.env.example`; cloud and real-node browser paths still require manual evidence. |
+| Run CAP demo with local n8n, cloud n8n, mock mode, and n8n node against CAP | manual UAT required | README run paths plus `.env.example`; `docs/cloud-n8n-runbook.md` makes the cloud n8n path followable, while cloud and real-node browser paths still require manual evidence. |
 | Configure supported environment variables safely | automated verified | `.env.example` and smoke tests check required groups and placeholder-only values. |
 | Follow SAP BTP guidance for credentials and connectivity | manual UAT required | `docs/btp-deployment-guide.md`; no Cloud Foundry or Kyma runtime validation. |
 | Trace n8n mockups and fixtures to user stories | automated verified | DOCS-06 mapping below. |
@@ -72,7 +72,7 @@ Current warning classification:
 | #26 | manual UAT required | Action/Function browser proof is in the real custom-node E2E checklist. |
 | #27 | manual UAT required | Composite-key behavior is deterministic Phase 7 evidence and included in real E2E manual checks. |
 | #29 | manual UAT required | BTP deployment guidance is advisory in `docs/btp-deployment-guide.md`; no runtime validation is claimed. |
-| #30 | manual UAT required | Hybrid local/cloud guidance is documented through `.env.example`, README, and BTP guide; cloud runtime proof remains open. |
+| #30 | manual UAT required | Hybrid local/cloud guidance is documented through `.env.example`, README, `docs/cloud-n8n-runbook.md`, and BTP guide; cloud runtime proof remains open. |
 
 ## DOCS-06 n8n Mockup and Story Mapping
 
@@ -96,7 +96,7 @@ Record browser/manual evidence here or in project tracking before moving related
 |--------------|----------------|----------------|
 | Real custom-node E2E | manual UAT required | n8n URL, SAP CAP node visible, credential Test Connection result, metadata options, Query, Read, Create, Update, Delete, Action/Function, cleanup. |
 | Cancellation showcase | manual UAT required | `CAP n8n Cancellation Test`, visible waiting/running execution, CAP/plugin execution ID, n8n execution ID, `n8n.cancel(executionId)` result, stopped/cancelled browser state, cleanup. |
-| Cloud n8n path | manual UAT required | CAP can reach cloud n8n webhook; n8n can reach CAP OData URL; secrets supplied by runtime config only. |
+| Cloud n8n path | manual UAT required | Follow `docs/cloud-n8n-runbook.md`: local CAP resolves `CDS_CONFIG` to cloud n8n `credentials.baseUrl` and `credentials.apiKey`, then cloud n8n receives the CAP create/update webhook. |
 | Cloud Foundry/Kyma deployment | manual UAT required | Target route, auth mode, service binding or secret store, destination/connectivity decision, runtime start evidence, rollback/cleanup notes. |
 
 When a reviewer completes one of these rows, update the state to `browser/manual verified` and attach or reference the local evidence without committing secrets.
