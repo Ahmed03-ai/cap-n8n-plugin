@@ -27,6 +27,7 @@ Run these from the repository root unless noted otherwise.
 ```bash
 npm run build
 npm run cap:compile
+npm run review:local
 npm run smoke
 npm run test:integration
 npm test
@@ -42,6 +43,7 @@ What they do:
 
 - `npm run build` - builds workspace packages that define a build script.
 - `npm run cap:compile` - compiles the CAP demo app models with repo-local CAP tooling.
+- `npm run review:local` - runs the deterministic automated release-readiness command. It covers tests, workflow annotation validation, CAP compile with generated workflow artifacts, and warning classification. It does not run browser/manual n8n UAT.
 - `npm run smoke` - builds the n8n node package and verifies package boundaries.
 - `npm run test:integration` - runs CAP plugin integration tests without Docker n8n.
 - `npm test` - runs smoke plus integration tests.
@@ -53,7 +55,21 @@ What they do:
 
 ## Manual Testing
 
-For a presenter-oriented walkthrough, see [Manual Visual Showcase Guide](docs/manual-visual-showcase.md). That guide explains how to demo the implemented CAP plugin functionality with n8n and the demo Fiori app, and it calls out which pieces are implemented but not yet polished enough for a no-harness visual showcase.
+Use this README as the entry point, then follow the focused Phase 8 docs for each run path:
+
+- [Manual Visual Showcase Guide](docs/manual-visual-showcase.md) - local CAP demo, local n8n webhook, annotation-driven starts, cancellation showcase, and presenter checklist.
+- [Local n8n Custom-Node E2E Runbook](docs/local-n8n-custom-node-e2e.md) - real n8n custom-node E2E with the local `SAP CAP` node installed in the isolated review profile.
+- [SAP BTP Deployment Advisory Guide](docs/btp-deployment-guide.md) - Cloud Foundry and Kyma considerations for routing, credentials, connectivity, and secrets.
+- [Release Readiness Evidence](docs/release-readiness.md) - requirement, GitHub story, mockup, fixture, command, and manual evidence traceability.
+
+Configuration starts from the root [.env.example](.env.example). It is grouped by run path: CAP demo/mock, local n8n webhook, real n8n custom-node E2E, cancellation stop API, cloud n8n, and BTP advisory placeholders. Copy values into your shell or ignored local environment files only; do not commit real API keys, Basic auth headers, OAuth client secrets, n8n owner/login values, or production tenant metadata.
+
+Run paths are intentionally separate:
+
+- Local CAP demo and mock/test commands are automated and local-first.
+- `npm run review:local` is automated review evidence only.
+- Real n8n custom-node E2E and cancellation browser checks remain checklist evidence until a reviewer completes them. If they have not been run in the current review environment, record `manual UAT required`.
+- BTP/cloud guidance is advisory and does not claim Cloud Foundry, Kyma, or cloud n8n runtime validation.
 
 ### 1. Baseline Verification
 

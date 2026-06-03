@@ -2,6 +2,12 @@
 
 This guide is for someone who has not worked in this codebase before and needs to demonstrate the implemented functionality manually. It is written as a presenter runbook: what to open, what to click, what command to run, what should appear on screen, and what not to claim yet.
 
+Related Phase 8 runbooks and evidence:
+
+- `docs/local-n8n-custom-node-e2e.md` - installed local SAP CAP custom-node E2E in a real n8n editor/runtime.
+- `docs/btp-deployment-guide.md` - advisory Cloud Foundry and Kyma deployment considerations.
+- `docs/release-readiness.md` - requirement, GitHub story, mockup, fixture, command, and manual evidence traceability.
+
 The strongest current visual showcase is:
 
 1. Open n8n and put the imported Webhook workflow into test/listening mode.
@@ -194,7 +200,7 @@ annotate AdminService.Books with @n8n.workflow.cancel: {
 What this proves:
 
 - Delete cancellation is declared in CDS.
-- The visual cancellation fixture is not yet polished enough for a no-harness demo. Use the integration test evidence for cancellation until the later showcase fixture exists.
+- The browser-first cancellation fixture and runner now live in `test-workflows/cancellation-workflows.json` and `scripts/cancellation-showcase.js`. Use Step 8 when cancellation evidence is part of the review, and record `manual UAT required` if the browser path has not been run in the current environment.
 
 ## Step 4: Show The Phase 5 Workflow Artifacts And Validator
 
