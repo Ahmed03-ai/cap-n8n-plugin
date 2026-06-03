@@ -30,6 +30,25 @@ const metadataXml = `<?xml version="1.0" encoding="utf-8"?>
   </edmx:DataServices>
 </edmx:Edmx>`
 
+const metadataWithCompositeKeys = `<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <edm:Schema Namespace="AdminService" xmlns:edm="http://docs.oasis-open.org/odata/ns/edm">
+      <edm:EntityType Name="BookDraft">
+        <edm:Key>
+          <edm:PropertyRef Name="ID" />
+          <edm:PropertyRef Name="IsActiveEntity" />
+        </edm:Key>
+        <edm:Property Name="ID" Type="Edm.Int32" Nullable="false" />
+        <edm:Property Name="IsActiveEntity" Type="Edm.Boolean" Nullable="false" />
+      </edm:EntityType>
+      <edm:EntityContainer Name="EntityContainer">
+        <edm:EntitySet Name="BookDrafts" EntityType="AdminService.BookDraft" />
+      </edm:EntityContainer>
+    </edm:Schema>
+  </edmx:DataServices>
+</edmx:Edmx>`
+
 let servers = []
 
 async function importDistModule(relativePath) {
@@ -684,6 +703,194 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  it('executes Create, Update, and Delete through the SAP CAP node', async () => {
+    const server = await createCapServer((request) => {
+      const requestBody = request.body ? JSON.parse(request.body) : undefined
+
+      if (request.method === 'POST') {
+        return {
+          statusCode: 201,
+          body: JSON.stringify({
+            '@odata.context': '$metadata#Books/$entity',
+            ID: 301,
+            title: requestBody.title,
+            createdBy: 'cap-server',
+          }),
+        }
+      }
+
+      if (request.method === 'PATCH') {
+        return {
+          body: JSON.stringify({
+            '@odata.context': '$metadata#Books/$entity',
+            ID: 201,
+            price: requestBody.price,
+            modifiedAt: '2026-06-03T17:00:00Z',
+          }),
+        }
+      }
+
+      return {
+        statusCode: 204,
+        body: '',
+      }
+    })
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'create',
+        body: JSON.stringify({
+          title: 'Phase 7 Created Book',
+        }),
+      }),
+      defaultParameters({
+        operation: 'update',
+        keyPredicate: 'ID=201',
+        body: JSON.stringify({
+          price: 24.99,
+        }),
+      }),
+      defaultParameters({
+        operation: 'delete',
+        keyPredicate: 'ID=202',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+    })
+
+    expect(server.requests).toHaveLength(3)
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/odata/v4/admin/Books',
+      body: JSON.stringify({
+        title: 'Phase 7 Created Book',
+      }),
+    })
+    expect(server.requests[0].headers.prefer).toBe('return=representation')
+    expect(server.requests[1]).toMatchObject({
+      method: 'PATCH',
+      url: '/odata/v4/admin/Books(ID=201)',
+      body: JSON.stringify({
+        price: 24.99,
+      }),
+    })
+    expect(server.requests[1].headers.prefer).toBe('return=representation')
+    expect(server.requests[2]).toMatchObject({
+      method: 'DELETE',
+      url: '/odata/v4/admin/Books(ID=202)',
+      body: '',
+    })
+    expect(server.requests[2].headers['content-type']).toBeUndefined()
+    expect(result[0]).toEqual([
+      {
+        json: {
+          ID: 301,
+          title: 'Phase 7 Created Book',
+          createdBy: 'cap-server',
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          ID: 201,
+          price: 24.99,
+          modifiedAt: '2026-06-03T17:00:00Z',
+        },
+        pairedItem: { item: 1 },
+      },
+      {
+        json: {
+          deleted: true,
+          entitySet: 'Books',
+          key: '(ID=202)',
+        },
+        pairedItem: { item: 2 },
+      },
+    ])
+  })
+
+  it('uses metadata-derived key parts for Update and Delete while preserving manual fallback', async () => {
+    const server = await createCapServer((request) => {
+      if (request.url === '/odata/v4/admin/$metadata') {
+        return {
+          contentType: 'application/xml',
+          body: metadataWithCompositeKeys,
+        }
+      }
+
+      if (request.method === 'PATCH') {
+        return {
+          body: JSON.stringify({
+            ID: 201,
+            IsActiveEntity: true,
+            price: 29.99,
+          }),
+        }
+      }
+
+      return {
+        statusCode: 204,
+        body: '',
+      }
+    })
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'update',
+        entitySet: 'BookDrafts',
+        keyInputMode: 'metadata',
+        keyParts: JSON.stringify({
+          ID: 201,
+          IsActiveEntity: true,
+        }),
+        body: JSON.stringify({
+          price: 29.99,
+        }),
+      }),
+      defaultParameters({
+        operation: 'delete',
+        entitySet: 'BookDrafts',
+        keyInputMode: 'manual',
+        keyPredicate: 'ID=202,IsActiveEntity=true',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+    })
+
+    expect(server.requests).toHaveLength(3)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/admin/$metadata',
+    })
+    expect(server.requests[1]).toMatchObject({
+      method: 'PATCH',
+      url: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+    })
+    expect(server.requests[2]).toMatchObject({
+      method: 'DELETE',
+      url: '/odata/v4/admin/BookDrafts(ID=202,IsActiveEntity=true)',
+      body: '',
+    })
+    expect(result[0]).toEqual([
+      {
+        json: {
+          ID: 201,
+          IsActiveEntity: true,
+          price: 29.99,
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          deleted: true,
+          entitySet: 'BookDrafts',
+          key: '(ID=202,IsActiveEntity=true)',
+        },
+        pairedItem: { item: 1 },
+      },
+    ])
+  })
+
   it('rejects Read key predicates with URL boundary characters before sending CAP requests', async () => {
     const server = await createCapServer(() => ({
       statusCode: 500,
@@ -963,19 +1170,13 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
-  it('rejects deferred mutation/action/trigger operations without sending CAP requests', async () => {
+  it('rejects deferred action/trigger operations without sending CAP requests', async () => {
     const server = await createCapServer(() => ({
       statusCode: 500,
       body: JSON.stringify({ error: 'should not be reached' }),
     }))
 
     const result = await executeSapCap([
-      defaultParameters({
-        operation: 'create',
-      }),
-      defaultParameters({
-        operation: 'delete',
-      }),
       defaultParameters({
         operation: 'action',
       }),
@@ -1002,20 +1203,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
           category: 'validation',
         },
         pairedItem: { item: 1 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 2 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 3 },
       },
     ])
   })
@@ -1125,30 +1312,37 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
-  it('keeps built node metadata and runtime source inside Phase 6 read-only scope', async () => {
+  it('keeps built node metadata and runtime source inside Phase 7 CRUD scope', async () => {
     const SapCap = await importSapCapNode()
     const node = new SapCap()
     const propertyNames = node.description.properties.map((property) => property.name)
     const operation = node.description.properties.find((property) => property.name === 'operation')
     const operationValues = operation.options.map((option) => option.value)
 
-    expect(operationValues).toEqual(['query', 'read'])
+    expect(operationValues).toEqual(['query', 'read', 'create', 'update', 'delete'])
     expect(operationValues).not.toEqual(expect.arrayContaining([
-      'create',
-      'update',
-      'delete',
       'action',
       'function',
       'trigger',
     ]))
-    expect(propertyNames).not.toEqual(expect.arrayContaining([
+    expect(propertyNames).toEqual(expect.arrayContaining([
+      'operation',
       'body',
+      'keyInputMode',
+      'keyParts',
+      'keyPredicate',
+    ]))
+    expect(propertyNames).not.toEqual(expect.arrayContaining([
       'rawResponse',
       'rawODataResponse',
       'pollInterval',
       'actionName',
       'functionName',
       'entityKey',
+      'deleteConfirmation',
+      'confirmDelete',
+      'entityProperty',
+      'entityProperties',
     ]))
 
     const runtimeSource = [
@@ -1164,6 +1358,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(runtimeSource).not.toContain(fakeResponseBody)
     expect(runtimeSource).not.toMatch(/returnFullResponse:\s*false/)
     expect(runtimeSource).not.toMatch(/raw(?:OData)?Response/i)
-    expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(create|update|delete|action|function|trigger)/i)
+    expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(action|function|trigger)/i)
   })
 })

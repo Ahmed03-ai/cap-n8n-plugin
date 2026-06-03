@@ -73,7 +73,7 @@ describe('package boundaries', () => {
     expect(credentialModules.some(hasFunctionExport)).toBe(true)
   })
 
-  it('exposes SAP CAP credentials and Phase 6 Query/Read operation metadata', async () => {
+  it('exposes SAP CAP credentials and Phase 7 CRUD operation metadata', async () => {
     const [nodeModule] = await importManifestModules(['dist/nodes/SapCap/SapCap.node.js'])
     const [credentialModule] = await importManifestModules(['dist/credentials/SapCapApi.credentials.js'])
     const SapCap = exportedConstructor(nodeModule, 'SapCap')
@@ -105,11 +105,17 @@ describe('package boundaries', () => {
       'select',
       'top',
       'skip',
+      'keyInputMode',
+      'keyParts',
       'keyPredicate',
+      'body',
     ])
     expect(operationValues).toEqual([
       'query',
       'read',
+      'create',
+      'update',
+      'delete',
     ])
     expect(operation.options).toEqual([
       expect.objectContaining({
@@ -123,6 +129,24 @@ describe('package boundaries', () => {
         value: 'read',
         description: 'Retrieve one CAP entity by key predicate.',
         action: 'Read a CAP entity',
+      }),
+      expect.objectContaining({
+        name: 'Create',
+        value: 'create',
+        description: 'Create one CAP entity from an explicit JSON Body.',
+        action: 'Create a CAP entity',
+      }),
+      expect.objectContaining({
+        name: 'Update',
+        value: 'update',
+        description: 'Patch one CAP entity by key using an explicit JSON Body.',
+        action: 'Update a CAP entity',
+      }),
+      expect.objectContaining({
+        name: 'Delete',
+        value: 'delete',
+        description: 'Delete one CAP entity by key.',
+        action: 'Delete a CAP entity',
       }),
     ])
     expect(propertyByName(node.description.properties, 'servicePath')).toMatchObject({
@@ -178,13 +202,48 @@ describe('package boundaries', () => {
       placeholder: 'ID=201,IsActiveEntity=true',
       displayOptions: {
         show: {
-          operation: ['read'],
+          operation: ['read', 'update', 'delete'],
+          keyInputMode: ['manual'],
         },
       },
     })
-    expect(propertyByName(node.description.properties, 'body')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'keyInputMode')).toMatchObject({
+      default: 'manual',
+      options: [
+        { name: 'Metadata Key Parts', value: 'metadata' },
+        { name: 'Manual Key Predicate', value: 'manual' },
+      ],
+      displayOptions: {
+        show: {
+          operation: ['read', 'update', 'delete'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'keyParts')).toMatchObject({
+      displayName: 'Key Parts (JSON)',
+      type: 'json',
+      displayOptions: {
+        show: {
+          operation: ['read', 'update', 'delete'],
+          keyInputMode: ['metadata'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'body')).toMatchObject({
+      displayName: 'Body (JSON)',
+      type: 'json',
+      displayOptions: {
+        show: {
+          operation: ['create', 'update'],
+        },
+      },
+    })
     expect(propertyByName(node.description.properties, 'entityKey')).toBeUndefined()
-    expect(operationValues).not.toEqual(expect.arrayContaining(['create', 'update', 'delete', 'action', 'function', 'trigger']))
+    expect(propertyByName(node.description.properties, 'deleteConfirmation')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'confirmDelete')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'entityProperty')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'entityProperties')).toBeUndefined()
+    expect(operationValues).not.toEqual(expect.arrayContaining(['action', 'function', 'trigger']))
     expect(credentialFields).toEqual(expect.arrayContaining([
       'baseUrl',
       'metadataPath',
