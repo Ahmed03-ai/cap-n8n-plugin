@@ -144,7 +144,21 @@ Plans:
   4. `cds build` reports clear errors for missing inputs and type mismatches in workflow trigger annotations.
   5. `cds build` reports warnings for extra inputs or untyped workflow references without blocking incremental adoption.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md - Create workflow artifact contract, sidecar schema, sanitizer, generated CDS, and demo app artifacts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 05-02-PLAN.md - Add package CLI local/live import with npm wrappers and secret-safe selection behavior.
+- [ ] 05-03-PLAN.md - Add shared annotation validator and CAP build integration for typed workflow mappings.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 05-04-PLAN.md - Wire direct CLI validation and run aggregate Phase 5 integration/source-gate verification.
 
 ### Phase 6: n8n Credentials, Metadata Discovery, and Read Operations
 
