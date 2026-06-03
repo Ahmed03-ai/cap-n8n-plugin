@@ -73,7 +73,7 @@ describe('package boundaries', () => {
     expect(credentialModules.some(hasFunctionExport)).toBe(true)
   })
 
-  it('exposes SAP CAP credentials and CRUD operation metadata', async () => {
+  it('exposes SAP CAP credentials and Phase 6 Query/Read operation metadata', async () => {
     const [nodeModule] = await importManifestModules(['dist/nodes/SapCap/SapCap.node.js'])
     const [credentialModule] = await importManifestModules(['dist/credentials/SapCapApi.credentials.js'])
     const SapCap = exportedConstructor(nodeModule, 'SapCap')
@@ -82,24 +82,101 @@ describe('package boundaries', () => {
     const credential = new SapCapApi()
     const operation = propertyByName(node.description.properties, 'operation')
     const operationValues = operation.options.map((option) => option.value)
+    const propertyNames = node.description.properties.map((property) => property.name)
     const credentialFields = credential.properties.map((property) => property.name)
 
+    expect(node.methods.loadOptions.getEntitySets).toEqual(expect.any(Function))
+    expect(propertyNames).toEqual([
+      'operation',
+      'servicePath',
+      'entitySetSource',
+      'entitySet',
+      'entitySetManual',
+      'filter',
+      'orderBy',
+      'select',
+      'top',
+      'skip',
+      'keyPredicate',
+    ])
     expect(operationValues).toEqual([
-      'create',
-      'delete',
       'query',
       'read',
-      'update',
+    ])
+    expect(operation.options).toEqual([
+      expect.objectContaining({
+        name: 'Query',
+        value: 'query',
+        description: 'Retrieve a filtered, sorted, or paged collection of CAP entities.',
+        action: 'Query CAP entities',
+      }),
+      expect.objectContaining({
+        name: 'Read',
+        value: 'read',
+        description: 'Retrieve one CAP entity by key predicate.',
+        action: 'Read a CAP entity',
+      }),
     ])
     expect(propertyByName(node.description.properties, 'servicePath')).toMatchObject({
       default: '/odata/v4/admin',
     })
+    expect(propertyByName(node.description.properties, 'entitySetSource')).toMatchObject({
+      default: 'metadata',
+      options: [
+        { name: 'From Metadata', value: 'metadata' },
+        { name: 'Manual', value: 'manual' },
+      ],
+    })
     expect(propertyByName(node.description.properties, 'entitySet')).toMatchObject({
+      type: 'options',
+      typeOptions: {
+        loadOptionsMethod: 'getEntitySets',
+      },
+      displayOptions: {
+        show: {
+          entitySetSource: ['metadata'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'entitySetManual')).toMatchObject({
+      displayName: 'Entity Set Name',
       placeholder: 'Books',
+      displayOptions: {
+        show: {
+          entitySetSource: ['manual'],
+        },
+      },
     })
-    expect(propertyByName(node.description.properties, 'entityKey')).toMatchObject({
+    expect(propertyByName(node.description.properties, 'filter')).toMatchObject({
+      displayName: 'Filter',
+      placeholder: "title eq 'Dune'",
+    })
+    expect(propertyByName(node.description.properties, 'orderBy')).toMatchObject({
+      displayName: 'Order By',
+      placeholder: 'title asc, stock desc',
+    })
+    expect(propertyByName(node.description.properties, 'select')).toMatchObject({
+      displayName: 'Select Fields',
+      placeholder: 'ID,title,stock',
+    })
+    expect(propertyByName(node.description.properties, 'top')).toMatchObject({
+      default: 100,
+    })
+    expect(propertyByName(node.description.properties, 'skip')).toMatchObject({
+      default: 0,
+    })
+    expect(propertyByName(node.description.properties, 'keyPredicate')).toMatchObject({
+      displayName: 'Key Predicate',
       placeholder: 'ID=201,IsActiveEntity=true',
+      displayOptions: {
+        show: {
+          operation: ['read'],
+        },
+      },
     })
+    expect(propertyByName(node.description.properties, 'body')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'entityKey')).toBeUndefined()
+    expect(operationValues).not.toEqual(expect.arrayContaining(['create', 'update', 'delete', 'action', 'function', 'trigger']))
     expect(credentialFields).toEqual(expect.arrayContaining([
       'baseUrl',
       'metadataPath',
