@@ -46,6 +46,7 @@
 | Cancellation resolver | Queries active workflow executions by workflowId plus business key/tag and cancels all matches through Phase 3 query/cancel APIs. | `cap-n8n-plugin/lib/annotations/CancellationResolver.js` |
 | Workflow artifact helpers | Normalize scalar sidecar schemas, sanitize n8n workflow JSON, build manifests, generate CDS input contracts, and write/read app-root n8n artifacts. | `cap-n8n-plugin/lib/workflows/*.js` |
 | Workflow import CLI | Imports local n8n exports or live n8n API workflows, applies explicit selection rules, and delegates all writes to workflow artifact helpers. | `cap-n8n-plugin/bin/cap-n8n.js`, `cap-n8n-plugin/lib/workflows/import.js`, `cap-n8n-plugin/lib/workflows/live-client.js`, `cap-n8n-plugin/lib/workflows/selection.js` |
+| Workflow build validation | Validates `@n8n.workflow.start` scalar input mappings against generated workflow schemas during `cds build`, reporting warnings for incremental adoption and throwing build errors for typed required-input/type mismatches. | `cap-n8n-plugin/lib/workflows/validate.js`, `cap-n8n-plugin/lib/workflows/diagnostics.js`, `cap-n8n-plugin/lib/workflows/BuildValidationPlugin.js`, `cap-n8n-plugin/cds-plugin.js` |
 | Mock n8n workflow service | Implements deterministic offline `start` behavior with in-memory start records and explicit opt-in failures. | `cap-n8n-plugin/lib/MockN8nWorkflowService.js` |
 | Plugin package entry | Public package entry that exports `N8nWorkflowService`, `MockN8nWorkflowService`, and `workflowTools`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
 | n8n node package entry | Package `main` target for the planned n8n community node; currently empty. | `cap-n8n-node/index.js` |
@@ -84,7 +85,7 @@
 **CAP Plugin Layer:**
 - Purpose: Provides the reusable CAP-to-n8n service implementation.
 - Location: `cap-n8n-plugin/`
-- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, declarative annotation registration under `cap-n8n-plugin/lib/annotations/`, workflow artifact helpers under `cap-n8n-plugin/lib/workflows/`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
+- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, declarative annotation registration under `cap-n8n-plugin/lib/annotations/`, workflow artifact/import/build-validation helpers under `cap-n8n-plugin/lib/workflows/`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
 - Depends on: `@sap/cds` at runtime from the consuming CAP app and global `fetch` from the Node runtime.
 - Used by: `demo-app/package.json` through `cds.requires.n8n.impl` and by `demo-app/srv/admin-service.js` through `cds.connect.to('n8n')`.
 
@@ -128,7 +129,7 @@
 - Location: `test-workflows/` and app-root `n8n/` directories such as `demo-app/n8n/`.
 - Contains: `test-workflows/workflows.json`, sanitized `workflow.json`, sidecar `schema.json`, workflow `manifest.json`, aggregate `manifest.json`, generated `index.cds`, and the package import CLI that produces those artifacts.
 - Depends on: Root scripts in `package.json` for raw fixture import/export and `cap-n8n-plugin/lib/workflows/` for deterministic generated artifacts.
-- Used by: `npm run n8n:import`, `npm run n8n:export`, `npm run n8n:workflow:import`, `cap-n8n import`, and future build validation.
+- Used by: `npm run n8n:import`, `npm run n8n:export`, `npm run n8n:workflow:import`, `cap-n8n import`, and `cds build` workflow validation.
 
 ## Data Flow
 
@@ -176,6 +177,11 @@
 - Examples: `cap-n8n-plugin/lib/workflows/schema.js`, `cap-n8n-plugin/lib/workflows/sanitize.js`, `cap-n8n-plugin/lib/workflows/artifacts.js`, `demo-app/n8n/index.cds`.
 - Pattern: Normalize sidecar input objects, sanitize workflow JSON recursively, write stable JSON under `appRoot/n8n/`, and compile generated CDS for validation.
 
+**Workflow Build Validation:**
+- Purpose: Catch typed workflow annotation mapping mistakes during CAP builds while allowing warning-only untyped or incremental-adoption cases.
+- Examples: `cap-n8n-plugin/lib/workflows/validate.js`, `cap-n8n-plugin/lib/workflows/diagnostics.js`, `cap-n8n-plugin/lib/workflows/BuildValidationPlugin.js`.
+- Pattern: Index generated workflow manifests by accepted references, consume Phase 4 annotation parser output from CSN, emit sanitized deterministic diagnostics, push CAP build messages, and throw `BuildError` only when error diagnostics exist.
+
 **CAP Application Services:**
 - Purpose: Pair declarative service definitions with imperative event/action handlers.
 - Examples: `demo-app/srv/admin-service.cds` with `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.cds` with `demo-app/srv/cat-service.js`.
@@ -215,8 +221,8 @@
 
 **Workflow artifact tools:**
 - Location: `cap-n8n-plugin/index.js` `workflowTools` and `cap-n8n-plugin/lib/workflows/*.js`
-- Triggers: `cap-n8n import`, root `n8n:workflow:import`, tests, and future build validation.
-- Responsibilities: Select local/live workflows, fetch live workflow JSON when requested, produce sanitized workflow artifacts, and generate CDS contracts under a consuming app's `n8n/` directory.
+- Triggers: `cap-n8n import`, root `n8n:workflow:import`, tests, and `cds build`.
+- Responsibilities: Select local/live workflows, fetch live workflow JSON when requested, produce sanitized workflow artifacts, generate CDS contracts under a consuming app's `n8n/` directory, and validate annotation mappings against typed workflow schemas.
 
 **Demo CAP server:**
 - Location: `demo-app/package.json`

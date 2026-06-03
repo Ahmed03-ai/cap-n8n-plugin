@@ -24,6 +24,7 @@ npm start --workspace demo-app        # Starts the CAP demo app for manual verif
 - Automated test files live under `test/smoke/` and `test/integration/`.
 - Current integration coverage includes CAP service contracts, mock/profile behavior, webhook runtime behavior, execution tracking, query/cancel behavior, transaction-safe dispatch, annotation helper contracts, annotated CREATE/UPDATE/DELETE start behavior, and declarative annotation cancellation behavior.
 - Workflow artifact coverage includes scalar sidecar normalization, sanitizer output, generated CDS compilation, manifest aliases, deterministic app-root writes, missing sidecar warnings, and path containment in `test/integration/n8n-workflow-artifacts.test.js`.
+- Workflow build validation coverage includes shared validator diagnostics plus temp-app `cds build` success/failure behavior for typed required-input errors, type mismatches, extra-input warnings, unknown references, and untyped artifacts in `test/integration/n8n-workflow-build-validation.test.js`.
 - Manual request verification lives in `demo-app/test.http`.
 - Shared n8n workflow fixtures live in `test-workflows/workflows.json`.
 
@@ -123,6 +124,7 @@ test-workflows/
 - `test/integration/n8n-annotations-start.test.js` covers package-owned annotation registration for CREATE, UPDATE, DELETE starts and non-rollback failed dispatch.
 - `test/integration/n8n-annotations-cancel.test.js` covers declarative cancellation matching, default DELETE registration, explicit UPDATE registration, no-match warnings, cancel-all behavior, and non-rollback failures.
 - `test/integration/n8n-workflow-artifacts.test.js` covers Phase 5 workflow artifact contracts without Docker n8n by using the committed workflow fixture, temporary app roots, and CAP compile assertions.
+- `test/integration/n8n-workflow-build-validation.test.js` covers Phase 5 workflow build validation without Docker n8n by creating temporary CAP app roots, writing generated `n8n/` artifacts, calling the shared validator directly, and running CAP build through the package plugin activation path.
 - Manual integration path: `demo-app/test.http` sends `POST http://localhost:3000/odata/v4/admin/Books`, which exercises `demo-app/srv/admin-service.js` and the configured n8n service in `demo-app/package.json`.
 - Root scripts support n8n workflow import/export for integration setup: `npm run n8n:import` and `npm run n8n:export` in `package.json`.
 - Requirements documents repeatedly call for integration coverage across CAP-to-n8n and n8n-to-CAP flows: `N8N_REQUIREMENTS.md`, `cap_n8n_requirements_v2.md`.
