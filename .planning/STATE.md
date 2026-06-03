@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T18:09:21.343Z"
+last_updated: "2026-06-03T18:28:41.315Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 27
-  completed_plans: 25
+  completed_plans: 26
   percent: 75
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 07 (n8n Mutations and CAP Actions/Functions) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-06-03
 
-Progress: [█████████░] 93%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
@@ -77,6 +77,7 @@ Progress: [█████████░] 93%
 | Phase 06 P03 | 8min | 3 tasks | 3 files |
 | Phase 07 P01 | 8min | 2 tasks | 3 files |
 | Phase 07 P02 | 12min | 3 tasks | 6 files |
+| Phase 07 P03 | 12min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -149,6 +150,10 @@ Recent decisions affecting current work:
 - [Phase 07]: [Phase 07 Plan 02]: Delete requests use the keyed entity URL with no request body and return a local confirmation item after CAP accepts the DELETE. - Matches OData DELETE behavior while giving n8n workflows deterministic output.
 - [Phase 07]: [Phase 07 Plan 02]: Keyed CRUD operations expose a Key Input selector with metadata-derived Key Parts JSON and Manual Key Predicate fallback. - Preserves Plan 07-01 composite-key helpers while retaining the reliable manual path.
 - [Phase 07]: [Phase 07 Plan 02]: Create and Update require a returned entity representation for output; empty metadata-only mutation responses are response-shape errors. - Prevents confirmation-only mutation output from replacing CAP entity data.
+- [Phase 07]: CAP actions and functions are exposed as one visible actionFunction operation value, while action/function kind is resolved from metadata or manual fallback fields.
+- [Phase 07]: Metadata option values carry only allowlisted descriptor fields: kind, name, qualifiedName, importName, isBound, bindingType, entitySet, and parameters.
+- [Phase 07]: Bound Action/Function requests reuse the same metadata key parts and manual Key Predicate path as Read, Update, and Delete.
+- [Phase 07]: Action/Function output is always one n8n item; object returns are cleaned directly and primitive or array returns are wrapped under value.
 
 ### Pending Todos
 
@@ -177,6 +182,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-06-03T18:09:21.329Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-06-03T18:28:25.483Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
