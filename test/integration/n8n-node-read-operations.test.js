@@ -136,14 +136,15 @@ function createExecutionContext({
       expect(type).toBe('sapCapApi')
       return credentials
     },
-    getNodeParameter: (name, itemIndex, defaultValue) => {
+    getNodeParameter: (...args) => {
+      const [name, itemIndex, defaultValue] = args
       const parameters = parametersByItem[itemIndex]
 
       if (Object.prototype.hasOwnProperty.call(parameters, name)) {
         return parameters[name]
       }
 
-      if (arguments.length >= 3) return defaultValue
+      if (args.length >= 3) return defaultValue
 
       throw new Error(`Missing node parameter ${name}`)
     },
@@ -385,6 +386,44 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     ])
   })
 
+  it('uses n8n default values when optional Query controls are omitted', async () => {
+    const server = await createCapServer(() => ({
+      body: JSON.stringify({
+        value: [
+          { ID: 201, title: 'Defaulted Query' },
+        ],
+      }),
+    }))
+
+    const result = await executeSapCap([{
+      operation: 'query',
+      servicePath: '/odata/v4/admin',
+      entitySetSource: 'metadata',
+      entitySet: 'Books',
+      entitySetManual: '',
+    }], {
+      credentials: basicCredentials(server.baseUrl),
+    })
+
+    expect(server.requests).toHaveLength(1)
+    const requestUrl = new URL(server.requests[0].url, 'http://example.test')
+
+    expect(requestUrl.pathname).toBe('/odata/v4/admin/Books')
+    expect([...requestUrl.searchParams.entries()]).toEqual([
+      ['$top', '100'],
+      ['$skip', '0'],
+    ])
+    expect(result[0]).toEqual([
+      {
+        json: {
+          ID: 201,
+          title: 'Defaulted Query',
+        },
+        pairedItem: { item: 0 },
+      },
+    ])
+  })
+
   it('sends Read key predicates with normalized parentheses and returns one cleaned entity item', async () => {
     const server = await createCapServer(() => ({
       body: JSON.stringify({
@@ -468,6 +507,18 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         operation: 'read',
         keyPredicate: 'ID=201)#fragment',
       }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201%2F$value',
+      }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201%3F$expand=SensitiveNav',
+      }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201%23fragment',
+      }),
     ], {
       credentials: basicCredentials(server.baseUrl),
       continueOnFail: true,
@@ -495,6 +546,68 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
           category: 'validation',
         },
         pairedItem: { item: 2 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 3 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 4 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 5 },
+      },
+    ])
+  })
+
+  it('rejects manual Entity Set path escapes before sending CAP requests', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({
+        entitySetSource: 'manual',
+        entitySet: '',
+        entitySetManual: '..',
+      }),
+      defaultParameters({
+        entitySetSource: 'manual',
+        entitySet: '',
+        entitySetManual: 'Books%2F$value',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 1 },
       },
     ])
   })

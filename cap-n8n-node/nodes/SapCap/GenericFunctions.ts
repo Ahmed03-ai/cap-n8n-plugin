@@ -56,11 +56,18 @@ export function normalizeBaseUrl(value: unknown) {
   try {
     const parsed = new URL(raw)
 
-    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password) {
+    if (
+      !['http:', 'https:'].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash
+    ) {
       throw new Error('invalid-url')
     }
 
-    return raw.replace(/\/+$/, '')
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '')
+    return `${parsed.origin}${normalizedPath === '/' ? '' : normalizedPath}`
   } catch (err) {
     throw createSapCapRequestError('Base URL must be a valid http or https URL.', {
       category: 'validation',
@@ -103,7 +110,7 @@ export function resolveEntitySetName(selection: EntitySetSelection) {
 export function normalizeKeyPredicate(value: unknown) {
   const keyPredicate = requireString(value, 'Key Predicate is required for Read.')
 
-  if (/[/?#]/.test(keyPredicate)) {
+  if (containsUrlBoundary(keyPredicate)) {
     throw createSapCapRequestError('Key Predicate must not include /, ?, or #.', {
       category: 'validation',
     })
@@ -221,13 +228,17 @@ function requireString(value: unknown, message: string) {
 function normalizeEntitySetName(value: unknown) {
   const entitySetName = requireString(value, 'Enter a CAP entity set name, for example Books.')
 
-  if (/[/?#]/.test(entitySetName)) {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(entitySetName)) {
     throw createSapCapRequestError('Enter a CAP entity set name, for example Books.', {
       category: 'validation',
     })
   }
 
   return entitySetName
+}
+
+function containsUrlBoundary(value: string) {
+  return /[/?#]/.test(value) || /%(?:2f|3f|23)/i.test(value)
 }
 
 function setTextQueryParam(params: URLSearchParams, key: string, value: unknown) {
