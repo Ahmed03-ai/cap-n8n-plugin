@@ -90,6 +90,42 @@ const metadataWithKeyDescriptors = `<?xml version="1.0" encoding="utf-8"?>
   </edmx:DataServices>
 </edmx:Edmx>`
 
+const metadataWithActionFunctions = `<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <edm:Schema Namespace="CatalogService" xmlns:edm="http://docs.oasis-open.org/odata/ns/edm">
+      <edm:EntityType Name="Book">
+        <edm:Key>
+          <edm:PropertyRef Name="ID" />
+        </edm:Key>
+        <edm:Property Name="ID" Type="Edm.Int32" Nullable="false" />
+      </edm:EntityType>
+      <edm:Action Name="submitOrder">
+        <edm:Parameter Name="book" Type="Edm.Int32" />
+        <edm:Parameter Name="quantity" Type="Edm.Int32" />
+      </edm:Action>
+      <edm:Function Name="bookAvailability">
+        <edm:Parameter Name="book" Type="Edm.Int32" />
+        <edm:ReturnType Type="Edm.Boolean" />
+      </edm:Function>
+      <edm:Action Name="restock" IsBound="true">
+        <edm:Parameter Name="bindingParameter" Type="CatalogService.Book" />
+        <edm:Parameter Name="quantity" Type="Edm.Int32" />
+      </edm:Action>
+      <edm:Function Name="inventoryValue" IsBound="true">
+        <edm:Parameter Name="bindingParameter" Type="CatalogService.Book" />
+        <edm:Parameter Name="currency" Type="Edm.String" />
+        <edm:ReturnType Type="Edm.Decimal" />
+      </edm:Function>
+      <edm:EntityContainer Name="CatalogContainer">
+        <edm:EntitySet Name="Books" EntityType="CatalogService.Book" />
+        <edm:ActionImport Name="submitOrder" Action="CatalogService.submitOrder" />
+        <edm:FunctionImport Name="bookAvailability" Function="CatalogService.bookAvailability" />
+      </edm:EntityContainer>
+    </edm:Schema>
+  </edmx:DataServices>
+</edmx:Edmx>`
+
 let servers = []
 
 async function importDistModule(relativePath) {
@@ -217,6 +253,12 @@ function serializedError(err) {
     statusCode: err.statusCode,
     category: err.category,
   })
+}
+
+function expectBasicAuthHeader(request) {
+  expect(request.headers.authorization).toBe(
+    `Basic ${Buffer.from(`${fakeUsername}:${fakePassword}`).toString('base64')}`
+  )
 }
 
 afterEach(async () => {
@@ -378,6 +420,126 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
         expect(serialized).not.toContain('Authorization')
       }
     }
+  })
+
+  it('extracts combined Action/Function descriptors and safe dropdown options', async () => {
+    const {
+      extractActionFunctionDescriptors,
+      extractActionFunctionOptions,
+    } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+
+    const descriptors = extractActionFunctionDescriptors(metadataWithActionFunctions)
+    const options = extractActionFunctionOptions(metadataWithActionFunctions)
+
+    expect(descriptors).toEqual([
+      {
+        kind: 'action',
+        name: 'submitOrder',
+        qualifiedName: 'CatalogService.submitOrder',
+        importName: 'submitOrder',
+        isBound: false,
+        parameters: [
+          { name: 'book', type: 'Edm.Int32' },
+          { name: 'quantity', type: 'Edm.Int32' },
+        ],
+      },
+      {
+        kind: 'function',
+        name: 'bookAvailability',
+        qualifiedName: 'CatalogService.bookAvailability',
+        importName: 'bookAvailability',
+        isBound: false,
+        parameters: [
+          { name: 'book', type: 'Edm.Int32' },
+        ],
+      },
+      {
+        kind: 'action',
+        name: 'restock',
+        qualifiedName: 'CatalogService.restock',
+        isBound: true,
+        bindingType: 'CatalogService.Book',
+        entitySet: 'Books',
+        parameters: [
+          { name: 'quantity', type: 'Edm.Int32' },
+        ],
+      },
+      {
+        kind: 'function',
+        name: 'inventoryValue',
+        qualifiedName: 'CatalogService.inventoryValue',
+        isBound: true,
+        bindingType: 'CatalogService.Book',
+        entitySet: 'Books',
+        parameters: [
+          { name: 'currency', type: 'Edm.String' },
+        ],
+      },
+    ])
+    expect(options.map((option) => option.name)).toEqual([
+      'Action: submitOrder',
+      'Function: bookAvailability',
+      'Action: Books/restock',
+      'Function: Books/inventoryValue',
+    ])
+    expect(options).toHaveLength(4)
+
+    for (const option of options) {
+      const descriptor = JSON.parse(option.value)
+      const allowedFields = [
+        'kind',
+        'name',
+        'qualifiedName',
+        'importName',
+        'isBound',
+        'bindingType',
+        'entitySet',
+        'parameters',
+      ]
+
+      expect(Object.keys(descriptor).sort()).toEqual(
+        Object.keys(descriptor).filter((field) => allowedFields.includes(field)).sort()
+      )
+      expect(JSON.stringify(descriptor)).not.toContain(fakePassword)
+      expect(JSON.stringify(descriptor)).not.toContain(fakeClientSecret)
+      expect(JSON.stringify(descriptor)).not.toContain(fakeBearerToken)
+      expect(JSON.stringify(descriptor)).not.toContain('<edmx:Edmx')
+      expect(JSON.stringify(descriptor)).not.toContain('Authorization')
+      expect(JSON.stringify(descriptor)).not.toContain('body')
+      expect(JSON.stringify(descriptor)).not.toContain('headers')
+    }
+  })
+
+  it('loads combined Action/Function options from CAP metadata with Basic Auth', async () => {
+    const { loadActionFunctionOptions } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+    const server = await createCapServer(() => ({
+      body: metadataWithActionFunctions,
+    }))
+
+    const options = await loadActionFunctionOptions.call(createContext(basicCredentials(server.baseUrl)))
+
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/admin/$metadata',
+    })
+    expectBasicAuthHeader(server.requests[0])
+    expect(options.map((option) => option.name)).toEqual([
+      'Action: submitOrder',
+      'Function: bookAvailability',
+      'Action: Books/restock',
+      'Function: Books/inventoryValue',
+    ])
+  })
+
+  it('returns an empty Action/Function option list when valid metadata has no operations', async () => {
+    const {
+      extractActionFunctionDescriptors,
+      extractActionFunctionOptions,
+    } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+
+    expect(extractActionFunctionDescriptors(metadataWithEntitySets)).toEqual([])
+    expect(extractActionFunctionOptions(metadataWithEntitySets)).toEqual([])
   })
 
   it('rejects HTML metadata responses returned with HTTP 200', async () => {
