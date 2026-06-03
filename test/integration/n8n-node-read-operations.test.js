@@ -262,6 +262,15 @@ function sourceWithoutComments(relativePath) {
     .join('\n')
 }
 
+function functionSource(source, functionName) {
+  const start = source.indexOf(`function ${functionName}`)
+  const remaining = source.slice(start + 1)
+  const nextFunction = remaining.search(/\n(?:export\s+)?function\s+/)
+
+  expect(start, `${functionName} source should be present`).toBeGreaterThanOrEqual(0)
+  return source.slice(start, nextFunction >= 0 ? start + 1 + nextFunction : source.length)
+}
+
 async function expectNodeOperationError(run, expected) {
   try {
     await run()
@@ -1350,6 +1359,8 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       sourceWithoutComments('cap-n8n-node/nodes/SapCap/GenericFunctions.ts'),
       sourceWithoutComments('cap-n8n-node/nodes/SapCap/ODataResponse.ts'),
     ].join('\n')
+    const genericSource = sourceWithoutComments('cap-n8n-node/nodes/SapCap/GenericFunctions.ts')
+    const deleteBuilderSource = functionSource(genericSource, 'buildDeleteRequest')
 
     expect(runtimeSource).not.toMatch(/console\./)
     expect(runtimeSource).not.toContain(fakePassword)
@@ -1359,5 +1370,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(runtimeSource).not.toMatch(/returnFullResponse:\s*false/)
     expect(runtimeSource).not.toMatch(/raw(?:OData)?Response/i)
     expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(action|function|trigger)/i)
+    expect(deleteBuilderSource).not.toMatch(/\bbody\b/)
   })
 })

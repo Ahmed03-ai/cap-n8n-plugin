@@ -190,6 +190,67 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     ])
   })
 
+  it('normalizes Create and Update returned entities into cleaned n8n items', async () => {
+    const { normalizeODataItems } = await importResponseHelpers()
+
+    expect(normalizeODataItems('create', {
+      '@odata.context': '$metadata#Books/$entity',
+      ID: 301,
+      title: 'Created Entity',
+      audit: {
+        '@odata.type': '#AdminService.Audit',
+        createdBy: 'cap-server',
+      },
+    }, 2)).toEqual([
+      {
+        json: {
+          ID: 301,
+          title: 'Created Entity',
+          audit: {
+            createdBy: 'cap-server',
+          },
+        },
+        pairedItem: { item: 2 },
+      },
+    ])
+    expect(normalizeODataItems('update', {
+      '@odata.context': '$metadata#Books/$entity',
+      ID: 201,
+      price: 24.99,
+      modifiedAt: '2026-06-03T17:00:00Z',
+    }, 3)).toEqual([
+      {
+        json: {
+          ID: 201,
+          price: 24.99,
+          modifiedAt: '2026-06-03T17:00:00Z',
+        },
+        pairedItem: { item: 3 },
+      },
+    ])
+  })
+
+  it('normalizes Delete confirmation output and rejects unexpected Delete shapes', async () => {
+    const { normalizeODataItems } = await importResponseHelpers()
+
+    expect(normalizeODataItems('delete', {
+      deleted: true,
+      entitySet: 'Books',
+      key: '(ID=202)',
+    }, 4)).toEqual([
+      {
+        json: {
+          deleted: true,
+          entitySet: 'Books',
+          key: '(ID=202)',
+        },
+        pairedItem: { item: 4 },
+      },
+    ])
+    expectResponseShapeFailure(() => normalizeODataItems('delete', { ID: 202 }, 4))
+    expectResponseShapeFailure(() => normalizeODataItems('delete', { value: [] }, 4))
+  })
+
   it('rejects unexpected Query and Read response shapes as responseShape errors', async () => {
     const helpers = await importResponseHelpers()
     const { normalizeODataItems } = helpers
@@ -199,6 +260,8 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     expectResponseShapeFailure(() => normalizeODataItems('query', { value: {} }, 0))
     expectResponseShapeFailure(() => normalizeODataItems('read', [], 0))
     expectResponseShapeFailure(() => normalizeODataItems('read', null, 0))
+    expectResponseShapeFailure(() => normalizeODataItems('create', { '@odata.context': '$metadata#Books/$entity' }, 0))
+    expectResponseShapeFailure(() => normalizeODataItems('update', { '@odata.context': '$metadata#Books/$entity' }, 0))
   })
 
   it('classifies CAP and OData failures into sanitized n8n categories', async () => {
@@ -227,6 +290,15 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         { operation: 'read' },
         {
           message: 'CAP entity was not found for the selected entity set and key predicate.',
+          statusCode: 404,
+          category: 'notFound',
+        },
+      ],
+      [
+        statusError(404),
+        { operation: 'delete' },
+        {
+          message: 'CAP entity was not found for Delete. Check the selected entity set and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -337,6 +409,10 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
       new Error(`network failed with ${fakeBearerToken} and ${fakeResponseBody}`),
       { operation: 'query' }
     )
+    const safeDeleteNotFoundError = classifySapCapError(
+      statusError(404, `missing row ${fakeBearerToken} ${fakeResponseBody}`),
+      { operation: 'delete' }
+    )
 
     expect(toContinueOnFailItem(safeValidationError, 4)).toEqual({
       json: {
@@ -354,7 +430,16 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
       pairedItem: { item: 5 },
     })
     expect(toContinueOnFailItem(safeNetworkError, 5).json).not.toHaveProperty('statusCode')
+    expect(toContinueOnFailItem(safeDeleteNotFoundError, 6)).toEqual({
+      json: {
+        error: 'CAP entity was not found for Delete. Check the selected entity set and key.',
+        statusCode: 404,
+        category: 'notFound',
+      },
+      pairedItem: { item: 6 },
+    })
     expectSerializedSafeError(toContinueOnFailItem(safeNetworkError, 5))
+    expectSerializedSafeError(toContinueOnFailItem(safeDeleteNotFoundError, 6))
   })
 
   it('creates sanitized NodeOperationError instances without wrapping raw HTTP internals', async () => {
