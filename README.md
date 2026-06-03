@@ -41,13 +41,15 @@ What they do:
 - `npm run build` - builds workspace packages that define a build script.
 - `npm run cap:compile` - compiles the CAP demo app models with repo-local CAP tooling.
 - `npm run smoke` - builds the n8n node package and verifies package boundaries.
-- `npm run test:integration` - runs Phase 2 CAP plugin integration tests without Docker n8n.
+- `npm run test:integration` - runs CAP plugin integration tests without Docker n8n.
 - `npm test` - runs smoke plus integration tests.
 - `npm test --workspaces --if-present` - runs workspace package-level checks.
 - `npm run n8n:up` - starts local n8n through Docker Compose.
 - `npm run n8n:import` / `npm run n8n:export` - sync shared workflow fixtures in `test-workflows/`.
 
 ## Manual Testing
+
+For a presenter-oriented walkthrough, see [Manual Visual Showcase Guide](docs/manual-visual-showcase.md). That guide explains how to demo the implemented CAP plugin functionality with n8n and the demo Fiori app, and it calls out which pieces are implemented but not yet polished enough for a no-harness visual showcase.
 
 ### 1. Baseline Verification
 
@@ -147,9 +149,9 @@ npm run n8n:up
 npm run n8n:import
 ```
 
-Open [http://localhost:5678](http://localhost:5678) and find the `cap-test-trigger` workflow.
+Open [http://localhost:5678](http://localhost:5678) and find the `CAP n8n Test` workflow. Its Webhook path is `cap-test-trigger`.
 
-The current demo app uses `workflowId: "webhook-test/cap-test-trigger"` in `demo-app/srv/admin-service.js`, so the demo-app create flow must be tested with the n8n Webhook node in test/listening mode. Click **Test step** on the Webhook node before sending the CAP request below.
+The current demo app uses `workflowId: "webhook-test/cap-test-trigger"` in `demo-app/srv/admin-service.cds`, so the demo-app create flow must be tested with the n8n Webhook node in test/listening mode. Click **Test step** on the Webhook node before sending the CAP request below.
 
 Start the CAP demo app:
 
@@ -199,7 +201,9 @@ Use this active-workflow snippet when the n8n workflow is activated. Use the dem
 
 ### 6. Test n8n -> CAP With The SAP CAP Node
 
-Use this path to manually validate the n8n community node against the CAP demo app. It covers the current n8n -> CAP node slice for credentials, Query, Read, Create, Update, Delete, and OData response cleanup.
+Use this path to manually validate the n8n community node against the CAP demo app after the local community node has been installed or mounted into n8n. The default `docker-compose.yml` starts plain n8n and does not install `cap-n8n-node` into the container.
+
+This covers the current n8n -> CAP node slice for credentials, Query, Read, Create, Update, Delete, and OData response cleanup.
 
 First build the node package and start the CAP demo app:
 

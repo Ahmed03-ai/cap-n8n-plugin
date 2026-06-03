@@ -190,6 +190,7 @@ Plans:
   3. Platform engineer can follow SAP BTP deployment guidance for credentials, connectivity, and Cloud Foundry or Kyma deployment considerations.
   4. Reviewer can trace n8n mockups, workflow fixtures, and documentation examples to implemented n8n-specific user stories.
   5. Developer can run a documented smoke test and repeatable local or CI command that reports whether the project is ready for review.
+  6. Reviewer can run a no-harness visual showcase for cancellation and the n8n community node, including a long-running/stoppable n8n fixture, documented stop API configuration, and local custom-node installation or mounting instructions.
 
 **Plans**: TBD
 
