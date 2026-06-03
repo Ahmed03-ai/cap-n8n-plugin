@@ -284,7 +284,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         Object.assign(new Error(`OAuth failed with ${fakeClientSecret}`), { category: 'configuration' }),
         { operation: 'query' },
         {
-          message: 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
+          message: 'SAP CAP authentication currently supports Basic Auth only.',
           category: 'configuration',
         },
       ],

@@ -205,7 +205,7 @@ function messageForCategory(
   }
 
   if (category === 'configuration') {
-    return 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.'
+    return 'SAP CAP authentication currently supports Basic Auth only.'
   }
 
   if (category === 'network') {

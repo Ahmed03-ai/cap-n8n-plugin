@@ -41,14 +41,10 @@ export class SapCapApi implements ICredentialType {
           name: 'Basic Auth',
           value: 'basicAuth',
         },
-        {
-          name: 'OAuth2 Client Credentials',
-          value: 'oauth2',
-        },
       ],
       default: 'basicAuth',
       required: true,
-      description: 'Authentication method for CAP OData requests.',
+      description: 'Authentication method for CAP OData requests. OAuth2 support is planned for a later release.',
     },
     {
       displayName: 'Username',
@@ -76,62 +72,6 @@ export class SapCapApi implements ICredentialType {
       displayOptions: {
         show: {
           authType: ['basicAuth'],
-        },
-      },
-    },
-    {
-      displayName: 'Token URL',
-      name: 'tokenUrl',
-      type: 'string',
-      default: '',
-      required: true,
-      placeholder: 'https://your-tenant.authentication.eu10.hana.ondemand.com/oauth/token',
-      description: 'OAuth2 token endpoint for the client credentials grant.',
-      displayOptions: {
-        show: {
-          authType: ['oauth2'],
-        },
-      },
-    },
-    {
-      displayName: 'Client ID',
-      name: 'clientId',
-      type: 'string',
-      default: '',
-      required: true,
-      description: 'OAuth2 client ID.',
-      displayOptions: {
-        show: {
-          authType: ['oauth2'],
-        },
-      },
-    },
-    {
-      displayName: 'Client Secret',
-      name: 'clientSecret',
-      type: 'string',
-      typeOptions: {
-        password: true,
-      },
-      default: '',
-      required: true,
-      description: 'OAuth2 client secret.',
-      displayOptions: {
-        show: {
-          authType: ['oauth2'],
-        },
-      },
-    },
-    {
-      displayName: 'Scope',
-      name: 'scope',
-      type: 'string',
-      default: '',
-      placeholder: 'openid',
-      description: 'Optional space-separated OAuth2 scopes.',
-      displayOptions: {
-        show: {
-          authType: ['oauth2'],
         },
       },
     },

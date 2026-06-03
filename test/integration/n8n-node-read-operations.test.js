@@ -545,7 +545,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     }
   })
 
-  it('returns sanitized configuration errors when OAuth2 is selected before Phase 7 support', async () => {
+  it('rejects stale OAuth2 credentials before any CAP request is sent', async () => {
     const server = await createCapServer(() => ({
       body: JSON.stringify({ value: [] }),
     }))
@@ -563,7 +563,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(result[0]).toEqual([
       {
         json: {
-          error: 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
+          error: 'SAP CAP authentication currently supports Basic Auth only.',
           category: 'configuration',
         },
         pairedItem: { item: 0 },
@@ -648,7 +648,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(result[0]).toEqual([
       {
         json: {
-          error: 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
+          error: 'SAP CAP authentication currently supports Basic Auth only.',
           category: 'configuration',
         },
         pairedItem: { item: 0 },

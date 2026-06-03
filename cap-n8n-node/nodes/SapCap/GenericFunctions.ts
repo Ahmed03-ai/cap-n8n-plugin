@@ -252,15 +252,8 @@ function applyAuthentication(headers: IDataObject, credentials: ICredentialDataD
     return
   }
 
-  if (authType === 'oauth2') {
-    throw createSapCapRequestError(
-      'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
-      { category: 'configuration' }
-    )
-  }
-
   throw createSapCapRequestError(
-    'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
+    'SAP CAP authentication currently supports Basic Auth only.',
     { category: 'configuration' }
   )
 }
