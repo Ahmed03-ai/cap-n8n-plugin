@@ -1,8 +1,8 @@
 ---
 phase: 07-n8n-mutations-and-cap-actions-functions
-reviewed: 2026-06-03T18:50:30Z
+reviewed: 2026-06-03T19:19:11Z
 depth: standard
-files_reviewed: 11
+files_reviewed: 13
 files_reviewed_list:
   - README.md
   - cap-n8n-node/nodes/SapCap/GenericFunctions.ts
@@ -11,107 +11,56 @@ files_reviewed_list:
   - cap-n8n-node/nodes/SapCap/SapCap.node.ts
   - docs/manual-visual-showcase.md
   - mockups/n8n-node-mockup.html
+  - package.json
   - test/integration/n8n-node-metadata-discovery.test.js
   - test/integration/n8n-node-read-operations.test.js
   - test/integration/n8n-node-response-cleanup.test.js
+  - test/integration/n8n-workflow-phase5.test.js
   - test/smoke/package-boundaries.test.js
 findings:
-  critical: 4
-  warning: 1
+  critical: 0
+  warning: 0
   info: 0
-  total: 5
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 7: Code Review Report
 
-**Reviewed:** 2026-06-03T18:50:30Z
+**Reviewed:** 2026-06-03T19:19:11Z
 **Depth:** standard
-**Files Reviewed:** 11
-**Status:** issues_found
+**Files Reviewed:** 13
+**Status:** clean
 
 ## Summary
 
-Reviewed the SAP CAP n8n node implementation, metadata parsing, response cleanup, documentation, mockup, and integration/smoke coverage. The mutation/action slice has correctness and security defects in response cleanup, successful empty-response handling, Action/Function entity binding, and OData function URL construction. The tests also have a reliability gap because they exercise ignored build artifacts.
+Re-reviewed the Phase 7 n8n node mutation/action implementation, metadata parsing, OData response cleanup, documentation, mockup, package scripts, and integration/smoke coverage after commits `d6cad07`, `a5c319a`, and `6f20f50`.
+
+All reviewed files meet quality standards. No Critical, Warning, or Info findings were found in the reviewed scope.
+
+Prior findings are resolved:
+
+- Prototype pollution: response cleanup now builds null-prototype objects and drops `__proto__`, `constructor`, and `prototype` keys recursively.
+- Empty response handling: successful empty JSON responses are handled explicitly; Update follows up with a Read, Delete returns a confirmation item, and void Action/Function output is normalized safely.
+- Descriptor entity-set binding: metadata-backed bound operations use the descriptor entity set instead of a stale visible entity-set field.
+- OData function-call syntax: functions now build OData call segments such as `bookAvailability(book=201)` and bound function paths such as `Books(ID=201)/CatalogService.inventoryValue(currency='USD')`.
+- Build-before-integration tests: `smoke` and `test:integration` both build `n8n-nodes-sap-cap` before importing ignored `dist/` artifacts.
+- Percent escaping: OData string literals escape `%` before quote doubling, preventing percent-decoded syntax injection through key and function values.
+- Whitespace-preserving string literals: string key and function values preserve significant leading/trailing spaces while numeric and boolean validation still trims for parsing.
+
+Verification performed:
+
+- `npm test` passed.
+- Smoke: 1 file, 3 tests passed.
+- Integration: 19 files, 154 tests passed.
+- The known `DEP0190` warning from the n8n node build CLI appeared during build and did not fail the run.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
-
-### CR-01: Response cleanup allows prototype pollution
-
-**Severity:** BLOCKER
-**File:** `cap-n8n-node/nodes/SapCap/ODataResponse.ts:42`
-**Issue:** `stripODataMetadata()` copies untrusted CAP response keys into a normal `{}` object. Assigning keys such as `__proto__` mutates the returned object's prototype instead of creating a safe data property, so a malicious or compromised CAP service can make downstream n8n items inherit attacker-controlled properties. This is not covered by `test/integration/n8n-node-response-cleanup.test.js`.
-**Fix:**
-```ts
-const unsafeObjectKeys = new Set(['__proto__', 'constructor', 'prototype'])
-const cleaned: IDataObject = Object.create(null)
-
-for (const [key, childValue] of Object.entries(value)) {
-  if (unsafeObjectKeys.has(key) || key.startsWith('@odata.') || key.includes('@odata.')) continue
-  cleaned[key] = stripODataMetadata(childValue) as IDataObject[keyof IDataObject]
-}
-```
-
-### CR-02: Successful empty mutation/action responses are reported as failures
-
-**Severity:** BLOCKER
-**File:** `cap-n8n-node/nodes/SapCap/GenericFunctions.ts:545`
-**Issue:** `sapCapApiRequest()` parses every successful JSON response with `JSON.parse(String(response.body ?? ''))`. `SapCap.execute()` sends Create, Update, and Action/Function through this JSON path, so a valid `204 No Content` PATCH response, a CAP action with no return value, or any successful empty body becomes `responseShape`. The README explicitly promises an Update fallback on empty mutation responses at `README.md:382`, but no fallback exists.
-**Fix:** Add explicit empty-body handling for operations that can legally return no representation. For Update, either perform a follow-up `GET` to the keyed URL or return a documented confirmation item. For void actions, return a deterministic success item instead of parsing an empty string.
-```ts
-if (responseFormat === 'json') {
-  const bodyText = String(response.body ?? '')
-  if (!bodyText.trim()) return undefined
-  return JSON.parse(bodyText)
-}
-```
-
-### CR-03: Action/Function uses the wrong entity set for bound metadata operations
-
-**Severity:** BLOCKER
-**File:** `cap-n8n-node/nodes/SapCap/SapCap.node.ts:470`
-**Issue:** `execute()` resolves the global Entity Set before it knows whether the selected Action/Function is bound or unbound, and `buildBoundActionFunctionPath()` later uses `input.entitySetName` instead of the `entitySet` already discovered in the metadata descriptor. A user can select a metadata option labelled `Action: Books/restock` while the stale Entity Set field is `Authors`, causing the node to send `/Authors(...)/CatalogService.restock`. Unbound actions/functions also incorrectly require an unrelated entity set, making services with operations but no entity sets unusable.
-**Fix:** Resolve the action/function descriptor before resolving entity inputs. Use `descriptor.entitySet` for metadata-backed bound operations, require manual entity set only for manual bound operations, and do not require entity fields for unbound operations.
-```ts
-const descriptor = resolveActionFunctionDescriptor(actionFunctionInput)
-const boundEntitySet = descriptor.isBound
-  ? descriptor.entitySet ?? resolveEntitySetName(selection)
-  : undefined
-```
-
-### CR-04: Function calls are built with query parameters instead of OData function-call syntax
-
-**Severity:** BLOCKER
-**File:** `cap-n8n-node/nodes/SapCap/GenericFunctions.ts:335`
-**Issue:** `buildActionFunctionRequest()` builds function paths as `/bookAvailability?book=201` and `/Books(ID=201)/CatalogService.inventoryValue?currency=USD`. OData V4/CAP function invocation uses function-call segments such as `/bookAvailability(book=201)` or a parameter-alias form, with string parameters encoded as OData literals. The current URL shape is accepted only by the mocked test server and will not route reliably against a real CAP OData service.
-**Fix:** Build the parameter list into the function segment and format values with OData literal rules, reusing metadata parameter types where available.
-```ts
-const parameterList = Object.entries(parameters)
-  .map(([name, value]) => `${normalizeFunctionParameterName(name)}=${formatODataLiteral(value, parameterTypes.get(name))}`)
-  .join(',')
-return `${operationPath}(${parameterList})`
-```
-
-## Warnings
-
-### WR-01: n8n-node integration tests can pass stale ignored build output
-
-**Severity:** WARNING
-**File:** `test/integration/n8n-node-read-operations.test.js:90`
-**Issue:** The integration tests import `cap-n8n-node/dist/...` files, and `dist/` is ignored. The root `test:integration` script does not build the n8n package first, so a clean checkout can fail before running these tests, while a dirty workspace with stale `dist/` can pass tests without exercising the changed TypeScript sources.
-**Fix:** Make the integration test entry point build the n8n package before importing `dist`, or import/execute the TypeScript source through a test-time transpiler so the tests always cover the reviewed source.
-```json
-{
-  "scripts": {
-    "test:integration": "npm run build --workspace n8n-nodes-sap-cap && vitest run test/integration"
-  }
-}
-```
+No narrative findings.
 
 ---
 
-_Reviewed: 2026-06-03T18:50:30Z_
+_Reviewed: 2026-06-03T19:19:11Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
