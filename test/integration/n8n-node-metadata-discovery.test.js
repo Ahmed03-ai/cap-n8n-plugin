@@ -695,6 +695,7 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
 
     expect(normalizeKeyPredicate('ID=201')).toBe('(ID=201)')
     expect(formatODataKeyLiteral("O'Neil", 'Edm.String')).toBe("'O''Neil'")
+    expect(formatODataKeyLiteral('201%27,quantity=999,%27', 'Edm.String')).toBe("'201%2527,quantity=999,%2527'")
     expect(formatODataKeyLiteral('201', 'Edm.Int32')).toBe('201')
     expect(formatODataKeyLiteral(true, 'Edm.Boolean')).toBe('true')
     expect(formatODataKeyLiteral('external-id', 'Custom.Identifier')).toBe("'external-id'")
@@ -709,9 +710,9 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       keyDescriptors: textKeys,
       keyParts: {
         locale: 'en-US',
-        code: "USD'2026",
+        code: "USD'2026%2Ccurrency%3DEUR",
       },
-    })).toBe("(locale='en-US',code='USD''2026')")
+    })).toBe("(locale='en-US',code='USD''2026%252Ccurrency%253DEUR')")
     expect(resolveKeyPredicate({
       keyPredicate: 'ID=201',
     })).toBe('(ID=201)')

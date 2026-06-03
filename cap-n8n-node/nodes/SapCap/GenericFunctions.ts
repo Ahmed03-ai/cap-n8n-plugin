@@ -207,7 +207,7 @@ export function formatODataKeyLiteral(value: unknown, type: unknown) {
     return formatNumericLiteral(rawValue, typeName)
   }
 
-  return `'${rawValue.replace(/'/g, '\'\'')}'`
+  return formatODataStringLiteral(rawValue)
 }
 
 export function buildKeyPredicateFromParts(input: {
@@ -563,7 +563,11 @@ function formatODataFunctionLiteral(value: IDataObject[keyof IDataObject], type:
     return formatNumericLiteral(rawValue, typeName || 'edm.double')
   }
 
-  return `'${rawValue.replace(/'/g, '\'\'')}'`
+  return formatODataStringLiteral(rawValue)
+}
+
+function formatODataStringLiteral(rawValue: string) {
+  return `'${rawValue.replace(/%/g, '%25').replace(/'/g, '\'\'')}'`
 }
 
 export async function sapCapApiRequest(
