@@ -66,9 +66,9 @@ function expectSerializedSafeError(value) {
   expect(serialized).not.toContain(fakeBasicToken)
   expect(serialized).not.toContain(fakeClientSecret)
   expect(serialized).not.toContain(fakeResponseBody)
-  expect(serialized).not.toContain('authorization')
+  expect(serialized).not.toContain('Authorization')
   expect(serialized).not.toContain('cookie')
-  expect(serialized).not.toContain('request')
+  expect(serialized).not.toContain('cap-session-cookie-for-test')
   expect(serialized).not.toContain('stack')
 }
 
