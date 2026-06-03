@@ -5,7 +5,7 @@ status: passed
 score: "12/12 must-haves verified"
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
+  previous_status: previous verifier reported one blocker
   previous_score: "11/12"
   gaps_closed:
     - "n8n user can configure SAP CAP API credentials with Base URL, Basic Auth, OAuth2 Client Credentials, and a `$metadata` test in the n8n UI."
