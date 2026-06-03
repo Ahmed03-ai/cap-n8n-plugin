@@ -116,12 +116,38 @@ describe('package boundaries', () => {
     })
     expect(propertyByName(credential.properties, 'metadataPath')).toMatchObject({
       default: '/odata/v4/admin/$metadata',
+      required: true,
+      description: 'CAP OData $metadata endpoint used for Test Connection and entity discovery.',
+    })
+    expect(propertyByName(credential.properties, 'authType')).toMatchObject({
+      default: 'basicAuth',
+      required: true,
+      description: 'Authentication method for CAP OData requests.',
     })
     expect(propertyByName(credential.properties, 'authType').options.map((option) => option.value)).toEqual([
       'basicAuth',
       'oauth2',
-      'none',
     ])
+    expect(propertyByName(credential.properties, 'username')).toMatchObject({
+      required: true,
+      description: 'CAP username for Basic Auth.',
+    })
+    expect(propertyByName(credential.properties, 'password')).toMatchObject({
+      required: true,
+      typeOptions: {
+        password: true,
+      },
+      description: 'CAP password for Basic Auth.',
+    })
+    expect(propertyByName(credential.properties, 'tokenUrl')).toMatchObject({
+      required: true,
+    })
+    expect(propertyByName(credential.properties, 'clientSecret')).toMatchObject({
+      required: true,
+      typeOptions: {
+        password: true,
+      },
+    })
     expect(credential.test.request).toMatchObject({
       baseURL: '={{$credentials.baseUrl}}',
       url: '={{$credentials.metadataPath}}',
