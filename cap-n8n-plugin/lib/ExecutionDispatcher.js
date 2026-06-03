@@ -93,10 +93,28 @@ class ExecutionDispatcher {
         options
       )
 
-      await this.store.markRunning(dispatch.executionId, {
+      const runningUpdates = {
         attempts,
         n8nExecutionId: webhook.n8nExecutionId
-      })
+      }
+
+      if (webhook.keepRunning) {
+        runningUpdates.result = webhook.result
+      }
+
+      const running = await this.store.markRunning(dispatch.executionId, runningUpdates)
+
+      if (webhook.keepRunning) {
+        this.log.info('Queued n8n workflow dispatch is running', {
+          workflowId: dispatch.workflowId,
+          executionId: dispatch.executionId,
+          n8nExecutionId: webhook.n8nExecutionId,
+          attempts,
+          correlationId: dispatch.correlationId
+        })
+
+        return running
+      }
 
       const succeeded = await this.store.markSucceeded(dispatch.executionId, {
         attempts,

@@ -29,6 +29,18 @@ function parseWebhookResponse(responseText) {
   }
 }
 
+function extractN8nExecutionId(result) {
+  if (!result || typeof result !== 'object') return undefined
+  return result.executionId || result.n8nExecutionId
+}
+
+function isExplicitRunningWebhookResponse(result, n8nExecutionId) {
+  if (!n8nExecutionId || !result || typeof result !== 'object') return false
+  if (result.keepRunning === true) return true
+
+  return typeof result.status === 'string' && result.status.toLowerCase() === 'running'
+}
+
 function parseSafeErrorResponse(responseText) {
   if (!responseText) return undefined
 
@@ -514,10 +526,12 @@ class N8nWorkflowService extends cds.Service {
         }
 
         const result = parseWebhookResponse(responseText)
+        const n8nExecutionId = extractN8nExecutionId(result)
 
         return {
           workflowId,
-          n8nExecutionId: result && typeof result === 'object' ? result.executionId : undefined,
+          n8nExecutionId,
+          keepRunning: isExplicitRunningWebhookResponse(result, n8nExecutionId),
           result
         }
       } catch (err) {

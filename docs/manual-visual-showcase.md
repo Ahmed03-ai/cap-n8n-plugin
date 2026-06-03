@@ -25,6 +25,7 @@ Implemented and demoable from the current repository:
 - Generated `demo-app/n8n` artifacts provide sanitized workflow JSON, a sidecar input schema, manifests, and generated CDS.
 - `cap-n8n validate` checks CDS annotations against generated workflow artifacts and returns sanitized text or JSON diagnostics.
 - CAP build validation uses the same workflow annotation validator.
+- Browser-first cancellation evidence is available through the dedicated `CAP n8n Cancellation Test` fixture and `scripts/cancellation-showcase.js`.
 - The SAP CAP n8n community node package builds and includes the Phase 7 node slice: SAP CAP API credentials, Basic Auth, OAuth2 Client Credentials, `$metadata` Test Connection, dynamic entity-set discovery, Query, Read, Create, Update, Delete, composite-key handling, Action/Function mode, JSON Body input, JSON Parameters input, OData response cleanup, and sanitized errors.
 
 ## What Not To Showcase As Finished Yet
@@ -33,15 +34,13 @@ Be precise about these limitations:
 
 - The current local n8n fixture is intentionally minimal. It contains one Webhook workflow named `CAP n8n Test`.
 - The visual n8n demo proves "CAP sent an annotated payload to n8n"; it does not show a rich downstream workflow.
-- Declarative cancellation is implemented, but there is no no-harness visual demo that seeds a long-running/stoppable n8n execution and shows cancellation in the n8n UI.
+- The cancellation fixture is intentionally separate from the happy-path `CAP n8n Test` fixture and exists only to prove the stop path.
 - The SAP CAP n8n community node is not installed or mounted into the default Docker n8n container. Do not claim that the SAP CAP node appears automatically in the Docker n8n UI.
 - Real installed n8n custom-node E2E in a live n8n editor/runtime remains Phase 8 release-readiness evidence. Phase 7 has deterministic built-node integration verification.
 - Polling triggers are not implemented in the current n8n community node surface.
 - To-one and to-many annotation input mappings are deferred. Scalar mappings are implemented.
 - The Phase 5 package CLI is implemented, but there is no deep `cds import --from n8n` command yet.
 - Live workflow import requires a reachable n8n API and credentials from CAP config/environment. Do not pass or display literal API keys.
-
-The missing no-harness visual showcase setup is tracked for a later roadmap phase.
 
 ## Presenter Setup
 
@@ -418,36 +417,140 @@ Expected result:
 
 - The test named `honors true and false start conditions without creating skipped execution rows` passes.
 
-## Step 8: Explain Cancellation Without Overclaiming The Visual Demo
+## Step 8: Show Browser-First Cancellation Through The CAP/plugin Stop Path
 
-Declarative cancellation is implemented:
+This step proves cancellation with visible n8n UI state first and terminal output second. The acceptance path is a real execution stop: `scripts/cancellation-showcase.js` starts a dedicated workflow through the CAP/plugin `start` API, waits while the reviewer confirms the n8n execution is waiting/running in the browser, then calls `n8n.cancel(executionId)` through the plugin API. The plugin cancellation path uses `cap-n8n-plugin/lib/annotations/CancellationResolver.js` for declarative matching and the service stop path for direct cancellation.
 
-- `@n8n.workflow.cancel` exists on `AdminService.Books`.
-- It runs on `DELETE`.
-- It matches executions by `workflowId`, `businessKey`, and `tag`.
-- It cancels all eligible queued/running/cancel-requested matches through the Phase 3 query/cancel APIs.
-- It logs no-match and failure cases without rolling back the CAP delete.
-
-But the current visual demo does not yet provide a simple screen where a presenter can create a long-running n8n execution, delete the matching Book, and watch the n8n execution stop in the UI.
-
-To show reliable evidence today:
+Start local n8n in Terminal 2:
 
 ```bash
-npx vitest run test/integration/n8n-annotations-cancel.test.js
+npm run n8n:up
+```
+
+If you are using the custom-node review profile instead of the default local n8n container, start that profile first, then use the same fixture import and browser checklist below.
+
+Import the dedicated cancellation fixture:
+
+```bash
+docker compose exec n8n n8n import:workflow --input=/test-workflows/cancellation-workflows.json
+```
+
+Open n8n:
+
+```text
+http://localhost:5678
+```
+
+Find and activate:
+
+```text
+CAP n8n Cancellation Test
+```
+
+Expected workflow shape:
+
+- Webhook path: `cap-cancel-stoppable`
+- Respond to Webhook returns JSON with `executionId` from n8n `$execution.id`
+- The response includes the explicit running webhook response contract: `status: "running"` and `keepRunning: true`
+- A Wait node keeps the execution visible long enough for browser evidence
+
+Create a local n8n API key in the n8n UI under Settings -> n8n API. Where scopes are available, use the minimum execution stop/list scope needed for local review.
+
+Set local placeholder environment variables in Terminal 4:
+
+PowerShell:
+
+```powershell
+$env:N8N_BASE_URL="http://localhost:5678"
+$env:N8N_CANCEL_SUPPORTED="true"
+$env:N8N_CANCEL_API_BASE_URL="http://localhost:5678"
+$env:N8N_API_KEY="<local-n8n-api-key>"
+$env:N8N_CANCEL_WORKFLOW_ID="cap-cancel-stoppable"
+```
+
+Bash:
+
+```bash
+export N8N_BASE_URL=http://localhost:5678
+export N8N_CANCEL_SUPPORTED=true
+export N8N_CANCEL_API_BASE_URL=http://localhost:5678
+export N8N_API_KEY=<local-n8n-api-key>
+export N8N_CANCEL_WORKFLOW_ID=cap-cancel-stoppable
+```
+
+Preview the runner without contacting n8n:
+
+```bash
+node scripts/cancellation-showcase.js --dry-run
+```
+
+Run the showcase:
+
+```bash
+node scripts/cancellation-showcase.js
+```
+
+Expected terminal result before cancellation:
+
+- The script prints the CAP/plugin `executionId`
+- The script prints the n8n `n8nExecutionId`
+- The script prints status `running`
+- The script does not print the API key
+
+Expected browser result before pressing Enter:
+
+- n8n shows an execution for `CAP n8n Cancellation Test`
+- The execution is waiting/running at the Wait node
+- The visible execution ID matches the `n8nExecutionId` printed by the script
+
+Press Enter in the script only after the browser shows the execution is waiting/running.
+
+Expected terminal result after cancellation:
+
+- The script calls `n8n.cancel(executionId)`
+- The cancellation result says `cancelled: true`
+- The result includes the same CAP/plugin execution ID and n8n execution ID
+
+Expected browser result after cancellation:
+
+- Refresh the n8n execution view if needed
+- The execution state is stopped or cancelled
+- The stopped/cancelled state matches the script output
+
+Checklist to capture as browser/manual evidence:
+
+- Browser URL: `http://localhost:5678`
+- Workflow name: `CAP n8n Cancellation Test`
+- Webhook path: `cap-cancel-stoppable`
+- n8n execution ID
+- CAP/plugin execution ID
+- CAP/plugin start response with status `running`
+- Browser-visible waiting/running execution before cancellation
+- Cancellation result from `n8n.cancel(executionId)`
+- Browser-visible stopped/cancelled n8n state after cancellation
+- Cleanup confirmation
+
+This path depends on the explicit running webhook response contract. Without `status: "running"` or `keepRunning: true` plus an n8n execution ID, normal webhook starts remain terminal successes and cancellation is a no-op by design.
+
+Automated evidence:
+
+```bash
+npx vitest run test/integration/n8n-cancellation-stop-api.test.js test/integration/n8n-release-readiness.test.js
 ```
 
 Expected result:
 
-- Cancellation success passes.
-- No-op when no execution is found passes.
-- Cancellation failure without CAP rollback passes.
-- Cancel-all matching behavior passes.
+- The fake stop API proves `n8n.cancel(executionId)` calls `POST /api/v1/executions/<n8nExecutionId>/stop`
+- The fixture, runner, docs, and output are checked for placeholder-only secret handling
 
-Presenter wording:
+Cleanup:
 
-```text
-The cancellation feature is implemented and verified, but the current local visual fixture is not yet reviewer-friendly. The follow-up roadmap item is to add a no-harness visual cancellation showcase with a long-running n8n workflow and documented stop API configuration.
-```
+- Deactivate `CAP n8n Cancellation Test` if it should not keep listening locally
+- Delete or stop only local review executions created for this run
+- Remove the local n8n API key from the n8n UI when review is complete
+- Do not delete checked-in workflow fixtures or generated docs
+
+If this browser path has not been run in the current review environment, record it as `manual UAT required` rather than claiming browser/manual verification.
 
 ## Step 9: Show Execution Tracking, Build Validation, Phase 7 Node Verification, And Non-Rollback Behavior
 
@@ -578,7 +681,7 @@ Use this when time is short.
 
 1. Show `demo-app/srv/admin-service.cds`.
 2. Point at `@n8n.workflow.start` and explain `CREATE`, `UPDATE`, scalar mapping, condition, business key, and tag.
-3. Point at `@n8n.workflow.cancel` and explain delete cancellation is implemented, but not visually polished yet.
+3. Point at `@n8n.workflow.cancel` and explain delete cancellation uses query/cancel matching through `cap-n8n-plugin/lib/annotations/CancellationResolver.js`.
 4. Show `demo-app/n8n`, then run `npm run n8n:workflow:validate -- --app demo-app`.
 5. Open n8n at `http://localhost:5678`, open `CAP n8n Test`, and start Webhook test/listening mode.
 6. Open Fiori at `http://localhost:3000/app/fiori-apps.html`, click `Manage Books`.
@@ -586,8 +689,9 @@ Use this when time is short.
 8. Show the n8n Webhook request payload.
 9. Run the update command for book `1021`.
 10. Show the second n8n Webhook request payload.
-11. Run the Phase 7 focused node verification command, or show the latest passing output for `VERIFY-04`.
-12. Run the Phase 5 or Phase 4 tests, or show the latest passing output for validation, cancellation, and non-rollback behavior.
+11. If cancellation evidence is part of the review, import `test-workflows/cancellation-workflows.json`, activate `CAP n8n Cancellation Test`, run `node scripts/cancellation-showcase.js`, and show the waiting/running execution become stopped/cancelled.
+12. Run the Phase 7 focused node verification command, or show the latest passing output for `VERIFY-04`.
+13. Run the Phase 5, Phase 4, or Phase 8 focused tests, or show the latest passing output for validation, cancellation, release-readiness, and non-rollback behavior.
 
 ## Troubleshooting
 
@@ -650,6 +754,7 @@ The presenter can claim:
 - Conditions are implemented and integration-tested.
 - Execution tracking/query/cancel infrastructure is implemented and integration-tested.
 - Declarative cancellation is implemented and integration-tested.
+- Browser-first cancellation evidence has a dedicated stoppable fixture and CAP/plugin runner when the Step 8 manual path has been completed in the current review environment.
 - Non-rollback behavior is integration-tested.
 - Workflow import writes deterministic sanitized app-root artifacts.
 - `cap-n8n validate` and CAP build validation use generated workflow manifests and typed sidecar schemas.
@@ -664,7 +769,6 @@ The presenter should not claim yet:
 - The SAP CAP n8n node is automatically installed in local Docker n8n.
 - The default Docker n8n container proves real installed SAP CAP custom-node E2E.
 - The SAP CAP n8n node supports polling triggers.
-- Declarative cancellation has a polished no-harness visual UI walkthrough.
 - Local n8n fixtures demonstrate a rich workflow beyond receiving a webhook.
 - A deep `cds import --from n8n` command exists.
 - Literal API-key CLI flags are supported for live import.
