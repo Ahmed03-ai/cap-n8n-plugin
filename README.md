@@ -31,6 +31,8 @@ npm run smoke
 npm run test:integration
 npm test
 npm test --workspaces --if-present
+npm run n8n:workflow:import -- --app demo-app --from test-workflows/workflows.json --workflow cap-test-trigger --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+npm run n8n:workflow:validate -- --app demo-app
 npm run n8n:up
 npm run n8n:import
 npm run n8n:export
@@ -44,6 +46,8 @@ What they do:
 - `npm run test:integration` - runs CAP plugin integration tests without Docker n8n.
 - `npm test` - runs smoke plus integration tests.
 - `npm test --workspaces --if-present` - runs workspace package-level checks.
+- `npm run n8n:workflow:import -- ...` - imports sanitized workflow artifacts into a CAP app through the package CLI.
+- `npm run n8n:workflow:validate -- --app demo-app` - validates CAP workflow annotations against generated app-local n8n artifacts.
 - `npm run n8n:up` - starts local n8n through Docker Compose.
 - `npm run n8n:import` / `npm run n8n:export` - sync shared workflow fixtures in `test-workflows/`.
 
@@ -199,7 +203,93 @@ cds.connect.to('n8n')
 
 Use this active-workflow snippet when the n8n workflow is activated. Use the demo-app create request when the Webhook node is in test mode.
 
-### 6. Test n8n -> CAP With The SAP CAP Node
+### 6. Test Workflow Import And Direct Validation
+
+Phase 5 adds a package CLI for importing workflow artifacts and validating CDS annotations. The repo-local npm wrappers call the checked-in CLI path so they work from this private workspace. Package consumers can use the `cap-n8n` binary exposed by `cap-n8n-plugin`.
+
+Local import from the checked-in n8n export fixture:
+
+```bash
+npm run n8n:workflow:import -- --app demo-app --from test-workflows/workflows.json --workflow cap-test-trigger --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+Equivalent package CLI shape:
+
+```bash
+node cap-n8n-plugin/bin/cap-n8n.js import --app demo-app --from test-workflows/workflows.json --workflow cap-test-trigger --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+Expected import output:
+
+```text
+Imported 1 local n8n workflow(s) into .../demo-app/n8n
+- cap-test-trigger (local) -> .../demo-app/n8n/workflows/cap-test-trigger/workflow.json
+```
+
+Live import uses the same artifact writer and reads credentials from CAP config/environment. It does not support a literal API-key CLI flag.
+
+```bash
+npm run n8n:workflow:import -- --app demo-app --live --workflow <workflow-id> --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+For local routing during a showcase, use a base URL override while keeping secrets in environment/config:
+
+```bash
+npm run n8n:workflow:import -- --app demo-app --live --workflow <workflow-id> --base-url http://localhost:5678 --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+Direct validation:
+
+```bash
+npm run n8n:workflow:validate -- --app demo-app
+node cap-n8n-plugin/bin/cap-n8n.js validate --app demo-app --json
+```
+
+Expected validation output:
+
+```text
+n8n workflow validation passed for .../demo-app.
+```
+
+JSON validation output has this shape:
+
+```json
+{
+  "appRoot": ".../demo-app",
+  "errors": [],
+  "warnings": [],
+  "diagnostics": []
+}
+```
+
+When validation finds an error, text diagnostics include `severity`, `code`, `entity`, `annotation`, `workflow`, `key`, `input`, and `reason`. Errors exit with code 1. Warning-only diagnostics exit with code 0.
+
+Committed app-root artifacts live under:
+
+```text
+demo-app/n8n/manifest.json
+demo-app/n8n/index.cds
+demo-app/n8n/workflows/cap-test-trigger/workflow.json
+demo-app/n8n/workflows/cap-test-trigger/schema.json
+demo-app/n8n/workflows/cap-test-trigger/manifest.json
+```
+
+Artifact roles:
+
+- `workflow.json` - sanitized reviewable n8n workflow structure. Credentials, owners, pinned/static data, request/response bodies, stack traces, runtime counters, and personal metadata are removed.
+- `schema.json` - sidecar scalar input contract used for typed workflow validation.
+- `manifest.json` - per-workflow provenance, accepted workflow references such as `webhook-test/cap-test-trigger`, artifact paths, and sanitizer removed path names only.
+- root `manifest.json` - aggregate index of app-local workflow artifacts.
+- `index.cds` - generated CDS input contract under `cap.n8n.workflows`.
+
+Build-time validation uses the same validator through the CAP build plugin:
+
+```bash
+npx cds compile demo-app/db demo-app/srv demo-app/app demo-app/n8n --to csn
+npm run test:integration -- --run test/integration/n8n-workflow-phase5.test.js
+```
+
+### 7. Test n8n -> CAP With The SAP CAP Node
 
 Use this path to manually validate the n8n community node against the CAP demo app after the local community node has been installed or mounted into n8n. The default `docker-compose.yml` starts plain n8n and does not install `cap-n8n-node` into the container.
 

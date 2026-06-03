@@ -21,6 +21,10 @@ Implemented and demoable from the current repository:
 - CDS annotations can map scalar fields into the workflow payload.
 - CDS annotations can apply a condition, currently `stock > 0` in the demo.
 - CDS annotations can declare cancellation on `DELETE`, and the cancellation behavior is covered by integration tests.
+- Local and live n8n workflow import are available through the package CLI.
+- Generated `demo-app/n8n` artifacts provide sanitized workflow JSON, a sidecar input schema, manifests, and generated CDS.
+- `cap-n8n validate` checks CDS annotations against generated workflow artifacts and returns sanitized text or JSON diagnostics.
+- CAP build validation uses the same workflow annotation validator.
 
 ## What Not To Showcase As Finished Yet
 
@@ -31,6 +35,8 @@ Be precise about these limitations:
 - Declarative cancellation is implemented, but there is no no-harness visual demo that seeds a long-running/stoppable n8n execution and shows cancellation in the n8n UI.
 - The SAP CAP n8n community node package builds and contains CRUD operations, but `docker-compose.yml` does not install or mount that custom node into the local n8n container. Do not claim that the SAP CAP node appears automatically in the Docker n8n UI.
 - To-one and to-many annotation input mappings are deferred. Scalar mappings are implemented.
+- The Phase 5 package CLI is implemented, but there is no deep `cds import --from n8n` command yet.
+- Live workflow import requires a reachable n8n API and credentials from CAP config/environment. Do not pass or display literal API keys.
 
 The missing no-harness visual showcase setup is tracked for a later roadmap phase.
 
@@ -188,7 +194,92 @@ What this proves:
 - Delete cancellation is declared in CDS.
 - The visual cancellation fixture is not yet polished enough for a no-harness demo. Use the integration test evidence for cancellation until the later showcase fixture exists.
 
-## Step 4: Trigger CREATE From CAP And Watch n8n Receive It
+## Step 4: Show The Phase 5 Workflow Artifacts And Validator
+
+Open this folder in the editor or file explorer:
+
+```text
+demo-app/n8n
+```
+
+Expected filesystem view:
+
+```text
+demo-app/n8n/manifest.json
+demo-app/n8n/index.cds
+demo-app/n8n/workflows/cap-test-trigger/workflow.json
+demo-app/n8n/workflows/cap-test-trigger/schema.json
+demo-app/n8n/workflows/cap-test-trigger/manifest.json
+```
+
+What to point out:
+
+- `workflow.json` is sanitized n8n workflow structure for review.
+- `schema.json` defines the typed scalar inputs `bookId`, `title`, and optional `event`.
+- `manifest.json` records accepted references, including `webhook-test/cap-test-trigger`, without storing removed secret or personal metadata values.
+- `index.cds` contains the generated `cap.n8n.workflows` input contract that CAP can compile.
+
+Run direct validation:
+
+```bash
+npm run n8n:workflow:validate -- --app demo-app
+```
+
+Expected terminal output:
+
+```text
+n8n workflow validation passed for .../demo-app.
+```
+
+Run JSON validation for machine-readable diagnostics:
+
+```bash
+node cap-n8n-plugin/bin/cap-n8n.js validate --app demo-app --json
+```
+
+Expected JSON shape:
+
+```json
+{
+  "appRoot": ".../demo-app",
+  "errors": [],
+  "warnings": [],
+  "diagnostics": []
+}
+```
+
+Run local import if you need to regenerate the same artifact set from the checked-in fixture:
+
+```bash
+npm run n8n:workflow:import -- --app demo-app --from test-workflows/workflows.json --workflow cap-test-trigger --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+Expected import output:
+
+```text
+Imported 1 local n8n workflow(s) into .../demo-app/n8n
+- cap-test-trigger (local) -> .../demo-app/n8n/workflows/cap-test-trigger/workflow.json
+```
+
+Live import uses the same artifact layout, but it requires a reachable n8n API and CAP config/environment credentials:
+
+```bash
+npm run n8n:workflow:import -- --app demo-app --live --workflow <workflow-id> --base-url http://localhost:5678 --schema demo-app/n8n/workflows/cap-test-trigger/schema.json
+```
+
+Presenter wording:
+
+```text
+The import command creates deterministic app-local artifacts. The validate command reads the same generated manifests and CAP CSN annotations as the build validator, so the demo annotation can be checked without starting n8n.
+```
+
+Do not claim:
+
+- The command accepts a literal API key flag.
+- The sanitized workflow JSON is a full-fidelity n8n export.
+- Full JSON Schema or association mapping is implemented.
+
+## Step 5: Trigger CREATE From CAP And Watch n8n Receive It
 
 Keep n8n Webhook test/listening mode active.
 
@@ -249,7 +340,7 @@ Talking point:
 
 The old hard-coded `cds.connect.to('n8n')` trigger was removed from `demo-app/srv/admin-service.js`. The create side effect now comes from the CDS annotation and plugin registrar.
 
-## Step 5: Trigger UPDATE And Watch n8n Receive It
+## Step 6: Trigger UPDATE And Watch n8n Receive It
 
 Put the n8n Webhook node back into test/listening mode.
 
@@ -297,7 +388,7 @@ Talking point:
 
 The annotation maps selected fields, not the whole database row. Updating `stock` triggers the workflow, but `stock` is not sent because the annotation maps only `ID` and `title`.
 
-## Step 6: Show Condition Behavior Honestly
+## Step 7: Show Condition Behavior Honestly
 
 The implemented condition is:
 
@@ -324,7 +415,7 @@ Expected result:
 
 - The test named `honors true and false start conditions without creating skipped execution rows` passes.
 
-## Step 7: Explain Cancellation Without Overclaiming The Visual Demo
+## Step 8: Explain Cancellation Without Overclaiming The Visual Demo
 
 Declarative cancellation is implemented:
 
@@ -355,7 +446,7 @@ Presenter wording:
 The cancellation feature is implemented and verified, but the current local visual fixture is not yet reviewer-friendly. The follow-up roadmap item is to add a no-harness visual cancellation showcase with a long-running n8n workflow and documented stop API configuration.
 ```
 
-## Step 8: Show Execution Tracking And Non-Rollback Behavior
+## Step 9: Show Execution Tracking, Build Validation, And Non-Rollback Behavior
 
 Run the aggregate integration suite:
 
@@ -365,8 +456,22 @@ npm run test:integration
 
 Expected result:
 
-- The Phase 2, Phase 3, and Phase 4 integration tests pass.
-- The suite includes execution storage, dispatch retry, duplicate handling, query/paging, cancellation, annotation start, annotation cancel, and demo annotation evidence.
+- The Phase 2, Phase 3, Phase 4, and Phase 5 integration tests pass.
+- The suite includes execution storage, dispatch retry, duplicate handling, query/paging, cancellation, annotation start, annotation cancel, demo annotation evidence, workflow import, generated CDS, direct validation, and CAP build validation.
+
+For a shorter Phase 5 check:
+
+```bash
+npx vitest run test/integration/n8n-workflow-phase5.test.js
+```
+
+Expected result:
+
+- Local workflow import writes app-root artifacts.
+- Direct `cap-n8n validate` passes for `demo-app`.
+- `cds compile` and CAP build validation pass for the temp app fixture.
+- Warning-only validation cases exit 0, while typed error cases exit 1.
+- Source, CLI output, and generated artifact sanitization gates pass.
 
 For a shorter Phase 4-only check:
 
@@ -382,7 +487,7 @@ Talking point:
 
 The integration tests use CAP, CDS models, SQLite, and fake HTTP webhook servers. They are not just plain object tests.
 
-## Step 9: Show The n8n Community Node Status Carefully
+## Step 10: Show The n8n Community Node Status Carefully
 
 The n8n node package is buildable:
 
@@ -420,13 +525,14 @@ Use this when time is short.
 1. Show `demo-app/srv/admin-service.cds`.
 2. Point at `@n8n.workflow.start` and explain `CREATE`, `UPDATE`, scalar mapping, condition, business key, and tag.
 3. Point at `@n8n.workflow.cancel` and explain delete cancellation is implemented, but not visually polished yet.
-4. Open n8n at `http://localhost:5678`, open `CAP n8n Test`, and start Webhook test/listening mode.
-5. Open Fiori at `http://localhost:3000/app/fiori-apps.html`, click `Manage Books`.
-6. Run the create command for book `1021`.
-7. Show the n8n Webhook request payload.
-8. Run the update command for book `1021`.
-9. Show the second n8n Webhook request payload.
-10. Run the Phase 4 tests or show the latest passing test output for cancellation and non-rollback behavior.
+4. Show `demo-app/n8n`, then run `npm run n8n:workflow:validate -- --app demo-app`.
+5. Open n8n at `http://localhost:5678`, open `CAP n8n Test`, and start Webhook test/listening mode.
+6. Open Fiori at `http://localhost:3000/app/fiori-apps.html`, click `Manage Books`.
+7. Run the create command for book `1021`.
+8. Show the n8n Webhook request payload.
+9. Run the update command for book `1021`.
+10. Show the second n8n Webhook request payload.
+11. Run the Phase 5 or Phase 4 tests, or show the latest passing output for validation, cancellation, and non-rollback behavior.
 
 ## Troubleshooting
 
@@ -490,6 +596,9 @@ The presenter can claim:
 - Execution tracking/query/cancel infrastructure is implemented and integration-tested.
 - Declarative cancellation is implemented and integration-tested.
 - Non-rollback behavior is integration-tested.
+- Workflow import writes deterministic sanitized app-root artifacts.
+- `cap-n8n validate` and CAP build validation use generated workflow manifests and typed sidecar schemas.
+- Phase 5 integration tests cover local import, fake-live import, generated CDS, direct validation, CAP build validation, and sanitization gates.
 
 The presenter should not claim yet:
 
@@ -497,3 +606,5 @@ The presenter should not claim yet:
 - The SAP CAP n8n node is automatically installed in local Docker n8n.
 - Declarative cancellation has a polished no-harness visual UI walkthrough.
 - Local n8n fixtures demonstrate a rich workflow beyond receiving a webhook.
+- A deep `cds import --from n8n` command exists.
+- Literal API-key CLI flags are supported for live import.
