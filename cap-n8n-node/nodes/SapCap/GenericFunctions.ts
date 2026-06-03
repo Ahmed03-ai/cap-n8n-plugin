@@ -31,8 +31,22 @@ type QueryRequestInput = {
 type ReadRequestInput = {
   servicePath: unknown
   entitySetName: unknown
-  keyPredicate: unknown
+  keyPredicate?: unknown
+  keyDescriptors?: MetadataKeyDescriptor[]
+  keyParts?: KeyPartsInput
 }
+
+type MetadataKeyDescriptor = {
+  name: unknown
+  type?: unknown
+}
+
+type KeyPartEntry = {
+  name?: unknown
+  value?: unknown
+}
+
+type KeyPartsInput = Record<string, unknown> | KeyPartEntry[]
 
 type SapCapApiRequestInput = {
   method?: IHttpRequestMethods
@@ -133,6 +147,62 @@ export function normalizeKeyPredicate(value: unknown) {
     : `(${keyPredicate})`
 }
 
+export function formatODataKeyLiteral(value: unknown, type: unknown) {
+  const rawValue = normalizeScalarKeyValue(value)
+  const typeName = typeof type === 'string' ? type.trim().toLowerCase() : ''
+
+  if (containsUrlBoundary(rawValue)) {
+    throw createSapCapRequestError('Key values must not include /, \\, ?, or #.', {
+      category: 'validation',
+    })
+  }
+
+  if (isBooleanEdmType(typeName)) {
+    return formatBooleanLiteral(rawValue)
+  }
+
+  if (isNumericEdmType(typeName)) {
+    return formatNumericLiteral(rawValue, typeName)
+  }
+
+  return `'${rawValue.replace(/'/g, '\'\'')}'`
+}
+
+export function buildKeyPredicateFromParts(input: {
+  keyDescriptors: MetadataKeyDescriptor[]
+  keyParts: KeyPartsInput
+}) {
+  const descriptors = normalizeKeyDescriptors(input.keyDescriptors)
+  const keyValues = normalizeKeyPartValues(input.keyParts)
+
+  const parts = descriptors.map((descriptor) => {
+    if (!keyValues.has(descriptor.name) || isMissingKeyValue(keyValues.get(descriptor.name))) {
+      throw createSapCapRequestError('Every metadata-derived key part is required.', {
+        category: 'validation',
+      })
+    }
+
+    return `${descriptor.name}=${formatODataKeyLiteral(keyValues.get(descriptor.name), descriptor.type)}`
+  })
+
+  return `(${parts.join(',')})`
+}
+
+export function resolveKeyPredicate(input: {
+  keyPredicate?: unknown
+  keyDescriptors?: MetadataKeyDescriptor[]
+  keyParts?: KeyPartsInput
+}) {
+  if (Array.isArray(input.keyDescriptors) && input.keyDescriptors.length > 0) {
+    return buildKeyPredicateFromParts({
+      keyDescriptors: input.keyDescriptors,
+      keyParts: input.keyParts ?? {},
+    })
+  }
+
+  return normalizeKeyPredicate(input.keyPredicate)
+}
+
 export function buildQueryRequest(input: QueryRequestInput) {
   const servicePath = normalizeServicePath(input.servicePath)
   const entitySetName = normalizeEntitySetName(input.entitySetName)
@@ -155,7 +225,7 @@ export function buildQueryRequest(input: QueryRequestInput) {
 export function buildReadRequest(input: ReadRequestInput) {
   const servicePath = normalizeServicePath(input.servicePath)
   const entitySetName = normalizeEntitySetName(input.entitySetName)
-  const keyPredicate = normalizeKeyPredicate(input.keyPredicate)
+  const keyPredicate = resolveKeyPredicate(input)
 
   return {
     method: 'GET' as IHttpRequestMethods,
@@ -292,6 +362,155 @@ function normalizeEntitySetName(value: unknown) {
 
 function containsUrlBoundary(value: string) {
   return /[/?#\\]/.test(value) || /%(?:2f|3f|23|5c)/i.test(value)
+}
+
+function normalizeKeyDescriptors(descriptors: MetadataKeyDescriptor[]) {
+  if (!Array.isArray(descriptors) || descriptors.length === 0) {
+    throw createSapCapRequestError('Metadata key descriptors are required to build a key predicate.', {
+      category: 'validation',
+    })
+  }
+
+  const normalized: Array<{ name: string, type?: string }> = []
+  const seen = new Set<string>()
+
+  for (const descriptor of descriptors) {
+    const name = normalizeKeyName(descriptor?.name)
+
+    if (seen.has(name)) {
+      throw createSapCapRequestError('Metadata key descriptors must not contain duplicate key names.', {
+        category: 'validation',
+      })
+    }
+
+    seen.add(name)
+    normalized.push({
+      name,
+      type: typeof descriptor.type === 'string' ? descriptor.type : undefined,
+    })
+  }
+
+  return normalized
+}
+
+function normalizeKeyPartValues(keyParts: KeyPartsInput) {
+  if (!isPlainObject(keyParts) && !Array.isArray(keyParts)) {
+    throw createSapCapRequestError('Metadata key values are required to build a key predicate.', {
+      category: 'validation',
+    })
+  }
+
+  const keyValues = new Map<string, unknown>()
+
+  if (Array.isArray(keyParts)) {
+    for (const part of keyParts) {
+      if (!isPlainObject(part)) {
+        throw createSapCapRequestError('Metadata key values are required to build a key predicate.', {
+          category: 'validation',
+        })
+      }
+
+      const name = normalizeKeyName(part.name)
+
+      if (keyValues.has(name)) {
+        throw createSapCapRequestError('Metadata key values must not contain duplicate key names.', {
+          category: 'validation',
+        })
+      }
+
+      keyValues.set(name, part.value)
+    }
+
+    return keyValues
+  }
+
+  for (const [name, value] of Object.entries(keyParts)) {
+    keyValues.set(normalizeKeyName(name), value)
+  }
+
+  return keyValues
+}
+
+function normalizeKeyName(value: unknown) {
+  const keyName = requireString(value, 'Metadata key names are invalid.')
+
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(keyName)) {
+    throw createSapCapRequestError('Metadata key names are invalid.', {
+      category: 'validation',
+    })
+  }
+
+  return keyName
+}
+
+function normalizeScalarKeyValue(value: unknown) {
+  if (isMissingKeyValue(value) ||
+    typeof value === 'object' ||
+    typeof value === 'function' ||
+    typeof value === 'symbol'
+  ) {
+    throw createSapCapRequestError('Every metadata-derived key part is required.', {
+      category: 'validation',
+    })
+  }
+
+  return String(value).trim()
+}
+
+function isMissingKeyValue(value: unknown) {
+  return value === undefined ||
+    value === null ||
+    (typeof value === 'string' && !value.trim())
+}
+
+function isBooleanEdmType(typeName: string) {
+  return typeName === 'edm.boolean'
+}
+
+function isNumericEdmType(typeName: string) {
+  return [
+    'edm.byte',
+    'edm.sbyte',
+    'edm.int16',
+    'edm.int32',
+    'edm.int64',
+    'edm.decimal',
+    'edm.double',
+    'edm.single',
+  ].includes(typeName)
+}
+
+function formatBooleanLiteral(rawValue: string) {
+  const normalized = rawValue.toLowerCase()
+
+  if (normalized !== 'true' && normalized !== 'false') {
+    throw createSapCapRequestError('Boolean key values must be true or false.', {
+      category: 'validation',
+    })
+  }
+
+  return normalized
+}
+
+function formatNumericLiteral(rawValue: string, typeName: string) {
+  const integerTypes = new Set(['edm.byte', 'edm.sbyte', 'edm.int16', 'edm.int32', 'edm.int64'])
+  const numberPattern = integerTypes.has(typeName)
+    ? /^[+-]?\d+$/
+    : /^[+-]?(?:\d+|\d*\.\d+)(?:[eE][+-]?\d+)?$/
+
+  if (!numberPattern.test(rawValue) || !Number.isFinite(Number(rawValue))) {
+    throw createSapCapRequestError('Numeric key values must be valid OData numbers.', {
+      category: 'validation',
+    })
+  }
+
+  return rawValue
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value)
 }
 
 function setTextQueryParam(params: URLSearchParams, key: string, value: unknown) {
