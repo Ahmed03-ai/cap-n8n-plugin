@@ -258,6 +258,11 @@ function applyAuthentication(headers: IDataObject, credentials: ICredentialDataD
       { category: 'configuration' }
     )
   }
+
+  throw createSapCapRequestError(
+    'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
+    { category: 'configuration' }
+  )
 }
 
 function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read') {

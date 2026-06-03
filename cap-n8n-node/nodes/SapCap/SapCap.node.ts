@@ -1,62 +1,27 @@
 import {
-  IDataObject,
   IExecuteFunctions,
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
   NodeConnectionTypes,
-  NodeOperationError,
 } from 'n8n-workflow'
 
 import {
   buildQueryRequest,
   buildReadRequest,
+  createSapCapRequestError,
   resolveEntitySetName,
   sapCapApiRequest,
 } from './GenericFunctions'
 import { loadEntitySetOptions } from './ODataMetadata'
+import {
+  classifySapCapError,
+  normalizeODataItems,
+  toContinueOnFailItem,
+  toNodeOperationError,
+} from './ODataResponse'
 
-function stripODataMetadata(value: IDataObject): IDataObject {
-  return Object.fromEntries(
-    Object.entries(value).filter(([key]) => !key.startsWith('@odata.'))
-  )
-}
-
-function normalizeODataResponse(
-  operation: string,
-  response: IDataObject | undefined,
-  itemIndex: number
-) {
-  if (!response) {
-    return [{
-      json: {},
-      pairedItem: { item: itemIndex },
-    }]
-  }
-
-  const value = response.value
-  if (operation === 'query' && Array.isArray(value)) {
-    return value.map((record) => ({
-      json: stripODataMetadata(record as IDataObject),
-      pairedItem: { item: itemIndex },
-    }))
-  }
-
-  return [{
-    json: stripODataMetadata(response),
-    pairedItem: { item: itemIndex },
-  }]
-}
-
-function errorItem(err: unknown) {
-  const error = err as Error & { statusCode?: number, category?: string }
-
-  return {
-    error: error instanceof Error ? error.message : String(err),
-    ...(error.statusCode ? { statusCode: error.statusCode } : {}),
-    ...(error.category ? { category: error.category } : {}),
-  }
-}
+type Phase6Operation = 'query' | 'read'
 
 export class SapCap implements INodeType {
   description: INodeTypeDescription = {
@@ -251,8 +216,10 @@ export class SapCap implements INodeType {
     const returnData: INodeExecutionData[] = []
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+      let operation: Phase6Operation = 'query'
+
       try {
-        const operation = this.getNodeParameter('operation', itemIndex) as string
+        operation = resolveOperation(this.getNodeParameter('operation', itemIndex))
         const servicePath = this.getNodeParameter('servicePath', itemIndex) as string
         const entitySetName = resolveEntitySetName({
           entitySetSource: this.getNodeParameter('entitySetSource', itemIndex) as string,
@@ -279,26 +246,31 @@ export class SapCap implements INodeType {
           ...request,
           responseFormat: 'json',
           errorContext: operation === 'read' ? 'read' : 'odata',
-        }) as IDataObject | undefined
+        })
 
-        returnData.push(...normalizeODataResponse(operation, response, itemIndex))
+        returnData.push(...normalizeODataItems(operation, response, itemIndex))
       } catch (err) {
+        const safeError = classifySapCapError(err, { operation })
+
         if (this.continueOnFail()) {
-          returnData.push({
-            json: errorItem(err),
-            pairedItem: {
-              item: itemIndex,
-            },
-          })
+          returnData.push(toContinueOnFailItem(safeError, itemIndex))
           continue
         }
 
-        throw new NodeOperationError(this.getNode(), err as Error, {
-          itemIndex,
-        })
+        throw toNodeOperationError(this.getNode(), safeError, itemIndex)
       }
     }
 
     return [returnData]
   }
+}
+
+function resolveOperation(value: unknown): Phase6Operation {
+  if (value === 'query' || value === 'read') {
+    return value
+  }
+
+  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query or Read.', {
+    category: 'validation',
+  })
 }
