@@ -1,7 +1,9 @@
-<!-- refreshed: 2026-05-28 -->
+<!-- refreshed: 2026-06-03 -->
 # Architecture
 
-**Analysis Date:** 2026-05-28
+**Analysis Date:** 2026-06-03
+
+**Last mapped commit:** fa456e23c97b9349257019c15ca7723aa8a3352d
 
 ## System Overview
 
@@ -49,7 +51,7 @@
 | Workflow build validation | Validates `@n8n.workflow.start` scalar input mappings against generated workflow schemas during `cds build`, reporting warnings for incremental adoption and throwing build errors for typed required-input/type mismatches. | `cap-n8n-plugin/lib/workflows/validate.js`, `cap-n8n-plugin/lib/workflows/diagnostics.js`, `cap-n8n-plugin/lib/workflows/BuildValidationPlugin.js`, `cap-n8n-plugin/cds-plugin.js` |
 | Mock n8n workflow service | Implements deterministic offline `start` behavior with in-memory start records and explicit opt-in failures. | `cap-n8n-plugin/lib/MockN8nWorkflowService.js` |
 | Plugin package entry | Public package entry that exports `N8nWorkflowService`, `MockN8nWorkflowService`, and `workflowTools`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
-| n8n node package entry | Package `main` target for the planned n8n community node; currently empty. | `cap-n8n-node/index.js` |
+| n8n community node package | Builds the `n8n-nodes-sap-cap` package, exports n8n node/credential registration metadata, implements SAP CAP API credentials, OData metadata discovery, CRUD operations, Action/Function execution, composite-key request building, and sanitized response/error cleanup. | `cap-n8n-node/index.js`, `cap-n8n-node/nodes/SapCap/*.ts`, `cap-n8n-node/credentials/SapCapApi.credentials.ts` |
 | Demo app configuration | Binds the demo app to the plugin service implementation, configures n8n credentials, and sets the CAP server port. | `demo-app/package.json` |
 | Domain model | Owns Bookshop persistence entities, localized fields, associations, code lists, and Fiori draft annotations. | `demo-app/db/schema.cds` |
 | Admin OData model | Exposes editable projections of `Authors`, `Books`, and `Genres`. | `demo-app/srv/admin-service.cds` |
@@ -90,11 +92,11 @@
 - Used by: `demo-app/package.json` through `cds.requires.n8n.impl` and by `demo-app/srv/admin-service.js` through `cds.connect.to('n8n')`.
 
 **n8n Node Layer:**
-- Purpose: Reserves the package boundary for n8n-to-CAP node functionality.
+- Purpose: Provides the n8n-to-CAP community node package for reading from and writing to CAP OData services.
 - Location: `cap-n8n-node/`
-- Contains: `cap-n8n-node/package.json` and empty `cap-n8n-node/index.js`.
-- Depends on: Not detected in current package metadata.
-- Used by: Root npm workspace only.
+- Contains: n8n package metadata and registration export in `cap-n8n-node/index.js`, TypeScript node implementation in `cap-n8n-node/nodes/SapCap/`, SAP CAP API credentials in `cap-n8n-node/credentials/`, package-local `tsconfig.json`, and `eslint.config.mjs`.
+- Depends on: `@n8n/node-cli`, `n8n-workflow`, TypeScript, Node.js `>=22.16 <25`, and a reachable CAP OData service at execution time.
+- Used by: Root smoke/integration tests, `npm run build --workspace n8n-nodes-sap-cap`, and future installed/mounted n8n community-node runtime.
 
 **Persistence Model Layer:**
 - Purpose: Defines the Bookshop entities persisted by CAP.
@@ -245,9 +247,9 @@
 - Responsibilities: Load Fiori Elements apps for browsing, administering books/authors, and displaying genres.
 
 **n8n node package:**
-- Location: `cap-n8n-node/index.js`
-- Triggers: Package entry if required by a consumer.
-- Responsibilities: Not detected; file is empty.
+- Location: `cap-n8n-node/index.js`, `cap-n8n-node/package.json`, `cap-n8n-node/nodes/SapCap/SapCap.node.ts`, `cap-n8n-node/credentials/SapCapApi.credentials.ts`
+- Triggers: `n8n-node build`, root smoke/integration test scripts, package require/import by tests, and installed/mounted n8n community-node discovery.
+- Responsibilities: Registers SAP CAP node and credential build artifacts, presents n8n node properties, loads `$metadata` options, validates Basic Auth/OAuth2 credentials, issues OData requests, normalizes OData responses into n8n items, and sanitizes request/response errors.
 
 ## Architectural Constraints
 
@@ -262,11 +264,11 @@
 
 ## Anti-Patterns
 
-### Empty Package Entry Points
+### Avoid Entry Point Drift
 
-**What happens:** `cap-n8n-plugin/package.json` and `cap-n8n-node/package.json` both point `main` at empty `index.js` files.
-**Why it's wrong:** Consumers requiring the package entry receive no API, and package behavior depends on CAP-specific plugin loading or explicit service implementation paths.
-**Do this instead:** Put public exports or package initialization in `cap-n8n-plugin/index.js` and implement n8n node registration in `cap-n8n-node/index.js` when those package boundaries are used.
+**What happens:** Package metadata can point at entry files or built artifacts that no longer match the actual public surface.
+**Why it's wrong:** Consumers and smoke tests either receive stale registration metadata or bypass the package boundary by importing internal files directly.
+**Do this instead:** Keep `cap-n8n-plugin/index.js`, `cap-n8n-node/index.js`, and package `main`/`n8n` metadata aligned with the implementation and verify them through package-boundary smoke tests.
 
 ### Demo-Specific Workflow Trigger in Business Service
 
@@ -300,4 +302,4 @@
 
 ---
 
-*Architecture analysis: 2026-05-28*
+*Architecture analysis: 2026-06-03*

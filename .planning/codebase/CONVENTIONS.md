@@ -1,12 +1,15 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-05-28
+**Analysis Date:** 2026-06-03
+
+**Last mapped commit:** fa456e23c97b9349257019c15ca7723aa8a3352d
 
 ## Naming Patterns
 
 **Files:**
 - Use lowercase package and folder names with hyphens for npm workspace packages: `cap-n8n-plugin/`, `cap-n8n-node/`, `demo-app/`.
 - Use `.js` for Node.js service implementations: `cap-n8n-plugin/lib/N8nWorkflowService.js`, `demo-app/srv/admin-service.js`, `demo-app/srv/cat-service.js`.
+- Use `.ts` for n8n community-node source files under `cap-n8n-node/nodes/SapCap/` and `cap-n8n-node/credentials/`; build output belongs in `cap-n8n-node/dist/`.
 - Use `.cds` for CAP models, services, access rules, constraints, and Fiori annotations: `demo-app/db/schema.cds`, `demo-app/srv/admin-service.cds`, `demo-app/app/common.cds`.
 - Use `Component.js` for SAP Fiori Elements app components under each app webapp folder: `demo-app/app/browse/webapp/Component.js`, `demo-app/app/admin-books/webapp/Component.js`.
 - Use `manifest.json` for SAP UI5/Fiori app manifests: `demo-app/app/browse/webapp/manifest.json`, `demo-app/app/admin-authors/webapp/manifest.json`.
@@ -33,8 +36,9 @@
 ## Code Style
 
 **Formatting:**
-- Formatting tool: Not detected. No `.prettierrc*`, `.eslintrc*`, `eslint.config.*`, `biome.json`, `tsconfig.json`, or `jsconfig.json` files are present.
+- Formatting tool: Not detected. No `.prettierrc*`, `biome.json`, or `jsconfig.json` files are present.
 - JavaScript service files use two-space indentation: `cap-n8n-plugin/lib/N8nWorkflowService.js`, `demo-app/srv/admin-service.js`, `demo-app/srv/cat-service.js`.
+- n8n node TypeScript uses the `cap-n8n-node/tsconfig.json` compiler settings (`strict`, Node16 modules, ES2022 target) and package-local `cap-n8n-node/eslint.config.mjs`.
 - The dominant JavaScript style omits semicolons: `cap-n8n-plugin/lib/N8nWorkflowService.js`, `demo-app/srv/admin-service.js`, `demo-app/srv/cat-service.js`, `demo-app/app/browse/webapp/Component.js`.
 - `cap-n8n-plugin/cds-plugin.js` uses semicolons; keep new plugin-service code aligned with the no-semicolon style in `cap-n8n-plugin/lib/N8nWorkflowService.js` unless editing `cap-n8n-plugin/cds-plugin.js` directly.
 - Use single quotes for Node.js string literals: `require('@sap/cds')` in `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cds.connect.to('n8n')` in `demo-app/srv/admin-service.js`.
@@ -43,8 +47,8 @@
 - Align CDS entity fields and annotations for readability where existing files use column alignment: `demo-app/db/schema.cds`, `demo-app/app/common.cds`.
 
 **Linting:**
-- Lint tool: Not detected.
-- `@eslint/js` appears only as a transitive/peer package inside `package-lock.json` and `demo-app/package-lock.json`; no project lint script or ESLint config is present.
+- Lint tool: n8n community-node linting is present for `cap-n8n-node` via `npm run lint --workspace n8n-nodes-sap-cap`, which delegates to `n8n-node lint`.
+- Root `package.json` declares `eslint` and `@eslint/js`; `cap-n8n-node/eslint.config.mjs` imports the config from `@n8n/node-cli/eslint`.
 - Do not assume lint rules beyond existing runtime syntax. Match the local JavaScript and CDS style in the file being edited.
 
 ## Import Organization
@@ -58,6 +62,7 @@
 **Path Aliases:**
 - No JavaScript path aliases are configured.
 - Use relative CommonJS paths for local JavaScript modules: `require.resolve('./lib/N8nWorkflowService.js')` in `cap-n8n-plugin/cds-plugin.js`.
+- Use relative TypeScript imports inside the n8n node package: `SapCap.node.ts` imports `./GenericFunctions`, `./ODataMetadata`, and `./ODataResponse`.
 - Use CDS relative imports between model layers: `using {sap.capire.bookshop as my} from '../db/schema';` in `demo-app/srv/admin-service.cds`, `using { AdminService } from '../../srv/admin-service';` in `demo-app/app/admin-books/fiori-service.cds`.
 - Use SAP package imports directly in CDS: `using { sap } from '@sap/cds/common';` in `demo-app/db/currencies.cds`, `using { sap.common } from '@sap/cds/common';` in `demo-app/app/common.cds`.
 
@@ -92,7 +97,7 @@
 
 **JSDoc/TSDoc:**
 - JSDoc is used as short block comments for CAP handler intent, not for type documentation: `demo-app/srv/admin-service.js`.
-- TSDoc is not applicable because the repo contains JavaScript and CDS, not TypeScript.
+- TSDoc is not established in the n8n TypeScript package; keep types explicit through TypeScript aliases/interfaces and add comments only for non-obvious behavior.
 - Use JSDoc-style comments only when they label a handler group or workflow behavior, such as `Generate IDs for new Books drafts` in `demo-app/srv/admin-service.js`.
 
 ## Function Design
@@ -107,8 +112,8 @@
 
 **Exports:** Use CommonJS exports for Node.js modules: `module.exports = N8nWorkflowService` in `cap-n8n-plugin/lib/N8nWorkflowService.js`, inline `module.exports = class ...` in `demo-app/srv/admin-service.js` and `demo-app/srv/cat-service.js`.
 
-**Barrel Files:** Barrel exports are not used. `cap-n8n-plugin/index.js` and `cap-n8n-node/index.js` are empty package entry files, while plugin behavior is registered through `cap-n8n-plugin/cds-plugin.js` and service implementation lives in `cap-n8n-plugin/lib/N8nWorkflowService.js`.
+**Package Entries:** `cap-n8n-plugin/index.js` exports the reusable service classes and workflow tools. `cap-n8n-node/index.js` exports package registration metadata derived from `cap-n8n-node/package.json`; the runtime n8n node implementation lives under `cap-n8n-node/nodes/SapCap/`.
 
 ---
 
-*Convention analysis: 2026-05-28*
+*Convention analysis: 2026-06-03*

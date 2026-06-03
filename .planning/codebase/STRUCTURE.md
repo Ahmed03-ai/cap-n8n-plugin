@@ -1,6 +1,8 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-05-28
+**Analysis Date:** 2026-06-03
+
+**Last mapped commit:** fa456e23c97b9349257019c15ca7723aa8a3352d
 
 ## Directory Layout
 
@@ -14,8 +16,12 @@ cap-n8n-plugin/
 |   |-- cds-plugin.js           # CAP bootstrap hook
 |   |-- index.js                # Package main entry and workflowTools export
 |   `-- package.json            # Plugin package metadata
-|-- cap-n8n-node/               # n8n community node package placeholder
-|   |-- index.js                # Empty package main entry
+|-- cap-n8n-node/               # n8n community node package for SAP CAP OData access
+|   |-- credentials/            # SAP CAP API credential type and icon
+|   |-- nodes/SapCap/           # SAP CAP node, OData metadata, request, and response helpers
+|   |-- eslint.config.mjs       # n8n community-node lint config
+|   |-- index.js                # Package registration metadata export
+|   |-- tsconfig.json           # TypeScript build config for node and credential sources
 |   `-- package.json            # n8n node package metadata
 |-- demo-app/                   # SAP CAP demo application
 |   |-- app/                    # Fiori Elements app annotations and UI5 shells
@@ -27,8 +33,13 @@ cap-n8n-plugin/
 |   |-- readme.md               # Demo-specific notes
 |   `-- test.http               # Manual admin OData request for n8n trigger
 |-- mockups/                    # Static n8n UI mockup artifact
+|-- docs/                       # Maintainer and manual showcase documentation
+|   `-- manual-visual-showcase.md
+|-- test/                       # Vitest smoke and integration tests
 |-- test-workflows/             # Shared exported n8n workflows
+|-- AGENTS.md                   # Generated Codex/agent operating context from GSD docs
 |-- docker-compose.yml          # Local n8n orchestration config
+|-- package-lock.json           # Root npm workspace lockfile
 |-- package.json                # npm workspace root
 |-- README.md                   # Project usage guide
 |-- N8N_REQUIREMENTS.md         # Requirements document
@@ -64,8 +75,8 @@ cap-n8n-plugin/
 
 **`cap-n8n-node/`:**
 - Purpose: Package boundary for n8n community node functionality.
-- Contains: Package metadata and empty package entry.
-- Key files: `cap-n8n-node/package.json`, `cap-n8n-node/index.js`
+- Contains: Package metadata, package registration export, TypeScript node implementation, credential definition, SVG icons, TypeScript config, and n8n CLI lint config.
+- Key files: `cap-n8n-node/package.json`, `cap-n8n-node/index.js`, `cap-n8n-node/nodes/SapCap/SapCap.node.ts`, `cap-n8n-node/nodes/SapCap/GenericFunctions.ts`, `cap-n8n-node/nodes/SapCap/ODataMetadata.ts`, `cap-n8n-node/nodes/SapCap/ODataResponse.ts`, `cap-n8n-node/credentials/SapCapApi.credentials.ts`, `cap-n8n-node/tsconfig.json`, `cap-n8n-node/eslint.config.mjs`
 
 **`demo-app/`:**
 - Purpose: Runnable SAP CAP demo app that consumes `cap-n8n-plugin` and demonstrates Book creation triggering n8n.
@@ -122,6 +133,16 @@ cap-n8n-plugin/
 - Contains: HTML mockup artifact.
 - Key files: `mockups/n8n-node-mockup.html`
 
+**`docs/`:**
+- Purpose: Stores human-facing project documentation that is not package-local runtime code.
+- Contains: Presenter-oriented manual showcase runbook, including what is implemented, what not to claim, local n8n/CAP demo steps, deterministic verification commands, and Phase 8 custom-node E2E limitations.
+- Key files: `docs/manual-visual-showcase.md`
+
+**`test/`:**
+- Purpose: Stores Vitest smoke and integration coverage for package boundaries, CAP plugin behavior, workflow artifacts/import/build validation, and the n8n community node slice.
+- Contains: `test/smoke/package-boundaries.test.js`, CAP plugin integration suites, workflow artifact/import/build-validation suites, and n8n node metadata/read/response cleanup suites.
+- Key files: `test/smoke/package-boundaries.test.js`, `test/integration/n8n-node-metadata-discovery.test.js`, `test/integration/n8n-node-read-operations.test.js`, `test/integration/n8n-node-response-cleanup.test.js`
+
 **`test-workflows/`:**
 - Purpose: Stores exported n8n workflows that can be imported into a local n8n instance.
 - Contains: Workflow JSON.
@@ -131,15 +152,22 @@ cap-n8n-plugin/
 
 **Entry Points:**
 - `package.json`: npm workspace root and n8n workflow import/export script entry.
+- `package-lock.json`: root npm workspace dependency lock, including `@n8n/node-cli`, `n8n-workflow`, TypeScript, ESLint, CAP, Vitest, and workspace package metadata.
 - `demo-app/package.json`: CAP app start script, dependencies, server port, and `cds.requires.n8n` binding.
 - `cap-n8n-plugin/cds-plugin.js`: CAP plugin bootstrap hook.
 - `cap-n8n-plugin/lib/N8nWorkflowService.js`: Reusable CAP service adapter entry.
+- `cap-n8n-node/index.js`: n8n community-node package metadata export for nodes and credentials.
+- `cap-n8n-node/nodes/SapCap/SapCap.node.ts`: SAP CAP n8n node definition and execution entry.
 - `demo-app/srv/admin-service.js`: Admin service runtime behavior and Book-create n8n trigger.
 - `demo-app/srv/cat-service.js`: Catalog service runtime behavior and `submitOrder` implementation.
 - `demo-app/app/*/webapp/Component.js`: UI5 app component entry points.
 
 **Configuration:**
 - `package.json`: Root npm workspaces and scripts.
+- `package-lock.json`: Locked root install graph and workspace package metadata.
+- `cap-n8n-node/package.json`: n8n package metadata, Node engine range, n8n node/credential build artifact registration, and `n8n-node` scripts.
+- `cap-n8n-node/tsconfig.json`: TypeScript compiler configuration for n8n node sources.
+- `cap-n8n-node/eslint.config.mjs`: n8n CLI-provided ESLint config.
 - `demo-app/package.json`: CAP `requires.n8n` implementation path, credentials reference, and server port.
 - `.gitignore`: Ignored generated and local files (`node_modules/`, `.env`, `.cds-services.json`, `*.log`, `.n8n-data/`).
 - `docker-compose.yml`: Local n8n orchestration config; contents not inspected for secret-safety.
@@ -154,6 +182,11 @@ cap-n8n-plugin/
 - `cap-n8n-plugin/lib/annotations/CancellationResolver.js`: Declarative cancellation matching through Phase 3 execution query and cancel APIs.
 - `cap-n8n-plugin/lib/workflows/*.js`: Sidecar schema, sanitizer, manifest, generated CDS, and artifact read/write helpers for app-local workflow artifacts.
 - `cap-n8n-plugin/cds-plugin.js`: Runtime default binding of the n8n service implementation.
+- `cap-n8n-node/nodes/SapCap/SapCap.node.ts`: n8n node property definitions, credential test registration, load-options registration, and per-operation execution dispatch.
+- `cap-n8n-node/nodes/SapCap/GenericFunctions.ts`: Base URL/service path/key normalization, OData request builders, JSON parameter parsing, auth request helpers, and CAP request errors.
+- `cap-n8n-node/nodes/SapCap/ODataMetadata.ts`: `$metadata` entity-set, key, action, and function extraction plus n8n load-options helpers.
+- `cap-n8n-node/nodes/SapCap/ODataResponse.ts`: OData response unwrapping, metadata cleanup, continue-on-fail item shape, and sanitized error conversion.
+- `cap-n8n-node/credentials/SapCapApi.credentials.ts`: SAP CAP API credential fields for Basic Auth and OAuth2 Client Credentials plus metadata path configuration.
 - `demo-app/db/schema.cds`: Bookshop domain model.
 - `demo-app/srv/admin-service.cds`: Admin service OData model.
 - `demo-app/srv/admin-service.js`: Admin service event handlers.
@@ -178,12 +211,17 @@ cap-n8n-plugin/
 - `test/integration/n8n-annotations-start.test.js`: Annotated CREATE/UPDATE/DELETE start integration tests.
 - `test/integration/n8n-annotations-cancel.test.js`: Declarative cancellation integration tests for default DELETE, explicit UPDATE, no-match, and non-rollback behavior.
 - `test/integration/n8n-workflow-artifacts.test.js`: Workflow artifact contract integration tests for scalar sidecars, sanitizer output, generated CDS, manifest aliases, and app-root containment.
+- `test/integration/n8n-node-metadata-discovery.test.js`: n8n SAP CAP node credential test, metadata entity/action/function discovery, auth handling, and sanitized error integration coverage.
+- `test/integration/n8n-node-read-operations.test.js`: n8n SAP CAP node Query, Read, Create, Update, Delete, Action/Function, composite-key, JSON input, and validation integration coverage against local HTTP harnesses.
+- `test/integration/n8n-node-response-cleanup.test.js`: OData metadata cleanup, item normalization, continue-on-fail, and error redaction coverage against built n8n node helpers.
 - `test-workflows/workflows.json`: Imported n8n webhook workflow used by the demo trigger.
 - `mockups/n8n-node-mockup.html`: Static mockup for n8n node UI requirements.
-- Automated test directories/files: Not detected.
+- `docs/manual-visual-showcase.md`: Presenter runbook for local manual showcase, deterministic verification commands, and current live n8n custom-node limitations.
 
 **Documentation:**
 - `README.md`: Root package overview and local development flow.
+- `docs/manual-visual-showcase.md`: Manual demo/showcase runbook that separates implemented evidence from Phase 8 live custom-node E2E work.
+- `AGENTS.md`: Generated project operating context consumed by Codex/agent sessions; includes embedded snapshots from GSD project and codebase documents.
 - `demo-app/readme.md`: Demo app-specific workflow-trigger notes.
 - `N8N_REQUIREMENTS.md`: Requirements for CAP-to-n8n and n8n-to-CAP integration.
 - `cap_n8n_requirements_v2.md`: Requirements version with user stories and acceptance criteria.
@@ -226,9 +264,12 @@ cap-n8n-plugin/
 - Integration tests: `test/integration/n8n-workflow-*.test.js`
 
 **New n8n Community Node Behavior:**
-- Primary code: `cap-n8n-node/index.js`
+- Primary code: `cap-n8n-node/nodes/SapCap/*.ts` and `cap-n8n-node/credentials/SapCapApi.credentials.ts`
+- Package entry/metadata: `cap-n8n-node/index.js`, `cap-n8n-node/package.json`
+- Build/lint config: `cap-n8n-node/tsconfig.json`, `cap-n8n-node/eslint.config.mjs`
 - Package metadata: `cap-n8n-node/package.json`
 - UI/reference mockups: `mockups/n8n-node-mockup.html`
+- Integration tests: `test/integration/n8n-node-*.test.js`, `test/smoke/package-boundaries.test.js`
 - Requirements reference: `cap_n8n_requirements_v2.md`
 
 **New CAP Entity or Domain Model:**
@@ -290,7 +331,7 @@ cap-n8n-plugin/
 - Committed: Yes
 
 **`mockups/`:**
-- Purpose: Static design/reference artifacts for the planned n8n node UI.
+- Purpose: Static design/reference artifacts for n8n node UI requirements and historical mockup alignment.
 - Generated: No
 - Committed: Yes
 
@@ -301,4 +342,4 @@ cap-n8n-plugin/
 
 ---
 
-*Structure analysis: 2026-05-28*
+*Structure analysis: 2026-06-03*

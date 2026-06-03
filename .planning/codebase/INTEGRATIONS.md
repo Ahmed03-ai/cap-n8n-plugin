@@ -1,6 +1,8 @@
 # External Integrations
 
-**Analysis Date:** 2026-05-28
+**Analysis Date:** 2026-06-03
+
+**Last mapped commit:** fa456e23c97b9349257019c15ca7723aa8a3352d
 
 ## APIs & External Services
 
@@ -17,6 +19,13 @@
   - Auth: CAP authorization annotations in `demo-app/srv/access-control.cds` and `demo-app/srv/cat-service.cds`.
   - Endpoints: `demo-app/app/*/webapp/manifest.json` references `odata/v4/admin/` and `odata/v4/catalog/`.
 
+**n8n SAP CAP Node:**
+- CAP OData client behavior implemented by `cap-n8n-node`.
+  - SDK/Client: n8n community-node APIs from `n8n-workflow` plus `this.helpers.httpRequest()` in built node execution.
+  - Auth: SAP CAP API credentials support Basic Auth and OAuth2 Client Credentials; credential test and entity/action/function discovery use the configured `$metadata` path.
+  - Endpoints: User-configured CAP base URL plus service path such as `/odata/v4/admin`, entity sets from `$metadata`, and explicit/manual OData key predicates or metadata-derived composite keys.
+  - Runtime caveat: The default `docker-compose.yml` starts plain n8n and does not install or mount the local `cap-n8n-node` package; live editor/runtime custom-node E2E requires separate install or mount setup.
+
 **SAP UI5 CDN:**
 - SAPUI5 and Fiori launchpad sandbox - Local HTML shell loads SAP-hosted resources.
   - SDK/Client: Browser scripts from `https://ui5.sap.com` in `demo-app/app/fiori-apps.html`.
@@ -27,7 +36,7 @@
 **Databases:**
 - CAP development SQLite
   - Connection: CAP default development persistence through `@cap-js/sqlite` in `demo-app/package.json`; no explicit database URL or external database binding detected.
-  - Client: `@cap-js/sqlite` locked at `2.4.0` in `package-lock.json` and `demo-app/package-lock.json`.
+  - Client: `@cap-js/sqlite` locked at `2.4.0` in the root `package-lock.json`.
   - Schema: `demo-app/db/schema.cds`.
   - Seed data: CSV files in `demo-app/db/data/*.csv`.
 
@@ -80,6 +89,7 @@
 
 **Required env vars:**
 - `N8N_API_KEY` - Optional n8n API key referenced by `demo-app/package.json`; required only when the target n8n webhook expects the `X-N8N-API-KEY` header.
+- SAP CAP node credentials - Stored by n8n when the community node is installed; fields include CAP Base URL, Metadata Path, Basic Auth username/password, or OAuth2 token URL/client credentials/scope. Do not commit real values in docs or fixtures.
 
 **Configuration keys:**
 - `cds.requires.n8n.impl` - Service implementation path in `demo-app/package.json`; explicit values are preserved by `cap-n8n-plugin/cds-plugin.js`.
@@ -105,6 +115,10 @@
   - URL construction: `${baseUrl}/${workflowId}` with automatic `webhook/` prefix unless the path starts with `webhook/` or `webhook-test/`.
   - Payload: JSON `inputs` from `demo-app/srv/admin-service.js`, including `event`, `bookId`, and `title`.
   - Headers: `Content-Type: application/json` and optional `X-N8N-API-KEY`.
+- n8n SAP CAP node outbound HTTP from `cap-n8n-node/nodes/SapCap/GenericFunctions.ts`.
+  - URL construction: normalized credential Base URL plus metadata path or normalized service path/entity/key/action/function path.
+  - Operations: Query, Read, Create, Update, Delete, Action/Function, `$metadata` discovery, and OAuth2 token exchange.
+  - Headers: Basic Auth or bearer token built from n8n credentials; tests assert sensitive headers and response bodies are redacted from surfaced errors.
 
 **Workflow Synchronization:**
 - Root `package.json` imports workflows with `npm run n8n:import`.
@@ -115,4 +129,4 @@
 
 ---
 
-*Integration audit: 2026-05-28*
+*Integration audit: 2026-06-03*
