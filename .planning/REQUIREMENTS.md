@@ -63,9 +63,9 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
 - [x] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
 - [x] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
-- [ ] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
-- [ ] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
-- [ ] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
+- [x] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
+- [x] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
+- [x] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
 - [x] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
 - [x] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
 - [ ] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
@@ -171,9 +171,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NODE-04 | Phase 6 | Complete |
 | NODE-05 | Phase 6 | Complete |
 | NODE-06 | Phase 6 | Complete |
-| NODE-07 | Phase 7 | Pending |
-| NODE-08 | Phase 7 | Pending |
-| NODE-09 | Phase 7 | Pending |
+| NODE-07 | Phase 7 | Complete |
+| NODE-08 | Phase 7 | Complete |
+| NODE-09 | Phase 7 | Complete |
 | NODE-10 | Phase 6 | Complete |
 | NODE-11 | Phase 6 | Complete |
 | NODE-12 | Phase 7 | Pending |

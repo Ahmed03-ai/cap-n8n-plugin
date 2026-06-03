@@ -209,7 +209,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md - Add Create, Update, and Delete node runtime behavior.
+- [x] 07-02-PLAN.md - Add Create, Update, and Delete node runtime behavior.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -269,5 +269,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 3/3 | Complete    | 2026-06-03 |
-| 7. n8n Mutations and CAP Actions/Functions | 1/4 | In Progress|  |
+| 7. n8n Mutations and CAP Actions/Functions | 2/4 | In Progress|  |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
