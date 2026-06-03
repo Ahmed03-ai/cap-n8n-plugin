@@ -42,7 +42,7 @@ export function stripODataMetadata(value: unknown): unknown {
   const cleaned: IDataObject = {}
 
   for (const [key, childValue] of Object.entries(value)) {
-    if (key.startsWith('@odata.')) continue
+    if (key.startsWith('@odata.') || key.includes('@odata.')) continue
 
     cleaned[key] = stripODataMetadata(childValue) as IDataObject[keyof IDataObject]
   }

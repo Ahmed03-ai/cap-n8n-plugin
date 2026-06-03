@@ -84,17 +84,20 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
           '@odata.etag': 'W/"1"',
           ID: 201,
           title: 'Dune',
+          'title@odata.type': '#String',
           stock: 7,
           available: true,
           author: {
             '@odata.id': 'Authors(101)',
             ID: 101,
             name: 'Frank Herbert',
+            'Books@odata.count': 12,
           },
           tags: [
             {
               '@odata.type': '#AdminService.Tag',
               code: 'sci-fi',
+              'code@odata.type': '#String',
             },
           ],
           nullable: null,
