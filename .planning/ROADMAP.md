@@ -199,8 +199,25 @@ Plans:
   4. n8n workflow designer receives consistent response cleanup and n8n-native errors across Query, Read, Create, Update, Delete, and Action/Function modes.
   5. Developer can run integration tests covering credentials, metadata discovery, CRUD, response cleanup, actions/functions, and composite keys.
 
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 07-01-PLAN.md - Create metadata-derived composite-key helper contracts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 07-02-PLAN.md - Add Create, Update, and Delete node runtime behavior.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 07-03-PLAN.md - Add combined Action/Function metadata and runtime behavior.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 07-04-PLAN.md - Update README, manual visual showcase, and mockup for Phase 7.
 
 ### Phase 8: Deployment, Docs, and Release Readiness
 
@@ -252,5 +269,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 3/3 | Complete    | 2026-06-03 |
-| 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
+| 7. n8n Mutations and CAP Actions/Functions | 0/4 | Not started | - |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
