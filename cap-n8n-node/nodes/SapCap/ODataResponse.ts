@@ -69,11 +69,30 @@ export function normalizeODataItems(
     })
   }
 
+  if (operation === 'delete') {
+    return [toDeleteConfirmationItem(response, itemIndex)]
+  }
+
+  return [toEntityItem(response, itemIndex)]
+}
+
+function toEntityItem(response: unknown, itemIndex: number): INodeExecutionData {
   if (!isPlainObject(response)) {
     throw createResponseShapeError()
   }
 
-  return [toItem(response, itemIndex)]
+  const cleaned = stripODataMetadata(response)
+
+  if (!isPlainObject(cleaned) || Object.keys(cleaned).length === 0) {
+    throw createResponseShapeError()
+  }
+
+  return {
+    json: cleaned as IDataObject,
+    pairedItem: {
+      item: itemIndex,
+    },
+  }
 }
 
 export function classifySapCapError(
@@ -136,6 +155,29 @@ export function toNodeOperationError(
 function toItem(value: IDataObject, itemIndex: number): INodeExecutionData {
   return {
     json: stripODataMetadata(value) as IDataObject,
+    pairedItem: {
+      item: itemIndex,
+    },
+  }
+}
+
+function toDeleteConfirmationItem(response: unknown, itemIndex: number): INodeExecutionData {
+  if (!isPlainObject(response) ||
+    response.deleted !== true ||
+    typeof response.entitySet !== 'string' ||
+    !response.entitySet.trim() ||
+    typeof response.key !== 'string' ||
+    !response.key.trim()
+  ) {
+    throw createResponseShapeError()
+  }
+
+  return {
+    json: {
+      deleted: true,
+      entitySet: response.entitySet,
+      key: response.key,
+    },
     pairedItem: {
       item: itemIndex,
     },
@@ -221,6 +263,10 @@ function messageForCategory(
 
     if (operation === 'read') {
       return 'CAP entity was not found for the selected entity set and key predicate.'
+    }
+
+    if (operation === 'delete') {
+      return 'CAP entity was not found for Delete. Check the selected entity set and key.'
     }
 
     return 'CAP OData endpoint was not found. Check the service path and entity set.'
