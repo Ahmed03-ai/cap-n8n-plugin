@@ -320,4 +320,68 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     })
     expectSerializedSafeError(safeError)
   })
+
+  it('creates continueOnFail items with safe structured error JSON', async () => {
+    const { classifySapCapError, toContinueOnFailItem } = await importResponseHelpers()
+    const safeValidationError = {
+      message: 'CAP rejected the OData request. Check the OData options.',
+      statusCode: 400,
+      category: 'validation',
+    }
+    const safeNetworkError = classifySapCapError(
+      new Error(`network failed with ${fakeBearerToken} and ${fakeResponseBody}`),
+      { operation: 'query' }
+    )
+
+    expect(toContinueOnFailItem(safeValidationError, 4)).toEqual({
+      json: {
+        error: 'CAP rejected the OData request. Check the OData options.',
+        statusCode: 400,
+        category: 'validation',
+      },
+      pairedItem: { item: 4 },
+    })
+    expect(toContinueOnFailItem(safeNetworkError, 5)).toEqual({
+      json: {
+        error: 'Could not reach CAP service. Check Base URL and network access from n8n.',
+        category: 'network',
+      },
+      pairedItem: { item: 5 },
+    })
+    expect(toContinueOnFailItem(safeNetworkError, 5).json).not.toHaveProperty('statusCode')
+    expectSerializedSafeError(toContinueOnFailItem(safeNetworkError, 5))
+  })
+
+  it('creates sanitized NodeOperationError instances without wrapping raw HTTP internals', async () => {
+    const { NodeOperationError } = await import('n8n-workflow')
+    const { classifySapCapError, toNodeOperationError } = await importResponseHelpers()
+    const rawError = statusError(500, `raw CAP failure ${fakeBearerToken} ${fakeResponseBody}`)
+    rawError.stack = `Error: ${fakeClientSecret}\n    at unsafe-stack`
+    const safeError = classifySapCapError(rawError, { operation: 'query' })
+    const node = {
+      id: 'sap-cap-node',
+      name: 'SAP CAP',
+      type: 'n8n-nodes-sap-cap.sapCap',
+      typeVersion: 1,
+      position: [0, 0],
+      parameters: {},
+    }
+    const nodeError = toNodeOperationError(node, safeError, 6)
+    const serialized = JSON.stringify({
+      message: nodeError.message,
+      description: nodeError.description,
+      context: nodeError.context,
+      cause: nodeError.cause,
+      stack: nodeError.stack,
+    })
+
+    expect(nodeError).toBeInstanceOf(NodeOperationError)
+    expect(nodeError.message).toBe('CAP service returned a server error. Try again or check the CAP service logs.')
+    expect(nodeError.context.itemIndex).toBe(6)
+    expect(serialized).not.toContain(fakePassword)
+    expect(serialized).not.toContain(fakeBearerToken)
+    expect(serialized).not.toContain(fakeBasicToken)
+    expect(serialized).not.toContain(fakeClientSecret)
+    expect(serialized).not.toContain(fakeResponseBody)
+  })
 })
