@@ -50,6 +50,46 @@ const metadataWithSingleQuotedAttributes = `<?xml version='1.0' encoding='utf-8'
   </edmx:DataServices>
 </edmx:Edmx>`
 
+const metadataWithKeyDescriptors = `<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <edm:Schema Namespace="AdminService" xmlns:edm="http://docs.oasis-open.org/odata/ns/edm">
+      <edm:EntityType Name="Book">
+        <edm:Key>
+          <edm:PropertyRef Name="ID" />
+        </edm:Key>
+        <edm:Property Name="ID" Type="Edm.Int32" Nullable="false" />
+        <edm:Property Name="title" Type="Edm.String" />
+      </edm:EntityType>
+      <edm:EntityType Name="BookDraft">
+        <edm:Key>
+          <edm:PropertyRef Name="ID" />
+          <edm:PropertyRef Name="IsActiveEntity" />
+        </edm:Key>
+        <edm:Property Name="ID" Type="Edm.Int32" Nullable="false" />
+        <edm:Property Name="IsActiveEntity" Type="Edm.Boolean" Nullable="false" />
+      </edm:EntityType>
+      <edm:EntityContainer Name="AdminContainer">
+        <edm:EntitySet Name="Books" EntityType="AdminService.Book" />
+        <edm:EntitySet Name="BookDrafts" EntityType="AdminService.BookDraft" />
+      </edm:EntityContainer>
+    </edm:Schema>
+    <Schema Namespace="CatalogService" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+      <EntityType Name="CurrencyText">
+        <Key>
+          <PropertyRef Name="locale" />
+          <PropertyRef Name="code" />
+        </Key>
+        <Property Name="locale" Type="Edm.String" Nullable="false" />
+        <Property Name="code" Type="Edm.String" Nullable="false" />
+      </EntityType>
+      <EntityContainer Name="CatalogContainer">
+        <EntitySet Name="CurrencyTexts" EntityType="CatalogService.CurrencyText" />
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>`
+
 let servers = []
 
 async function importDistModule(relativePath) {
@@ -253,6 +293,91 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     expect(extractEntitySetOptions(metadataWithoutEntitySets)).toEqual([])
     expect(() => extractEntitySetOptions('not xml')).toThrow('CAP metadata response is not valid XML.')
     expect(() => extractEntitySetOptions('<html><form>Login</form></html>')).toThrow('CAP metadata response is not valid OData metadata.')
+  })
+
+  it('extracts entity-set key descriptors for single and composite keys', async () => {
+    const {
+      extractEntityKeyDescriptors,
+      extractEntitySetDescriptors,
+      extractEntitySetOptions,
+    } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+
+    expect(extractEntitySetOptions(metadataWithKeyDescriptors)).toEqual([
+      { name: 'Books', value: 'Books', description: 'AdminService.Book' },
+      { name: 'BookDrafts', value: 'BookDrafts', description: 'AdminService.BookDraft' },
+      { name: 'CurrencyTexts', value: 'CurrencyTexts', description: 'CatalogService.CurrencyText' },
+    ])
+    expect(extractEntitySetDescriptors(metadataWithKeyDescriptors)).toEqual([
+      {
+        name: 'Books',
+        entityType: 'AdminService.Book',
+        keys: [
+          { name: 'ID', type: 'Edm.Int32' },
+        ],
+      },
+      {
+        name: 'BookDrafts',
+        entityType: 'AdminService.BookDraft',
+        keys: [
+          { name: 'ID', type: 'Edm.Int32' },
+          { name: 'IsActiveEntity', type: 'Edm.Boolean' },
+        ],
+      },
+      {
+        name: 'CurrencyTexts',
+        entityType: 'CatalogService.CurrencyText',
+        keys: [
+          { name: 'locale', type: 'Edm.String' },
+          { name: 'code', type: 'Edm.String' },
+        ],
+      },
+    ])
+    expect(extractEntityKeyDescriptors(metadataWithKeyDescriptors, 'BookDrafts')).toEqual([
+      { name: 'ID', type: 'Edm.Int32' },
+      { name: 'IsActiveEntity', type: 'Edm.Boolean' },
+    ])
+    expect(extractEntityKeyDescriptors(metadataWithKeyDescriptors, 'CurrencyTexts')).toEqual([
+      { name: 'locale', type: 'Edm.String' },
+      { name: 'code', type: 'Edm.String' },
+    ])
+    expect(extractEntityKeyDescriptors(metadataWithKeyDescriptors, 'MissingSet')).toEqual([])
+  })
+
+  it('sanitizes metadata key extraction failures', async () => {
+    const {
+      extractEntityKeyDescriptors,
+      extractEntitySetDescriptors,
+    } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+    const leakingHtml = [
+      '<html>',
+      `Authorization: Bearer ${fakeBearerToken}`,
+      fakePassword,
+      fakeClientSecret,
+      fakeResponseBody,
+      '</html>',
+    ].join(' ')
+
+    for (const fn of [
+      () => extractEntitySetDescriptors(leakingHtml),
+      () => extractEntityKeyDescriptors(leakingHtml, 'Books'),
+    ]) {
+      try {
+        fn()
+        throw new Error('Expected metadata extraction to fail')
+      } catch (err) {
+        const serialized = serializedError(err)
+
+        expect(err).toMatchObject({
+          message: 'CAP metadata response is not valid OData metadata.',
+          category: 'responseShape',
+        })
+        expect(serialized).not.toContain(fakePassword)
+        expect(serialized).not.toContain(fakeClientSecret)
+        expect(serialized).not.toContain(fakeBearerToken)
+        expect(serialized).not.toContain(fakeResponseBody)
+        expect(serialized).not.toContain('Authorization')
+      }
+    }
   })
 
   it('rejects HTML metadata responses returned with HTTP 200', async () => {
