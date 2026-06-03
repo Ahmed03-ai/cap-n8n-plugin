@@ -85,7 +85,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 - [x] **VERIFY-01**: Developer can run integration tests for the CAP programmatic API, authentication, errors, retry behavior, and mock runtime.
 - [x] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
-- [ ] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
+- [x] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
 - [ ] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
 - [ ] **VERIFY-05**: Developer can run a documented smoke test covering the demo CAP app, local n8n, and exported workflow fixture.
 - [ ] **VERIFY-06**: CI or an equivalent repeatable local command reports whether the project is ready for review.
@@ -186,7 +186,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-07 | Phase 8 | Pending |
 | VERIFY-01 | Phase 2 | Complete |
 | VERIFY-02 | Phase 4 | Complete |
-| VERIFY-03 | Phase 5 | Pending |
+| VERIFY-03 | Phase 5 | Complete |
 | VERIFY-04 | Phase 7 | Pending |
 | VERIFY-05 | Phase 8 | Pending |
 | VERIFY-06 | Phase 8 | Pending |
