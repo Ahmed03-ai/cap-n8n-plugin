@@ -49,6 +49,42 @@ const metadataWithCompositeKeys = `<?xml version="1.0" encoding="utf-8"?>
   </edmx:DataServices>
 </edmx:Edmx>`
 
+const metadataWithActionFunctions = `<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+  <edmx:DataServices>
+    <edm:Schema Namespace="CatalogService" xmlns:edm="http://docs.oasis-open.org/odata/ns/edm">
+      <edm:EntityType Name="Book">
+        <edm:Key>
+          <edm:PropertyRef Name="ID" />
+        </edm:Key>
+        <edm:Property Name="ID" Type="Edm.Int32" Nullable="false" />
+      </edm:EntityType>
+      <edm:Action Name="submitOrder">
+        <edm:Parameter Name="book" Type="Edm.Int32" />
+        <edm:Parameter Name="quantity" Type="Edm.Int32" />
+      </edm:Action>
+      <edm:Function Name="bookAvailability">
+        <edm:Parameter Name="book" Type="Edm.Int32" />
+        <edm:ReturnType Type="Edm.Boolean" />
+      </edm:Function>
+      <edm:Action Name="restock" IsBound="true">
+        <edm:Parameter Name="bindingParameter" Type="CatalogService.Book" />
+        <edm:Parameter Name="quantity" Type="Edm.Int32" />
+      </edm:Action>
+      <edm:Function Name="inventoryValue" IsBound="true">
+        <edm:Parameter Name="bindingParameter" Type="CatalogService.Book" />
+        <edm:Parameter Name="currency" Type="Edm.String" />
+        <edm:ReturnType Type="Edm.Decimal" />
+      </edm:Function>
+      <edm:EntityContainer Name="EntityContainer">
+        <edm:EntitySet Name="Books" EntityType="CatalogService.Book" />
+        <edm:ActionImport Name="submitOrder" Action="CatalogService.submitOrder" />
+        <edm:FunctionImport Name="bookAvailability" Function="CatalogService.bookAvailability" />
+      </edm:EntityContainer>
+    </edm:Schema>
+  </edmx:DataServices>
+</edmx:Edmx>`
+
 let servers = []
 
 async function importDistModule(relativePath) {
@@ -149,6 +185,12 @@ function defaultParameters(overrides = {}) {
     top: 100,
     skip: 0,
     keyPredicate: '',
+    operationSource: 'metadata',
+    actionFunction: '',
+    actionFunctionKind: 'action',
+    actionFunctionName: '',
+    actionFunctionBinding: 'unbound',
+    parameters: '{}',
     ...overrides,
   }
 }
@@ -655,6 +697,153 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(server.requests[2].headers['content-type']).toBeUndefined()
   })
 
+  it('builds Action/Function requests with explicit JSON Parameters contracts', async () => {
+    const {
+      buildActionFunctionRequest,
+    } = await importDistModule('dist/nodes/SapCap/GenericFunctions.js')
+    const actionDescriptor = {
+      kind: 'action',
+      name: 'submitOrder',
+      qualifiedName: 'CatalogService.submitOrder',
+      importName: 'submitOrder',
+      isBound: false,
+      parameters: [
+        { name: 'book', type: 'Edm.Int32' },
+        { name: 'quantity', type: 'Edm.Int32' },
+      ],
+    }
+    const functionDescriptor = {
+      kind: 'function',
+      name: 'bookAvailability',
+      qualifiedName: 'CatalogService.bookAvailability',
+      importName: 'bookAvailability',
+      isBound: false,
+      parameters: [
+        { name: 'book', type: 'Edm.Int32' },
+      ],
+    }
+    const boundActionDescriptor = {
+      kind: 'action',
+      name: 'restock',
+      qualifiedName: 'CatalogService.restock',
+      isBound: true,
+      bindingType: 'CatalogService.Book',
+      entitySet: 'Books',
+      parameters: [
+        { name: 'quantity', type: 'Edm.Int32' },
+      ],
+    }
+    const boundFunctionDescriptor = {
+      kind: 'function',
+      name: 'inventoryValue',
+      qualifiedName: 'CatalogService.inventoryValue',
+      isBound: true,
+      bindingType: 'CatalogService.Book',
+      entitySet: 'Books',
+      parameters: [
+        { name: 'currency', type: 'Edm.String' },
+      ],
+    }
+
+    expect(buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog/',
+      operationSource: 'metadata',
+      operationDescriptor: JSON.stringify(actionDescriptor),
+      entitySetName: 'Books',
+      parameters: JSON.stringify({ book: 201, quantity: 2 }),
+    })).toEqual({
+      method: 'POST',
+      path: '/odata/v4/catalog/submitOrder',
+      body: { book: 201, quantity: 2 },
+      headers: {
+        Prefer: 'return=representation',
+      },
+    })
+
+    const functionRequest = buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: JSON.stringify(functionDescriptor),
+      entitySetName: 'Books',
+      parameters: JSON.stringify({ book: 201 }),
+    })
+    const functionUrl = new URL(functionRequest.path, 'http://cap.test')
+
+    expect(functionRequest.method).toBe('GET')
+    expect(functionUrl.pathname).toBe('/odata/v4/catalog/bookAvailability')
+    expect(functionUrl.searchParams.get('book')).toBe('201')
+    expect(functionRequest).not.toHaveProperty('body')
+
+    const boundActionRequest = buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: JSON.stringify(boundActionDescriptor),
+      entitySetName: 'Books',
+      keyPredicate: 'ID=201',
+      parameters: JSON.stringify({ quantity: 5 }),
+    })
+    const boundFunctionRequest = buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: JSON.stringify(boundFunctionDescriptor),
+      entitySetName: 'Books',
+      keyDescriptors: [
+        { name: 'ID', type: 'Edm.Int32' },
+      ],
+      keyParts: {
+        ID: 201,
+      },
+      parameters: JSON.stringify({ currency: 'USD' }),
+    })
+    const boundFunctionUrl = new URL(boundFunctionRequest.path, 'http://cap.test')
+
+    expect(boundActionRequest).toEqual({
+      method: 'POST',
+      path: '/odata/v4/catalog/Books(ID=201)/CatalogService.restock',
+      body: { quantity: 5 },
+      headers: {
+        Prefer: 'return=representation',
+      },
+    })
+    expect(boundFunctionRequest.method).toBe('GET')
+    expect(boundFunctionUrl.pathname).toBe('/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue')
+    expect(boundFunctionUrl.searchParams.get('currency')).toBe('USD')
+
+    expect(buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'manual',
+      operationKind: 'function',
+      operationName: 'manualAvailability',
+      operationBinding: 'unbound',
+      entitySetName: 'Books',
+      parameters: JSON.stringify({ book: 201 }),
+    }).path).toBe('/odata/v4/catalog/manualAvailability?book=201')
+
+    for (const parameters of ['', '{', '[]', '"literal"', 'null', []]) {
+      expect(() => buildActionFunctionRequest({
+        servicePath: '/odata/v4/catalog',
+        operationSource: 'manual',
+        operationKind: 'action',
+        operationName: 'submitOrder',
+        operationBinding: 'unbound',
+        entitySetName: 'Books',
+        parameters,
+      })).toThrow('Parameters must be a JSON object.')
+    }
+
+    expect(() => buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'manual',
+      operationKind: 'function',
+      operationName: 'complexFunction',
+      operationBinding: 'unbound',
+      entitySetName: 'Books',
+      parameters: JSON.stringify({
+        unsafe: { nested: true },
+      }),
+    })).toThrow('Function parameter values must be primitive JSON values.')
+  })
+
   it('rejects invalid Create and Update Body values before sending CAP requests', async () => {
     const {
       buildCreateRequest,
@@ -894,6 +1083,292 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
           deleted: true,
           entitySet: 'BookDrafts',
           key: '(ID=202,IsActiveEntity=true)',
+        },
+        pairedItem: { item: 1 },
+      },
+    ])
+  })
+
+  it('executes metadata-backed Action/Function operations through the SAP CAP node', async () => {
+    const server = await createCapServer((request) => {
+      if (request.url === '/odata/v4/admin/$metadata') {
+        return {
+          contentType: 'application/xml',
+          body: metadataWithActionFunctions,
+        }
+      }
+
+      if (request.method === 'POST' && request.url === '/odata/v4/catalog/submitOrder') {
+        return {
+          body: JSON.stringify({
+            '@odata.context': '$metadata#submitOrder',
+            stock: 5,
+          }),
+        }
+      }
+
+      if (request.method === 'GET' && request.url === '/odata/v4/catalog/bookAvailability?book=201') {
+        return {
+          body: JSON.stringify({
+            '@odata.context': '$metadata#bookAvailability',
+            value: true,
+          }),
+        }
+      }
+
+      if (request.method === 'POST' && request.url === '/odata/v4/catalog/Books(ID=201)/CatalogService.restock') {
+        return {
+          body: JSON.stringify({
+            '@odata.context': '$metadata#Books/$entity',
+            ID: 201,
+            stock: 12,
+          }),
+        }
+      }
+
+      if (request.method === 'GET' && request.url === '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue?currency=USD') {
+        return {
+          body: JSON.stringify({
+            value: 1200,
+          }),
+        }
+      }
+
+      return {
+        statusCode: 404,
+        body: JSON.stringify({ error: 'unexpected request' }),
+      }
+    })
+    const SapCap = await importSapCapNode()
+    const node = new SapCap()
+    const loadOptionsContext = {
+      getCredentials: async () => basicCredentials(server.baseUrl),
+      helpers: createExecutionContext({
+        credentials: basicCredentials(server.baseUrl),
+        parametersByItem: [defaultParameters()],
+      }).helpers,
+    }
+    const actionFunctionOptions = await node.methods.loadOptions.getActionFunctions.call(loadOptionsContext)
+    const optionByName = new Map(actionFunctionOptions.map((option) => [option.name, option.value]))
+    server.requests.length = 0
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        operationSource: 'metadata',
+        actionFunction: optionByName.get('Action: submitOrder'),
+        parameters: JSON.stringify({
+          book: 201,
+          quantity: 2,
+        }),
+      }),
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        operationSource: 'metadata',
+        actionFunction: optionByName.get('Function: bookAvailability'),
+        parameters: JSON.stringify({
+          book: 201,
+        }),
+      }),
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        entitySet: 'Books',
+        operationSource: 'metadata',
+        actionFunction: optionByName.get('Action: Books/restock'),
+        keyInputMode: 'manual',
+        keyPredicate: 'ID=201',
+        parameters: JSON.stringify({
+          quantity: 5,
+        }),
+      }),
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        entitySet: 'Books',
+        operationSource: 'metadata',
+        actionFunction: optionByName.get('Function: Books/inventoryValue'),
+        keyInputMode: 'metadata',
+        keyParts: JSON.stringify({
+          ID: 201,
+        }),
+        parameters: JSON.stringify({
+          currency: 'USD',
+        }),
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl, {
+        metadataPath: '/odata/v4/admin/$metadata',
+      }),
+    })
+
+    expect(server.requests).toHaveLength(5)
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/odata/v4/catalog/submitOrder',
+      body: JSON.stringify({
+        book: 201,
+        quantity: 2,
+      }),
+    })
+    expect(server.requests[0].headers.prefer).toBe('return=representation')
+    expect(server.requests[1]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/catalog/bookAvailability?book=201',
+      body: '',
+    })
+    expect(server.requests[1].headers['content-type']).toBeUndefined()
+    expect(server.requests[2]).toMatchObject({
+      method: 'POST',
+      url: '/odata/v4/catalog/Books(ID=201)/CatalogService.restock',
+      body: JSON.stringify({
+        quantity: 5,
+      }),
+    })
+    expect(server.requests[3]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/admin/$metadata',
+    })
+    expect(server.requests[4]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue?currency=USD',
+      body: '',
+    })
+    expect(result[0]).toEqual([
+      {
+        json: {
+          stock: 5,
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          value: true,
+        },
+        pairedItem: { item: 1 },
+      },
+      {
+        json: {
+          ID: 201,
+          stock: 12,
+        },
+        pairedItem: { item: 2 },
+      },
+      {
+        json: {
+          value: 1200,
+        },
+        pairedItem: { item: 3 },
+      },
+    ])
+  })
+
+  it('executes manual Action/Function fallback controls and validates Parameters locally', async () => {
+    const server = await createCapServer((request) => {
+      if (request.method === 'POST') {
+        return {
+          body: JSON.stringify({
+            stock: 7,
+          }),
+        }
+      }
+
+      return {
+        body: JSON.stringify({
+          value: 'ok',
+        }),
+      }
+    })
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        operationSource: 'manual',
+        actionFunctionKind: 'action',
+        actionFunctionName: 'submitOrder',
+        actionFunctionBinding: 'unbound',
+        parameters: JSON.stringify({
+          book: 201,
+          quantity: 1,
+        }),
+      }),
+      defaultParameters({
+        operation: 'actionFunction',
+        servicePath: '/odata/v4/catalog',
+        operationSource: 'manual',
+        actionFunctionKind: 'function',
+        actionFunctionName: 'manualAvailability',
+        actionFunctionBinding: 'unbound',
+        parameters: JSON.stringify({
+          book: 201,
+        }),
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+    })
+
+    expect(server.requests).toHaveLength(2)
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/odata/v4/catalog/submitOrder',
+    })
+    expect(server.requests[1]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/catalog/manualAvailability?book=201',
+      body: '',
+    })
+    expect(result[0]).toEqual([
+      {
+        json: {
+          stock: 7,
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          value: 'ok',
+        },
+        pairedItem: { item: 1 },
+      },
+    ])
+
+    server.requests.length = 0
+    const invalidResult = await executeSapCap([
+      defaultParameters({
+        operation: 'actionFunction',
+        operationSource: 'manual',
+        actionFunctionKind: 'action',
+        actionFunctionName: 'submitOrder',
+        parameters: '{',
+      }),
+      defaultParameters({
+        operation: 'actionFunction',
+        operationSource: 'manual',
+        actionFunctionKind: 'function',
+        actionFunctionName: 'manualAvailability',
+        parameters: '[]',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(invalidResult[0]).toEqual([
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
         },
         pairedItem: { item: 1 },
       },
@@ -1179,7 +1654,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
-  it('rejects deferred action/trigger operations without sending CAP requests', async () => {
+  it('rejects separate action/function and trigger operations without sending CAP requests', async () => {
     const server = await createCapServer(() => ({
       statusCode: 500,
       body: JSON.stringify({ error: 'should not be reached' }),
@@ -1190,6 +1665,9 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         operation: 'action',
       }),
       defaultParameters({
+        operation: 'function',
+      }),
+      defaultParameters({
         operation: 'trigger',
       }),
     ], {
@@ -1198,22 +1676,13 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     })
 
     expect(server.requests).toHaveLength(0)
-    expect(result[0]).toEqual([
-      {
+    expect(result[0]).toEqual([0, 1, 2].map((item) => ({
         json: {
           error: 'CAP rejected the OData request. Check the OData options.',
           category: 'validation',
         },
-        pairedItem: { item: 0 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 1 },
-      },
-    ])
+        pairedItem: { item },
+      })))
   })
 
   it('rejects unauthenticated credential modes before any CAP request is sent', async () => {
@@ -1328,7 +1797,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     const operation = node.description.properties.find((property) => property.name === 'operation')
     const operationValues = operation.options.map((option) => option.value)
 
-    expect(operationValues).toEqual(['query', 'read', 'create', 'update', 'delete'])
+    expect(operationValues).toEqual(['query', 'read', 'create', 'update', 'delete', 'actionFunction'])
     expect(operationValues).not.toEqual(expect.arrayContaining([
       'action',
       'function',
@@ -1337,6 +1806,12 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(propertyNames).toEqual(expect.arrayContaining([
       'operation',
       'body',
+      'operationSource',
+      'actionFunction',
+      'actionFunctionKind',
+      'actionFunctionName',
+      'actionFunctionBinding',
+      'parameters',
       'keyInputMode',
       'keyParts',
       'keyPredicate',
@@ -1369,7 +1844,9 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(runtimeSource).not.toContain(fakeResponseBody)
     expect(runtimeSource).not.toMatch(/returnFullResponse:\s*false/)
     expect(runtimeSource).not.toMatch(/raw(?:OData)?Response/i)
-    expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(action|function|trigger)/i)
+    expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(^|['"])(action|function|trigger)(['"])/i)
+    expect(runtimeSource).toMatch(/buildActionFunctionRequest/)
+    expect(runtimeSource).toMatch(/loadActionFunctionOptions/)
     expect(deleteBuilderSource).not.toMatch(/\bbody\b/)
   })
 })
