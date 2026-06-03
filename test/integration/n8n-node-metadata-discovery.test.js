@@ -11,6 +11,7 @@ const n8nPackageDir = resolve(repoRoot, 'cap-n8n-node')
 const fakeUsername = 'cap-user'
 const fakePassword = 'cap-password-for-test'
 const fakeClientSecret = 'cap-client-secret-for-test'
+const keyPredicateBoundaryMessage = 'Key Predicate must not include /, \\, ?, or #.'
 
 const metadataWithEntitySets = `<?xml version="1.0" encoding="utf-8"?>
 <edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
@@ -309,13 +310,95 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     expect(() => normalizeBaseUrl('https://cap.example.test/?tenant=a')).toThrow('Base URL must be a valid http or https URL.')
     expect(() => normalizeBaseUrl('https://cap.example.test/#/admin')).toThrow('Base URL must be a valid http or https URL.')
     expect(() => normalizeServicePath('/odata/v4/admin?$filter=ID')).toThrow('Service Path must start with / and must not include query strings.')
-    expect(() => normalizeKeyPredicate('ID=201)?$expand=SensitiveNav')).toThrow('Key Predicate must not include /, ?, or #.')
-    expect(() => normalizeKeyPredicate('ID=201)/$value')).toThrow('Key Predicate must not include /, ?, or #.')
-    expect(() => normalizeKeyPredicate('ID=201%2F$value')).toThrow('Key Predicate must not include /, ?, or #.')
-    expect(() => normalizeKeyPredicate('ID=201%3F$expand=SensitiveNav')).toThrow('Key Predicate must not include /, ?, or #.')
-    expect(() => normalizeKeyPredicate('ID=201%23fragment')).toThrow('Key Predicate must not include /, ?, or #.')
+    expect(() => normalizeKeyPredicate('ID=201)?$expand=SensitiveNav')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201)/$value')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201)#fragment')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201)\\$value')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201%2F$value')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201%3F$expand=SensitiveNav')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201%23fragment')).toThrow(keyPredicateBoundaryMessage)
+    expect(() => normalizeKeyPredicate('ID=201%5C$value')).toThrow(keyPredicateBoundaryMessage)
     expect(() => resolveEntitySetName({ entitySetSource: 'manual', entitySetManual: '../Books' })).toThrow('Enter a CAP entity set name, for example Books.')
     expect(() => resolveEntitySetName({ entitySetSource: 'manual', entitySetManual: '..' })).toThrow('Enter a CAP entity set name, for example Books.')
     expect(() => resolveEntitySetName({ entitySetSource: 'manual', entitySetManual: 'Books%2F$value' })).toThrow('Enter a CAP entity set name, for example Books.')
+    expect(() => buildQueryRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'Books',
+      top: true,
+    })).toThrow('Top must be a nonnegative integer.')
+    expect(() => buildQueryRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'Books',
+      skip: [],
+    })).toThrow('Skip must be a nonnegative integer.')
+    expect(() => buildQueryRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'Books',
+      top: '   ',
+    })).toThrow('Top must be a nonnegative integer.')
+  })
+
+  it('runs credential Test Connection through shared SAP CAP validation guards', async () => {
+    const { SapCap } = await importDistModule('dist/nodes/SapCap/SapCap.node.js')
+    const node = new SapCap()
+    const requests = []
+    const credentialTestContext = {
+      helpers: {
+        request: async (options) => {
+          requests.push(options)
+          return { ok: true }
+        },
+      },
+    }
+
+    const result = await node.methods.credentialTest.sapCapApiCredentialTest.call(
+      credentialTestContext,
+      { data: basicCredentials('https://cap.example.test/app/') }
+    )
+
+    expect(result).toEqual({
+      status: 'OK',
+      message: 'Connection successful',
+    })
+    expect(requests).toEqual([
+      expect.objectContaining({
+        method: 'GET',
+        url: 'https://cap.example.test/app/odata/v4/admin/$metadata',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${fakeUsername}:${fakePassword}`).toString('base64')}`,
+        },
+      }),
+    ])
+
+    requests.length = 0
+
+    await expect(
+      node.methods.credentialTest.sapCapApiCredentialTest.call(
+        credentialTestContext,
+        { data: basicCredentials('https://cap.example.test/?tenant=a') }
+      )
+    ).rejects.toMatchObject({
+      message: 'Base URL must be a valid http or https URL.',
+      category: 'validation',
+    })
+    await expect(
+      node.methods.credentialTest.sapCapApiCredentialTest.call(
+        credentialTestContext,
+        { data: basicCredentials('https://cap.example.test', { metadataPath: 'odata/v4/admin/$metadata' }) }
+      )
+    ).rejects.toMatchObject({
+      message: 'Metadata Path must start with /.',
+      category: 'validation',
+    })
+    await expect(
+      node.methods.credentialTest.sapCapApiCredentialTest.call(
+        credentialTestContext,
+        { data: basicCredentials('https://cap.example.test', { authType: 'oauth2' }) }
+      )
+    ).rejects.toMatchObject({
+      message: 'SAP CAP authentication currently supports Basic Auth only.',
+      category: 'configuration',
+    })
+    expect(requests).toHaveLength(0)
   })
 })

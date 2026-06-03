@@ -509,6 +509,10 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       }),
       defaultParameters({
         operation: 'read',
+        keyPredicate: 'ID=201)\\$value',
+      }),
+      defaultParameters({
+        operation: 'read',
         keyPredicate: 'ID=201%2F$value',
       }),
       defaultParameters({
@@ -518,6 +522,41 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'read',
         keyPredicate: 'ID=201%23fragment',
+      }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201%5C$value',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(result[0]).toEqual(Array.from({ length: 8 }, (_, item) => ({
+      json: {
+        error: 'CAP rejected the OData request. Check the OData options.',
+        category: 'validation',
+      },
+      pairedItem: { item },
+    })))
+  })
+
+  it('rejects malformed Top and Skip expression values before sending CAP requests', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({
+        top: true,
+      }),
+      defaultParameters({
+        skip: [],
+      }),
+      defaultParameters({
+        top: '   ',
       }),
     ], {
       credentials: basicCredentials(server.baseUrl),
@@ -546,27 +585,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
           category: 'validation',
         },
         pairedItem: { item: 2 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 3 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 4 },
-      },
-      {
-        json: {
-          error: 'CAP rejected the OData request. Check the OData options.',
-          category: 'validation',
-        },
-        pairedItem: { item: 5 },
       },
     ])
   })

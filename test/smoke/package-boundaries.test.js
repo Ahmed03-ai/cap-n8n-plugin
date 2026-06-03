@@ -86,6 +86,14 @@ describe('package boundaries', () => {
     const credentialFields = credential.properties.map((property) => property.name)
 
     expect(node.methods.loadOptions.getEntitySets).toEqual(expect.any(Function))
+    expect(node.methods.credentialTest.sapCapApiCredentialTest).toEqual(expect.any(Function))
+    expect(node.description.credentials).toEqual([
+      expect.objectContaining({
+        name: 'sapCapApi',
+        required: true,
+        testedBy: 'sapCapApiCredentialTest',
+      }),
+    ])
     expect(propertyNames).toEqual([
       'operation',
       'servicePath',
@@ -217,10 +225,6 @@ describe('package boundaries', () => {
       },
       description: 'CAP password for Basic Auth.',
     })
-    expect(credential.test.request).toMatchObject({
-      baseURL: '={{$credentials.baseUrl}}',
-      url: '={{$credentials.metadataPath}}',
-      method: 'GET',
-    })
+    expect(credential.test).toBeUndefined()
   })
 })

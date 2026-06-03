@@ -1,15 +1,22 @@
 import {
+  ICredentialDataDecryptedObject,
+  ICredentialsDecrypted,
+  ICredentialTestFunctions,
   IExecuteFunctions,
   INodeExecutionData,
+  INodeCredentialTestResult,
   INodeType,
   INodeTypeDescription,
   NodeConnectionTypes,
 } from 'n8n-workflow'
 
 import {
+  buildBasicAuthHeaders,
   buildQueryRequest,
   buildReadRequest,
   createSapCapRequestError,
+  normalizeBaseUrl,
+  normalizeMetadataPath,
   resolveEntitySetName,
   sapCapApiRequest,
 } from './GenericFunctions'
@@ -42,6 +49,7 @@ export class SapCap implements INodeType {
       {
         name: 'sapCapApi',
         required: true,
+        testedBy: 'sapCapApiCredentialTest',
       },
     ],
     properties: [
@@ -208,6 +216,34 @@ export class SapCap implements INodeType {
   methods = {
     loadOptions: {
       getEntitySets: loadEntitySetOptions,
+    },
+    credentialTest: {
+      async sapCapApiCredentialTest(
+        this: ICredentialTestFunctions,
+        credential: ICredentialsDecrypted<ICredentialDataDecryptedObject>
+      ): Promise<INodeCredentialTestResult> {
+        const credentials = credential.data
+
+        if (!credentials) {
+          throw createSapCapRequestError('SAP CAP credential data is required for Test Connection.', {
+            category: 'configuration',
+          })
+        }
+
+        const url = `${normalizeBaseUrl(credentials.baseUrl)}${normalizeMetadataPath(credentials.metadataPath)}`
+        const headers = buildBasicAuthHeaders(credentials)
+
+        await this.helpers.request({
+          method: 'GET',
+          url,
+          headers,
+        })
+
+        return {
+          status: 'OK',
+          message: 'Connection successful',
+        }
+      },
     },
   }
 

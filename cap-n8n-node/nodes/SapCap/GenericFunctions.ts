@@ -111,7 +111,7 @@ export function normalizeKeyPredicate(value: unknown) {
   const keyPredicate = requireString(value, 'Key Predicate is required for Read.')
 
   if (containsUrlBoundary(keyPredicate)) {
-    throw createSapCapRequestError('Key Predicate must not include /, ?, or #.', {
+    throw createSapCapRequestError('Key Predicate must not include /, \\, ?, or #.', {
       category: 'validation',
     })
   }
@@ -215,6 +215,25 @@ export function createSapCapRequestError(
   return err
 }
 
+export function buildBasicAuthHeaders(credentials: ICredentialDataDecryptedObject) {
+  const authType = credentials.authType as string
+
+  if (authType !== 'basicAuth') {
+    throw createSapCapRequestError(
+      'SAP CAP authentication currently supports Basic Auth only.',
+      { category: 'configuration' }
+    )
+  }
+
+  const token = Buffer.from(
+    `${credentials.username || ''}:${credentials.password || ''}`
+  ).toString('base64')
+
+  return {
+    Authorization: `Basic ${token}`,
+  }
+}
+
 function requireString(value: unknown, message: string) {
   if (typeof value !== 'string' || !value.trim()) {
     throw createSapCapRequestError(message, {
@@ -238,7 +257,7 @@ function normalizeEntitySetName(value: unknown) {
 }
 
 function containsUrlBoundary(value: string) {
-  return /[/?#]/.test(value) || /%(?:2f|3f|23)/i.test(value)
+  return /[/?#\\]/.test(value) || /%(?:2f|3f|23|5c)/i.test(value)
 }
 
 function setTextQueryParam(params: URLSearchParams, key: string, value: unknown) {
@@ -256,7 +275,18 @@ function setIntegerQueryParam(
 ) {
   if (value === undefined || value === null || value === '') return
 
-  const numberValue = Number(value)
+  const rawValue = typeof value === 'string' ? value.trim() : value
+
+  if (
+    typeof rawValue !== 'number' &&
+    (typeof rawValue !== 'string' || !/^\d+$/.test(rawValue))
+  ) {
+    throw createSapCapRequestError(message, {
+      category: 'validation',
+    })
+  }
+
+  const numberValue = typeof rawValue === 'number' ? rawValue : Number(rawValue)
 
   if (!Number.isInteger(numberValue) || numberValue < 0) {
     throw createSapCapRequestError(message, {
@@ -268,20 +298,7 @@ function setIntegerQueryParam(
 }
 
 function applyAuthentication(headers: IDataObject, credentials: ICredentialDataDecryptedObject) {
-  const authType = credentials.authType as string
-
-  if (authType === 'basicAuth') {
-    const token = Buffer.from(
-      `${credentials.username || ''}:${credentials.password || ''}`
-    ).toString('base64')
-    headers.Authorization = `Basic ${token}`
-    return
-  }
-
-  throw createSapCapRequestError(
-    'SAP CAP authentication currently supports Basic Auth only.',
-    { category: 'configuration' }
-  )
+  Object.assign(headers, buildBasicAuthHeaders(credentials))
 }
 
 function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read') {

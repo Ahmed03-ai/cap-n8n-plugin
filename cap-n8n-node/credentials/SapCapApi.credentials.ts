@@ -1,5 +1,4 @@
 import {
-  ICredentialTestRequest,
   ICredentialType,
   INodeProperties,
 } from 'n8n-workflow'
@@ -77,21 +76,4 @@ export class SapCapApi implements ICredentialType {
     },
   ]
 
-  authenticate = {
-    type: 'generic',
-    properties: {
-      auth: {
-        username: '={{$credentials.username}}',
-        password: '={{$credentials.password}}',
-      },
-    },
-  } as const
-
-  test: ICredentialTestRequest = {
-    request: {
-      baseURL: '={{$credentials.baseUrl}}',
-      url: '={{$credentials.metadataPath}}',
-      method: 'GET',
-    },
-  }
 }
