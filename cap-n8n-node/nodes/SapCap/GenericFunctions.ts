@@ -103,6 +103,12 @@ export function resolveEntitySetName(selection: EntitySetSelection) {
 export function normalizeKeyPredicate(value: unknown) {
   const keyPredicate = requireString(value, 'Key Predicate is required for Read.')
 
+  if (/[/?#]/.test(keyPredicate)) {
+    throw createSapCapRequestError('Key Predicate must not include /, ?, or #.', {
+      category: 'validation',
+    })
+  }
+
   return keyPredicate.startsWith('(') && keyPredicate.endsWith(')')
     ? keyPredicate
     : `(${keyPredicate})`

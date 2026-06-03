@@ -449,6 +449,56 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(server.requests[0].url).toBe('/odata/v4/admin/Books(ID=201)')
   })
 
+  it('rejects Read key predicates with URL boundary characters before sending CAP requests', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201)?$expand=SensitiveNav',
+      }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201)/$value',
+      }),
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201)#fragment',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 1 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 2 },
+      },
+    ])
+  })
+
   it('throws sanitized not-found errors for missing Read entities when continueOnFail is false', async () => {
     const server = await createCapServer(() => ({
       statusCode: 404,

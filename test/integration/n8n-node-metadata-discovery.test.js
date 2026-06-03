@@ -274,6 +274,8 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     expect(resolveEntitySetName({ entitySetSource: 'manual', entitySetManual: 'Books' })).toBe('Books')
     expect(() => normalizeBaseUrl('ftp://cap.example.test')).toThrow('Base URL must be a valid http or https URL.')
     expect(() => normalizeServicePath('/odata/v4/admin?$filter=ID')).toThrow('Service Path must start with / and must not include query strings.')
+    expect(() => normalizeKeyPredicate('ID=201)?$expand=SensitiveNav')).toThrow('Key Predicate must not include /, ?, or #.')
+    expect(() => normalizeKeyPredicate('ID=201)/$value')).toThrow('Key Predicate must not include /, ?, or #.')
     expect(() => resolveEntitySetName({ entitySetSource: 'manual', entitySetManual: '../Books' })).toThrow('Enter a CAP entity set name, for example Books.')
   })
 })
