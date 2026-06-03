@@ -636,7 +636,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       statusCode: 500,
       body: JSON.stringify({ error: 'should not be reached' }),
     }))
-    const unsafeBody = `{"title":"${fakePassword}","Authorization":"Bearer ${fakeBearerToken}"}`
+    const unsafeBody = `{"title":"${fakePassword}","Authorization":"Bearer ${fakeBearerToken}"`
     const invalidBodyValues = [
       '',
       '   ',

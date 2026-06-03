@@ -36,6 +36,12 @@ type ReadRequestInput = {
   keyParts?: KeyPartsInput
 }
 
+type MutationRequestInput = ReadRequestInput & {
+  body: unknown
+}
+
+type DeleteRequestInput = ReadRequestInput
+
 type MetadataKeyDescriptor = {
   name: unknown
   type?: unknown
@@ -52,8 +58,9 @@ type SapCapApiRequestInput = {
   method?: IHttpRequestMethods
   path: string
   body?: IDataObject
+  headers?: IDataObject
   responseFormat?: 'json' | 'text'
-  errorContext?: 'metadata' | 'odata' | 'read'
+  errorContext?: 'metadata' | 'odata' | 'read' | 'delete'
 }
 
 type FullHttpResponse = {
@@ -233,6 +240,68 @@ export function buildReadRequest(input: ReadRequestInput) {
   }
 }
 
+export function buildCreateRequest(input: MutationRequestInput) {
+  const servicePath = normalizeServicePath(input.servicePath)
+  const entitySetName = normalizeEntitySetName(input.entitySetName)
+
+  return {
+    method: 'POST' as IHttpRequestMethods,
+    path: `${servicePath}/${entitySetName}`,
+    body: parseJsonObjectParameter(input.body, 'Body'),
+    headers: {
+      Prefer: 'return=representation',
+    },
+  }
+}
+
+export function buildUpdateRequest(input: MutationRequestInput) {
+  const servicePath = normalizeServicePath(input.servicePath)
+  const entitySetName = normalizeEntitySetName(input.entitySetName)
+  const keyPredicate = resolveKeyPredicate(input)
+
+  return {
+    method: 'PATCH' as IHttpRequestMethods,
+    path: `${servicePath}/${entitySetName}${keyPredicate}`,
+    body: parseJsonObjectParameter(input.body, 'Body'),
+    headers: {
+      Prefer: 'return=representation',
+    },
+  }
+}
+
+export function buildDeleteRequest(input: DeleteRequestInput) {
+  const servicePath = normalizeServicePath(input.servicePath)
+  const entitySetName = normalizeEntitySetName(input.entitySetName)
+  const keyPredicate = resolveKeyPredicate(input)
+
+  return {
+    method: 'DELETE' as IHttpRequestMethods,
+    path: `${servicePath}/${entitySetName}${keyPredicate}`,
+  }
+}
+
+export function parseJsonObjectParameter(value: unknown, fieldName: string) {
+  if (typeof value === 'string' && !value.trim()) {
+    throwJsonObjectParameterError(fieldName)
+  }
+
+  let parsed = value
+
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value)
+    } catch (err) {
+      throwJsonObjectParameterError(fieldName)
+    }
+  }
+
+  if (!isPlainObject(parsed)) {
+    throwJsonObjectParameterError(fieldName)
+  }
+
+  return parsed as IDataObject
+}
+
 export async function sapCapApiRequest(
   context: SapCapRequestContext,
   input: SapCapApiRequestInput
@@ -243,6 +312,8 @@ export async function sapCapApiRequest(
   const headers: IDataObject = {
     Accept: responseFormat === 'text' ? 'application/xml, text/xml, */*' : 'application/json',
   }
+
+  Object.assign(headers, input.headers ?? {})
 
   if (input.body) {
     headers['Content-Type'] = 'application/json'
@@ -550,7 +621,7 @@ function setIntegerQueryParam(
   params.set(key, String(numberValue))
 }
 
-function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read') {
+function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read' | 'delete') {
   const category = categoryForStatus(statusCode)
   const message = messageForStatus(statusCode, category, context)
 
@@ -569,7 +640,7 @@ function categoryForStatus(statusCode: number) {
   return 'validation'
 }
 
-function messageForStatus(statusCode: number, category: string, context: 'metadata' | 'odata' | 'read') {
+function messageForStatus(statusCode: number, category: string, context: 'metadata' | 'odata' | 'read' | 'delete') {
   if (context === 'metadata') {
     if (statusCode === 401) return 'Authentication failed for CAP metadata. Check the SAP CAP API credential.'
     if (statusCode === 403) return 'CAP metadata access is forbidden for this credential.'
@@ -582,6 +653,10 @@ function messageForStatus(statusCode: number, category: string, context: 'metada
     return 'CAP entity was not found for the selected entity set and key predicate.'
   }
 
+  if (context === 'delete' && statusCode === 404) {
+    return 'CAP entity was not found for Delete. Check the selected entity set and key.'
+  }
+
   if (category === 'authentication') return 'CAP authentication failed. Check the SAP CAP API credential.'
   if (category === 'authorization') return 'CAP authorization failed. This credential cannot access the CAP service.'
   if (category === 'server') return 'CAP service returned a server error. Try again or check the CAP service logs.'
@@ -589,7 +664,7 @@ function messageForStatus(statusCode: number, category: string, context: 'metada
   return 'CAP rejected the OData request. Check the OData options.'
 }
 
-function networkMessage(context: 'metadata' | 'odata' | 'read') {
+function networkMessage(context: 'metadata' | 'odata' | 'read' | 'delete') {
   if (context === 'metadata') {
     return 'Could not reach CAP metadata endpoint. Check Base URL and network access from n8n.'
   }
@@ -599,6 +674,12 @@ function networkMessage(context: 'metadata' | 'odata' | 'read') {
 
 function isSapCapRequestError(err: unknown): err is Error & { category: string } {
   return err instanceof Error && typeof (err as Error & { category?: unknown }).category === 'string'
+}
+
+function throwJsonObjectParameterError(fieldName: string): never {
+  throw createSapCapRequestError(`${fieldName} must be a JSON object.`, {
+    category: 'validation',
+  })
 }
 
 async function requestOAuth2Token(
