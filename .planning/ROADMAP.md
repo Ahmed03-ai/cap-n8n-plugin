@@ -269,5 +269,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 3/3 | Complete    | 2026-06-03 |
-| 7. n8n Mutations and CAP Actions/Functions | 4/4 | Complete   | 2026-06-03 |
+| 7. n8n Mutations and CAP Actions/Functions | 4/4 | Complete    | 2026-06-03 |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
