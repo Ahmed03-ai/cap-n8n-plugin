@@ -61,8 +61,8 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
 - [x] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
 - [x] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
-- [ ] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
-- [ ] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
+- [x] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
+- [x] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
 - [ ] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
 - [ ] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
 - [ ] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
@@ -168,8 +168,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NODE-02 | Phase 6 | Complete |
 | NODE-03 | Phase 6 | Complete |
 | NODE-04 | Phase 6 | Complete |
-| NODE-05 | Phase 6 | Pending |
-| NODE-06 | Phase 6 | Pending |
+| NODE-05 | Phase 6 | Complete |
+| NODE-06 | Phase 6 | Complete |
 | NODE-07 | Phase 7 | Pending |
 | NODE-08 | Phase 7 | Pending |
 | NODE-09 | Phase 7 | Pending |
