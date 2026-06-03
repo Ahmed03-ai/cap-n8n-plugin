@@ -30,7 +30,7 @@ export class SapCapApi implements ICredentialType {
       default: '/odata/v4/admin/$metadata',
       required: true,
       placeholder: '/odata/v4/admin/$metadata',
-      description: 'CAP OData metadata endpoint used by the credential test.',
+      description: 'CAP OData $metadata endpoint used for Test Connection and entity discovery.',
     },
     {
       displayName: 'Authentication',
@@ -45,19 +45,18 @@ export class SapCapApi implements ICredentialType {
           name: 'OAuth2 Client Credentials',
           value: 'oauth2',
         },
-        {
-          name: 'None',
-          value: 'none',
-        },
       ],
       default: 'basicAuth',
       required: true,
+      description: 'Authentication method for CAP OData requests.',
     },
     {
       displayName: 'Username',
       name: 'username',
       type: 'string',
       default: '',
+      required: true,
+      description: 'CAP username for Basic Auth.',
       displayOptions: {
         show: {
           authType: ['basicAuth'],
@@ -72,6 +71,8 @@ export class SapCapApi implements ICredentialType {
         password: true,
       },
       default: '',
+      required: true,
+      description: 'CAP password for Basic Auth.',
       displayOptions: {
         show: {
           authType: ['basicAuth'],
@@ -83,6 +84,7 @@ export class SapCapApi implements ICredentialType {
       name: 'tokenUrl',
       type: 'string',
       default: '',
+      required: true,
       placeholder: 'https://your-tenant.authentication.eu10.hana.ondemand.com/oauth/token',
       description: 'OAuth2 token endpoint for the client credentials grant.',
       displayOptions: {
@@ -96,6 +98,8 @@ export class SapCapApi implements ICredentialType {
       name: 'clientId',
       type: 'string',
       default: '',
+      required: true,
+      description: 'OAuth2 client ID.',
       displayOptions: {
         show: {
           authType: ['oauth2'],
@@ -110,6 +114,8 @@ export class SapCapApi implements ICredentialType {
         password: true,
       },
       default: '',
+      required: true,
+      description: 'OAuth2 client secret.',
       displayOptions: {
         show: {
           authType: ['oauth2'],
@@ -130,6 +136,16 @@ export class SapCapApi implements ICredentialType {
       },
     },
   ]
+
+  authenticate = {
+    type: 'generic',
+    properties: {
+      auth: {
+        username: '={{$credentials.username}}',
+        password: '={{$credentials.password}}',
+      },
+    },
+  } as const
 
   test: ICredentialTestRequest = {
     request: {
