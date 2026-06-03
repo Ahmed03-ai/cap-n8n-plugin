@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-06-03T20:38:38.262Z"
-last_activity: 2026-06-03
+status: human_verification
+last_updated: "2026-06-03T23:30:12Z"
+last_activity: 2026-06-04 -- Phase 08 automated verification passed; human UAT required
 progress:
   total_phases: 8
   completed_phases: 7
-  total_plans: 27
-  completed_plans: 27
-  percent: 88
+  total_plans: 31
+  completed_plans: 31
+  percent: 87
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** CAP developers can add reliable n8n workflow automation to CAP applications without repeatedly hand-writing integration glue.
-**Current focus:** Phase 8 — deployment, docs, and release readiness
+**Current focus:** Phase 08 — deployment-docs-and-release-readiness
 
 ## Current Position
 
-Phase: 8
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-06-03
+Phase: 08 (deployment-docs-and-release-readiness) - HUMAN UAT
+Plan: 4 of 4 completed
+Status: Automated verification passed; human UAT pending
+Last activity: 2026-06-04 -- Phase 08 verification recorded human_needed
 
 Progress: [██████████] 100%
 
@@ -163,6 +163,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - [Phase 05] Run live n8n import UAT from `.planning/phases/05-workflow-import-and-build-validation/05-HUMAN-UAT.md`; GitHub issue #17 remains open until this is confirmed.
+- [Phase 08] Complete manual UAT from `.planning/phases/08-deployment-docs-and-release-readiness/08-HUMAN-UAT.md` before closing browser, cloud n8n, or BTP runtime evidence.
 
 ### Blockers/Concerns
 
