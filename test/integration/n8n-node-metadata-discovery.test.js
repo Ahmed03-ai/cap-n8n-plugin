@@ -514,6 +514,128 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     })).toThrow('Top must be a nonnegative integer.')
   })
 
+  it('builds type-aware metadata key predicates while preserving manual fallback', async () => {
+    const {
+      buildKeyPredicateFromParts,
+      buildReadRequest,
+      formatODataKeyLiteral,
+      normalizeKeyPredicate,
+      resolveKeyPredicate,
+    } = await importDistModule('dist/nodes/SapCap/GenericFunctions.js')
+    const draftKeys = [
+      { name: 'ID', type: 'Edm.Int32' },
+      { name: 'IsActiveEntity', type: 'Edm.Boolean' },
+    ]
+    const textKeys = [
+      { name: 'locale', type: 'Edm.String' },
+      { name: 'code', type: 'Edm.String' },
+    ]
+
+    expect(normalizeKeyPredicate('ID=201')).toBe('(ID=201)')
+    expect(formatODataKeyLiteral("O'Neil", 'Edm.String')).toBe("'O''Neil'")
+    expect(formatODataKeyLiteral('201', 'Edm.Int32')).toBe('201')
+    expect(formatODataKeyLiteral(true, 'Edm.Boolean')).toBe('true')
+    expect(formatODataKeyLiteral('external-id', 'Custom.Identifier')).toBe("'external-id'")
+    expect(buildKeyPredicateFromParts({
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: 201,
+        IsActiveEntity: true,
+      },
+    })).toBe('(ID=201,IsActiveEntity=true)')
+    expect(buildKeyPredicateFromParts({
+      keyDescriptors: textKeys,
+      keyParts: {
+        locale: 'en-US',
+        code: "USD'2026",
+      },
+    })).toBe("(locale='en-US',code='USD''2026')")
+    expect(resolveKeyPredicate({
+      keyPredicate: 'ID=201',
+    })).toBe('(ID=201)')
+    expect(resolveKeyPredicate({
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: '201',
+        IsActiveEntity: 'true',
+      },
+    })).toBe('(ID=201,IsActiveEntity=true)')
+    expect(buildReadRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'BookDrafts',
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: 201,
+        IsActiveEntity: true,
+      },
+    })).toEqual({
+      method: 'GET',
+      path: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+    })
+    expect(buildReadRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'Books',
+      keyPredicate: 'ID=201',
+    })).toEqual({
+      method: 'GET',
+      path: '/odata/v4/admin/Books(ID=201)',
+    })
+    expect(() => buildKeyPredicateFromParts({
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: 201,
+      },
+    })).toThrow('Every metadata-derived key part is required.')
+    expect(() => buildKeyPredicateFromParts({
+      keyDescriptors: [
+        { name: 'ID', type: 'Edm.Int32' },
+        { name: 'ID', type: 'Edm.Int32' },
+      ],
+      keyParts: {
+        ID: 201,
+      },
+    })).toThrow('Metadata key descriptors must not contain duplicate key names.')
+    expect(() => buildKeyPredicateFromParts({
+      keyDescriptors: draftKeys,
+      keyParts: [
+        { name: 'ID', value: 201 },
+        { name: 'ID', value: 202 },
+        { name: 'IsActiveEntity', value: true },
+      ],
+    })).toThrow('Metadata key values must not contain duplicate key names.')
+  })
+
+  it('sanitizes metadata-derived key validation errors', async () => {
+    const {
+      buildKeyPredicateFromParts,
+    } = await importDistModule('dist/nodes/SapCap/GenericFunctions.js')
+
+    try {
+      buildKeyPredicateFromParts({
+        keyDescriptors: [
+          { name: 'ID', type: 'Edm.String' },
+        ],
+        keyParts: {
+          ID: `201/$value ${fakePassword} ${fakeClientSecret} ${fakeBearerToken} ${fakeResponseBody}`,
+        },
+      })
+      throw new Error('Expected metadata key validation to fail')
+    } catch (err) {
+      const serialized = serializedError(err)
+
+      expect(err).toMatchObject({
+        message: 'Key values must not include /, \\, ?, or #.',
+        category: 'validation',
+      })
+      expect(serialized).not.toContain(fakePassword)
+      expect(serialized).not.toContain(fakeClientSecret)
+      expect(serialized).not.toContain(fakeBearerToken)
+      expect(serialized).not.toContain(fakeResponseBody)
+      expect(serialized).not.toContain('201/$value')
+      expect(serialized).not.toContain('Authorization')
+    }
+  })
+
   it('runs credential Test Connection through shared SAP CAP validation guards', async () => {
     const { SapCap } = await importDistModule('dist/nodes/SapCap/SapCap.node.js')
     const node = new SapCap()
