@@ -173,8 +173,18 @@ Plans:
   4. n8n workflow designer can use Read mode to retrieve one CAP entity by key and receives a clear n8n-native not-found error when appropriate.
   5. n8n workflow designer receives plain item data and n8n-native errors instead of raw OData wrappers or unsanitized CAP responses.
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 06-01-PLAN.md - Create SAP CAP credentials and metadata-backed entity discovery.
+- [ ] 06-02-PLAN.md - Create OData response cleanup and sanitized n8n error helpers.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-03-PLAN.md - Wire Query and Read runtime behavior with aggregate Phase 6 verification.
 
 ### Phase 7: n8n Mutations and CAP Actions/Functions
 
