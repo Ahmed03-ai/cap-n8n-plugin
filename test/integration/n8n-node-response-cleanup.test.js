@@ -230,6 +230,65 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     ])
   })
 
+  it('normalizes Action/Function returned values into one cleaned n8n item', async () => {
+    const { normalizeODataItems } = await importResponseHelpers()
+
+    expect(normalizeODataItems('actionFunction', {
+      '@odata.context': '$metadata#submitOrder',
+      stock: 5,
+      audit: {
+        '@odata.type': '#CatalogService.ActionAudit',
+        status: 'accepted',
+      },
+    }, 4)).toEqual([
+      {
+        json: {
+          stock: 5,
+          audit: {
+            status: 'accepted',
+          },
+        },
+        pairedItem: { item: 4 },
+      },
+    ])
+    expect(normalizeODataItems('actionFunction', {
+      '@odata.context': '$metadata#bookAvailability',
+      value: true,
+    }, 5)).toEqual([
+      {
+        json: {
+          value: true,
+        },
+        pairedItem: { item: 5 },
+      },
+    ])
+    expect(normalizeODataItems('actionFunction', [
+      {
+        '@odata.etag': 'W/"1"',
+        ID: 201,
+      },
+    ], 6)).toEqual([
+      {
+        json: {
+          value: [
+            {
+              ID: 201,
+            },
+          ],
+        },
+        pairedItem: { item: 6 },
+      },
+    ])
+    expect(normalizeODataItems('actionFunction', 1200, 7)).toEqual([
+      {
+        json: {
+          value: 1200,
+        },
+        pairedItem: { item: 7 },
+      },
+    ])
+  })
+
   it('normalizes Delete confirmation output and rejects unexpected Delete shapes', async () => {
     const { normalizeODataItems } = await importResponseHelpers()
 
@@ -262,6 +321,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     expectResponseShapeFailure(() => normalizeODataItems('read', null, 0))
     expectResponseShapeFailure(() => normalizeODataItems('create', { '@odata.context': '$metadata#Books/$entity' }, 0))
     expectResponseShapeFailure(() => normalizeODataItems('update', { '@odata.context': '$metadata#Books/$entity' }, 0))
+    expectResponseShapeFailure(() => normalizeODataItems('actionFunction', { '@odata.context': '$metadata#submitOrder' }, 0))
   })
 
   it('classifies CAP and OData failures into sanitized n8n categories', async () => {
@@ -299,6 +359,15 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         { operation: 'delete' },
         {
           message: 'CAP entity was not found for Delete. Check the selected entity set and key.',
+          statusCode: 404,
+          category: 'notFound',
+        },
+      ],
+      [
+        statusError(404),
+        { operation: 'actionFunction' },
+        {
+          message: 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -413,6 +482,10 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
       statusError(404, `missing row ${fakeBearerToken} ${fakeResponseBody}`),
       { operation: 'delete' }
     )
+    const safeActionFunctionNotFoundError = classifySapCapError(
+      statusError(404, `missing action ${fakeBearerToken} ${fakeResponseBody}`),
+      { operation: 'actionFunction' }
+    )
 
     expect(toContinueOnFailItem(safeValidationError, 4)).toEqual({
       json: {
@@ -438,8 +511,17 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
       },
       pairedItem: { item: 6 },
     })
+    expect(toContinueOnFailItem(safeActionFunctionNotFoundError, 7)).toEqual({
+      json: {
+        error: 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.',
+        statusCode: 404,
+        category: 'notFound',
+      },
+      pairedItem: { item: 7 },
+    })
     expectSerializedSafeError(toContinueOnFailItem(safeNetworkError, 5))
     expectSerializedSafeError(toContinueOnFailItem(safeDeleteNotFoundError, 6))
+    expectSerializedSafeError(toContinueOnFailItem(safeActionFunctionNotFoundError, 7))
   })
 
   it('creates sanitized NodeOperationError instances without wrapping raw HTTP internals', async () => {

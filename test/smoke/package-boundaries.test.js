@@ -73,7 +73,7 @@ describe('package boundaries', () => {
     expect(credentialModules.some(hasFunctionExport)).toBe(true)
   })
 
-  it('exposes SAP CAP credentials and Phase 7 CRUD operation metadata', async () => {
+  it('exposes SAP CAP credentials and Phase 7 operation metadata', async () => {
     const [nodeModule] = await importManifestModules(['dist/nodes/SapCap/SapCap.node.js'])
     const [credentialModule] = await importManifestModules(['dist/credentials/SapCapApi.credentials.js'])
     const SapCap = exportedConstructor(nodeModule, 'SapCap')
@@ -86,6 +86,7 @@ describe('package boundaries', () => {
     const credentialFields = credential.properties.map((property) => property.name)
 
     expect(node.methods.loadOptions.getEntitySets).toEqual(expect.any(Function))
+    expect(node.methods.loadOptions.getActionFunctions).toEqual(expect.any(Function))
     expect(node.methods.credentialTest.sapCapApiCredentialTest).toEqual(expect.any(Function))
     expect(node.description.credentials).toEqual([
       expect.objectContaining({
@@ -100,6 +101,11 @@ describe('package boundaries', () => {
       'entitySetSource',
       'entitySet',
       'entitySetManual',
+      'operationSource',
+      'actionFunction',
+      'actionFunctionKind',
+      'actionFunctionName',
+      'actionFunctionBinding',
       'filter',
       'orderBy',
       'select',
@@ -109,6 +115,7 @@ describe('package boundaries', () => {
       'keyParts',
       'keyPredicate',
       'body',
+      'parameters',
     ])
     expect(operationValues).toEqual([
       'query',
@@ -116,6 +123,7 @@ describe('package boundaries', () => {
       'create',
       'update',
       'delete',
+      'actionFunction',
     ])
     expect(operation.options).toEqual([
       expect.objectContaining({
@@ -147,6 +155,12 @@ describe('package boundaries', () => {
         value: 'delete',
         description: 'Delete one CAP entity by key.',
         action: 'Delete a CAP entity',
+      }),
+      expect.objectContaining({
+        name: 'Action/Function',
+        value: 'actionFunction',
+        description: 'Invoke a CAP action or function using metadata or manual operation details.',
+        action: 'Invoke a CAP action or function',
       }),
     ])
     expect(propertyByName(node.description.properties, 'servicePath')).toMatchObject({
@@ -202,7 +216,7 @@ describe('package boundaries', () => {
       placeholder: 'ID=201,IsActiveEntity=true',
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete'],
+          operation: ['read', 'update', 'delete', 'actionFunction'],
           keyInputMode: ['manual'],
         },
       },
@@ -215,7 +229,7 @@ describe('package boundaries', () => {
       ],
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete'],
+          operation: ['read', 'update', 'delete', 'actionFunction'],
         },
       },
     })
@@ -224,7 +238,7 @@ describe('package boundaries', () => {
       type: 'json',
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete'],
+          operation: ['read', 'update', 'delete', 'actionFunction'],
           keyInputMode: ['metadata'],
         },
       },
@@ -238,6 +252,61 @@ describe('package boundaries', () => {
         },
       },
     })
+    expect(propertyByName(node.description.properties, 'operationSource')).toMatchObject({
+      default: 'metadata',
+      options: [
+        { name: 'From Metadata', value: 'metadata' },
+        { name: 'Manual', value: 'manual' },
+      ],
+      displayOptions: {
+        show: {
+          operation: ['actionFunction'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'actionFunction')).toMatchObject({
+      displayName: 'Action/Function',
+      type: 'options',
+      typeOptions: {
+        loadOptionsMethod: 'getActionFunctions',
+      },
+      displayOptions: {
+        show: {
+          operation: ['actionFunction'],
+          operationSource: ['metadata'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'actionFunctionKind')).toMatchObject({
+      default: 'action',
+      options: [
+        { name: 'Action', value: 'action' },
+        { name: 'Function', value: 'function' },
+      ],
+    })
+    expect(propertyByName(node.description.properties, 'actionFunctionName')).toMatchObject({
+      displayName: 'Operation Name',
+      placeholder: 'submitOrder',
+    })
+    expect(propertyByName(node.description.properties, 'actionFunctionBinding')).toMatchObject({
+      default: 'unbound',
+      options: [
+        { name: 'Unbound', value: 'unbound' },
+        { name: 'Bound to Entity', value: 'bound' },
+      ],
+    })
+    expect(propertyByName(node.description.properties, 'parameters')).toMatchObject({
+      displayName: 'Parameters (JSON)',
+      type: 'json',
+      default: '{}',
+      displayOptions: {
+        show: {
+          operation: ['actionFunction'],
+        },
+      },
+    })
+    expect(propertyByName(node.description.properties, 'actionName')).toBeUndefined()
+    expect(propertyByName(node.description.properties, 'functionName')).toBeUndefined()
     expect(propertyByName(node.description.properties, 'entityKey')).toBeUndefined()
     expect(propertyByName(node.description.properties, 'deleteConfirmation')).toBeUndefined()
     expect(propertyByName(node.description.properties, 'confirmDelete')).toBeUndefined()

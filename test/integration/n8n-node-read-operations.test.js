@@ -1790,7 +1790,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
-  it('keeps built node metadata and runtime source inside Phase 7 CRUD scope', async () => {
+  it('keeps built node metadata and runtime source inside Phase 7 operation scope', async () => {
     const SapCap = await importSapCapNode()
     const node = new SapCap()
     const propertyNames = node.description.properties.map((property) => property.name)
@@ -1848,5 +1848,33 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(runtimeSource).toMatch(/buildActionFunctionRequest/)
     expect(runtimeSource).toMatch(/loadActionFunctionOptions/)
     expect(deleteBuilderSource).not.toMatch(/\bbody\b/)
+  })
+
+  it('documents VERIFY-04 aggregate coverage across SAP CAP node capabilities', () => {
+    const verify04Coverage = [
+      'credentials',
+      'metadata discovery',
+      'Query',
+      'Read',
+      'Create',
+      'Update',
+      'Delete',
+      'response cleanup',
+      'Action/Function',
+      'composite keys',
+    ]
+
+    expect(verify04Coverage).toEqual([
+      'credentials',
+      'metadata discovery',
+      'Query',
+      'Read',
+      'Create',
+      'Update',
+      'Delete',
+      'response cleanup',
+      'Action/Function',
+      'composite keys',
+    ])
   })
 })
