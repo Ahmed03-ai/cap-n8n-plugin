@@ -1,8 +1,6 @@
 import {
   IDataObject,
-  ICredentialDataDecryptedObject,
   IExecuteFunctions,
-  IHttpRequestMethods,
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
@@ -10,9 +8,13 @@ import {
   NodeOperationError,
 } from 'n8n-workflow'
 
-function trimTrailingSlash(value: string) {
-  return value.replace(/\/$/, '')
-}
+import {
+  buildQueryRequest,
+  buildReadRequest,
+  resolveEntitySetName,
+  sapCapApiRequest,
+} from './GenericFunctions'
+import { loadEntitySetOptions } from './ODataMetadata'
 
 function stripODataMetadata(value: IDataObject): IDataObject {
   return Object.fromEntries(
@@ -20,100 +22,40 @@ function stripODataMetadata(value: IDataObject): IDataObject {
   )
 }
 
-function normalizeEntityKey(rawKey: string) {
-  const key = rawKey.trim()
-  if (!key) {
-    throw new Error('Entity Key is required for this operation.')
-  }
-
-  return key.startsWith('(') && key.endsWith(')') ? key : `(${key})`
-}
-
-function parseJsonBody(body: string) {
-  try {
-    return JSON.parse(body || '{}')
-  } catch (err) {
-    throw new Error('Body must be valid JSON.')
-  }
-}
-
-async function fetchOAuth2Token(
-  context: IExecuteFunctions,
-  credentials: ICredentialDataDecryptedObject
+function normalizeODataResponse(
+  operation: string,
+  response: IDataObject | undefined,
+  itemIndex: number
 ) {
-  const tokenUrl = credentials.tokenUrl as string
-  if (!tokenUrl) {
-    throw new Error('Token URL is required for OAuth2 Client Credentials authentication.')
-  }
-
-  const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: credentials.clientId as string,
-    client_secret: credentials.clientSecret as string,
-  })
-
-  if (credentials.scope) {
-    body.set('scope', credentials.scope as string)
-  }
-
-  const response = await context.helpers.httpRequest({
-    method: 'POST',
-    url: tokenUrl,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: body.toString(),
-  })
-
-  if (!response?.access_token) {
-    throw new Error('OAuth2 token request succeeded but returned no access_token.')
-  }
-
-  return response.access_token as string
-}
-
-async function createAuthHeaders(
-  context: IExecuteFunctions,
-  credentials: ICredentialDataDecryptedObject
-) {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
-  }
-  const authType = credentials.authType as string
-
-  if (authType === 'basicAuth') {
-    const token = Buffer.from(
-      `${credentials.username || ''}:${credentials.password || ''}`
-    ).toString('base64')
-    headers.Authorization = `Basic ${token}`
-  }
-
-  if (authType === 'oauth2') {
-    const token = await fetchOAuth2Token(context, credentials)
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  return headers
-}
-
-function normalizeODataResponse(operation: string, response: IDataObject | undefined, key?: string) {
-  if (operation === 'delete') {
-    return [{ json: { deleted: true, key } }]
-  }
-
   if (!response) {
-    return [{ json: {} }]
+    return [{
+      json: {},
+      pairedItem: { item: itemIndex },
+    }]
   }
 
   const value = response.value
-  if (Array.isArray(value)) {
+  if (operation === 'query' && Array.isArray(value)) {
     return value.map((record) => ({
       json: stripODataMetadata(record as IDataObject),
+      pairedItem: { item: itemIndex },
     }))
   }
 
-  return [{ json: stripODataMetadata(response) }]
+  return [{
+    json: stripODataMetadata(response),
+    pairedItem: { item: itemIndex },
+  }]
+}
+
+function errorItem(err: unknown) {
+  const error = err as Error & { statusCode?: number, category?: string }
+
+  return {
+    error: error instanceof Error ? error.message : String(err),
+    ...(error.statusCode ? { statusCode: error.statusCode } : {}),
+    ...(error.category ? { category: error.category } : {}),
+  }
 }
 
 export class SapCap implements INodeType {
@@ -145,55 +87,78 @@ export class SapCap implements INodeType {
         noDataExpression: true,
         options: [
           {
-            name: 'Create',
-            value: 'create',
-            description: 'Create a CAP entity',
-            action: 'Create a CAP entity',
-          },
-          {
-            name: 'Delete',
-            value: 'delete',
-            description: 'Delete a CAP entity by key',
-            action: 'Delete a CAP entity',
-          },
-          {
             name: 'Query',
             value: 'query',
-            description: 'Retrieve a filtered, sorted, or paged collection of CAP entities',
+            description: 'Retrieve a filtered, sorted, or paged collection of CAP entities.',
             action: 'Query CAP entities',
           },
           {
             name: 'Read',
             value: 'read',
-            description: 'Retrieve one CAP entity by key',
+            description: 'Retrieve one CAP entity by key predicate.',
             action: 'Read a CAP entity',
-          },
-          {
-            name: 'Update',
-            value: 'update',
-            description: 'Update a CAP entity by key',
-            action: 'Update a CAP entity',
           },
         ],
         default: 'query',
-        description: 'CAP OData operation to run',
+        description: 'CAP OData operation to run.',
       },
       {
         displayName: 'Service Path',
         name: 'servicePath',
         type: 'string',
         default: '/odata/v4/admin',
+        required: true,
         placeholder: '/odata/v4/admin',
         description: 'Path to the CAP OData service.',
       },
       {
+        displayName: 'Entity Set Source',
+        name: 'entitySetSource',
+        type: 'options',
+        options: [
+          {
+            name: 'From Metadata',
+            value: 'metadata',
+          },
+          {
+            name: 'Manual',
+            value: 'manual',
+          },
+        ],
+        default: 'metadata',
+        required: true,
+        description: 'Choose whether to load entity sets from CAP metadata or enter a name manually.',
+      },
+      {
         displayName: 'Entity Set',
         name: 'entitySet',
+        type: 'options',
+        default: '',
+        required: true,
+        placeholder: 'Select an entity set',
+        description: 'Loaded from $metadata using the selected SAP CAP API credential.',
+        typeOptions: {
+          loadOptionsMethod: 'getEntitySets',
+        },
+        displayOptions: {
+          show: {
+            entitySetSource: ['metadata'],
+          },
+        },
+      },
+      {
+        displayName: 'Entity Set Name',
+        name: 'entitySetManual',
         type: 'string',
         default: '',
         required: true,
         placeholder: 'Books',
-        description: 'CAP OData entity set name.',
+        description: 'Use this when metadata cannot be loaded. Enter only the CAP entity set name, not a path or query string.',
+        displayOptions: {
+          show: {
+            entitySetSource: ['manual'],
+          },
+        },
       },
       {
         displayName: 'Filter',
@@ -201,7 +166,33 @@ export class SapCap implements INodeType {
         type: 'string',
         default: '',
         placeholder: "title eq 'Dune'",
-        description: 'OData $filter expression.',
+        description: 'Raw OData $filter expression.',
+        displayOptions: {
+          show: {
+            operation: ['query'],
+          },
+        },
+      },
+      {
+        displayName: 'Order By',
+        name: 'orderBy',
+        type: 'string',
+        default: '',
+        placeholder: 'title asc, stock desc',
+        description: 'Raw OData $orderby expression.',
+        displayOptions: {
+          show: {
+            operation: ['query'],
+          },
+        },
+      },
+      {
+        displayName: 'Select Fields',
+        name: 'select',
+        type: 'string',
+        default: '',
+        placeholder: 'ID,title,stock',
+        description: 'Comma-separated field list for OData $select.',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -233,130 +224,68 @@ export class SapCap implements INodeType {
         },
       },
       {
-        displayName: 'Order By',
-        name: 'orderBy',
-        type: 'string',
-        default: '',
-        placeholder: 'title asc, stock desc',
-        description: 'OData $orderby expression.',
-        displayOptions: {
-          show: {
-            operation: ['query'],
-          },
-        },
-      },
-      {
-        displayName: 'Select Fields',
-        name: 'select',
-        type: 'string',
-        default: '',
-        placeholder: 'ID,title,stock',
-        description: 'Comma-separated field list for OData $select.',
-        displayOptions: {
-          show: {
-            operation: ['query'],
-          },
-        },
-      },
-      {
-        displayName: 'Entity Key',
-        name: 'entityKey',
+        displayName: 'Key Predicate',
+        name: 'keyPredicate',
         type: 'string',
         default: '',
         required: true,
         placeholder: 'ID=201,IsActiveEntity=true',
-        description: 'OData key predicate, for example ID=201,IsActiveEntity=true.',
+        description: 'OData key predicate. Parentheses are optional; examples: ID=201 or ID=201,IsActiveEntity=true.',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete'],
-          },
-        },
-      },
-      {
-        displayName: 'Body',
-        name: 'body',
-        type: 'json',
-        default: '{}',
-        description: 'JSON request body for Create or Update.',
-        displayOptions: {
-          show: {
-            operation: ['create', 'update'],
+            operation: ['read'],
           },
         },
       },
     ],
   }
 
+  methods = {
+    loadOptions: {
+      getEntitySets: loadEntitySetOptions,
+    },
+  }
+
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData()
     const returnData: INodeExecutionData[] = []
-    const credentials = await this.getCredentials('sapCapApi')
-    const baseUrl = trimTrailingSlash(credentials.baseUrl as string)
-    const headers = await createAuthHeaders(this, credentials)
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
       try {
         const operation = this.getNodeParameter('operation', itemIndex) as string
-        const servicePath = trimTrailingSlash(this.getNodeParameter('servicePath', itemIndex) as string)
-        const entitySet = this.getNodeParameter('entitySet', itemIndex) as string
-        const entityKey = operation === 'query' || operation === 'create'
-          ? undefined
-          : this.getNodeParameter('entityKey', itemIndex) as string
-        const keyPredicate = entityKey ? normalizeEntityKey(entityKey) : undefined
-        let method: IHttpRequestMethods = 'GET'
-        let url = `${baseUrl}${servicePath}/${entitySet}`
-        let body: IDataObject | undefined
+        const servicePath = this.getNodeParameter('servicePath', itemIndex) as string
+        const entitySetName = resolveEntitySetName({
+          entitySetSource: this.getNodeParameter('entitySetSource', itemIndex) as string,
+          entitySet: this.getNodeParameter('entitySet', itemIndex, '') as string,
+          entitySetManual: this.getNodeParameter('entitySetManual', itemIndex, '') as string,
+        })
+        const request = operation === 'read'
+          ? buildReadRequest({
+            servicePath,
+            entitySetName,
+            keyPredicate: this.getNodeParameter('keyPredicate', itemIndex) as string,
+          })
+          : buildQueryRequest({
+            servicePath,
+            entitySetName,
+            filter: this.getNodeParameter('filter', itemIndex, '') as string,
+            orderBy: this.getNodeParameter('orderBy', itemIndex, '') as string,
+            select: this.getNodeParameter('select', itemIndex, '') as string,
+            top: this.getNodeParameter('top', itemIndex, 100) as number,
+            skip: this.getNodeParameter('skip', itemIndex, 0) as number,
+          })
 
-        if (keyPredicate) {
-          url += keyPredicate
-        }
-
-        if (operation === 'query') {
-          const params = new URLSearchParams()
-          const filter = this.getNodeParameter('filter', itemIndex, '') as string
-          const top = this.getNodeParameter('top', itemIndex, 100) as number
-          const skip = this.getNodeParameter('skip', itemIndex, 0) as number
-          const orderBy = this.getNodeParameter('orderBy', itemIndex, '') as string
-          const select = this.getNodeParameter('select', itemIndex, '') as string
-
-          if (filter) params.set('$filter', filter)
-          if (top) params.set('$top', String(top))
-          if (skip) params.set('$skip', String(skip))
-          if (orderBy) params.set('$orderby', orderBy)
-          if (select) params.set('$select', select)
-
-          const query = params.toString().replace(/\+/g, '%20')
-          if (query) url += `?${query}`
-        }
-
-        if (operation === 'create') {
-          method = 'POST'
-          body = parseJsonBody(this.getNodeParameter('body', itemIndex) as string)
-        }
-
-        if (operation === 'update') {
-          method = 'PATCH'
-          body = parseJsonBody(this.getNodeParameter('body', itemIndex) as string)
-        }
-
-        if (operation === 'delete') {
-          method = 'DELETE'
-        }
-
-        const response = await this.helpers.httpRequest({
-          method,
-          url,
-          headers,
-          body,
+        const response = await sapCapApiRequest(this, {
+          ...request,
+          responseFormat: 'json',
+          errorContext: operation === 'read' ? 'read' : 'odata',
         }) as IDataObject | undefined
 
-        returnData.push(...normalizeODataResponse(operation, response, entityKey))
+        returnData.push(...normalizeODataResponse(operation, response, itemIndex))
       } catch (err) {
         if (this.continueOnFail()) {
           returnData.push({
-            json: {
-              error: err instanceof Error ? err.message : String(err),
-            },
+            json: errorItem(err),
             pairedItem: {
               item: itemIndex,
             },
