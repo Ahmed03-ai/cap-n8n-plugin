@@ -1,0 +1,24 @@
+{
+  "connections": {},
+  "name": "CAP n8n Test",
+  "nodes": [
+    {
+      "id": "9fd6a43a-1249-4032-9506-56de71fc3c13",
+      "name": "Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "cap-test-trigger"
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

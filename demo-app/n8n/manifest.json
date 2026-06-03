@@ -1,0 +1,12 @@
+{
+  "workflows": [
+    {
+      "cds": "index.cds",
+      "manifest": "workflows/cap-test-trigger/manifest.json",
+      "schema": "workflows/cap-test-trigger/schema.json",
+      "typed": true,
+      "workflow": "workflows/cap-test-trigger/workflow.json",
+      "workflowKey": "cap-test-trigger"
+    }
+  ]
+}

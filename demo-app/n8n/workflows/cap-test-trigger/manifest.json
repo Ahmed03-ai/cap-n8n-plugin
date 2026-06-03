@@ -1,0 +1,50 @@
+{
+  "acceptedReferences": [
+    "cap-n8n-test",
+    "cap-test-trigger",
+    "webhook-test/cap-test-trigger",
+    "webhook/cap-test-trigger",
+    "xS2pbMEOrVWMxiT0"
+  ],
+  "artifacts": {
+    "cds": "index.cds",
+    "manifest": "workflows/cap-test-trigger/manifest.json",
+    "schema": "workflows/cap-test-trigger/schema.json",
+    "workflow": "workflows/cap-test-trigger/workflow.json"
+  },
+  "sanitizer": {
+    "removedPaths": [
+      "active",
+      "activeVersionId",
+      "createdAt",
+      "description",
+      "id",
+      "isArchived",
+      "meta",
+      "nodes.0.webhookId",
+      "pinData",
+      "settings.availableInMCP",
+      "settings.binaryMode",
+      "settings.callerPolicy",
+      "settings.saveExecutionProgress",
+      "settings.timeSavedMode",
+      "settings.timezone",
+      "shared",
+      "staticData",
+      "tags",
+      "triggerCount",
+      "updatedAt",
+      "versionCounter",
+      "versionId",
+      "versionMetadata"
+    ]
+  },
+  "source": {
+    "type": "local",
+    "webhookPath": "cap-test-trigger",
+    "workflowId": "xS2pbMEOrVWMxiT0",
+    "workflowName": "CAP n8n Test"
+  },
+  "typed": true,
+  "workflowKey": "cap-test-trigger"
+}

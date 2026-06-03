@@ -1,0 +1,16 @@
+{
+  "inputs": {
+    "bookId": {
+      "required": true,
+      "type": "Integer"
+    },
+    "event": {
+      "required": false,
+      "type": "JSON"
+    },
+    "title": {
+      "required": true,
+      "type": "String"
+    }
+  }
+}
