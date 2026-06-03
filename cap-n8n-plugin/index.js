@@ -13,6 +13,7 @@ const {
   readWorkflowArtifacts,
   writeWorkflowArtifacts
 } = require('./lib/workflows/artifacts.js')
+const { validateWorkflowAnnotations } = require('./lib/workflows/validate.js')
 
 const workflowTools = {
   SUPPORTED_WORKFLOW_INPUT_TYPES,
@@ -21,11 +22,13 @@ const workflowTools = {
   generateWorkflowCds,
   workflowTypeName,
   readWorkflowArtifacts,
-  writeWorkflowArtifacts
+  writeWorkflowArtifacts,
+  validateWorkflowAnnotations
 }
 
 module.exports = {
   N8nWorkflowService,
   MockN8nWorkflowService,
+  validateWorkflowAnnotations,
   workflowTools
 }

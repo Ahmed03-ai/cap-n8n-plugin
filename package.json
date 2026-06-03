@@ -16,6 +16,7 @@
     "test": "npm run smoke && npm run test:integration",
     "cap-n8n": "node cap-n8n-plugin/bin/cap-n8n.js",
     "n8n:workflow:import": "node cap-n8n-plugin/bin/cap-n8n.js import",
+    "n8n:workflow:validate": "node cap-n8n-plugin/bin/cap-n8n.js validate",
     "n8n:up": "docker compose up -d n8n",
     "n8n:export": "docker compose exec n8n n8n export:workflow --all --output=/test-workflows/workflows.json",
     "n8n:import": "docker compose exec n8n n8n import:workflow --input=/test-workflows/workflows.json"

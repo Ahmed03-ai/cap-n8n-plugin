@@ -1,6 +1,22 @@
 #!/usr/bin/env node
 
 const { importWorkflows } = require('../lib/workflows/import')
+const {
+  runValidateCommand,
+  textOutput
+} = require('../lib/workflows/validate-command')
+
+const BOOLEAN_OPTIONS = new Set(['--all', '--live', '--help', '--json'])
+const VALUE_OPTIONS = new Set([
+  '--app',
+  '--from',
+  '--workflow',
+  '--key',
+  '--schema',
+  '--base-url',
+  '--api-base-url',
+  '--timeout-ms'
+])
 
 function writeOut(message = '') {
   process.stdout.write(`${message}\n`)
@@ -16,6 +32,7 @@ function help() {
     '',
     'Commands:',
     '  import    Import n8n workflow artifacts into a CAP app',
+    '  validate  Validate CAP n8n workflow annotations against generated artifacts',
     '',
     'Import options:',
     '  --app <path>          CAP app root that receives app-local n8n artifacts',
@@ -28,6 +45,10 @@ function help() {
     '  --base-url <url>     Override configured n8n routing base URL',
     '  --api-base-url <url> Override configured n8n public API base URL',
     '  --timeout-ms <ms>    Override live import request timeout',
+    '',
+    'Validate options:',
+    '  --app <path>          CAP app root that contains app-local n8n artifacts',
+    '  --json               Emit machine-readable sanitized diagnostics',
     '  --help               Show help'
   ].join('\n')
 }
@@ -44,9 +65,13 @@ function parseArgs(args) {
       continue
     }
 
-    if (arg === '--all' || arg === '--live' || arg === '--help') {
+    if (BOOLEAN_OPTIONS.has(arg)) {
       options[arg.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = true
       continue
+    }
+
+    if (!VALUE_OPTIONS.has(arg)) {
+      throw new Error(`Unknown option: ${arg}`)
     }
 
     const value = args[index + 1]
@@ -79,6 +104,27 @@ function printImportResult(result) {
   }
 }
 
+function printValidateResult(payload) {
+  if (payload.options?.json) {
+    writeOut(JSON.stringify({
+      appRoot: payload.appRoot,
+      errors: payload.result.errors,
+      warnings: payload.result.warnings,
+      diagnostics: payload.result.diagnostics
+    }, null, 2))
+    return
+  }
+
+  for (const line of textOutput(payload)) {
+    const hasError = line.includes('severity=error')
+    if (hasError) {
+      writeErr(line)
+    } else {
+      writeOut(line)
+    }
+  }
+}
+
 async function main(argv = process.argv.slice(2)) {
   const { command, options } = parseArgs(argv)
 
@@ -87,10 +133,20 @@ async function main(argv = process.argv.slice(2)) {
     return 0
   }
 
-  if (command !== 'import') {
+  if (command !== 'import' && command !== 'validate') {
     writeErr(`Unknown cap-n8n command: ${command}`)
     writeErr(help())
     return 1
+  }
+
+  if (command === 'validate') {
+    const payload = await runValidateCommand({
+      ...options,
+      cwd: process.cwd()
+    })
+    payload.options = options
+    printValidateResult(payload)
+    return payload.exitCode
   }
 
   const result = await importWorkflows({
