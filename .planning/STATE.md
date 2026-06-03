@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T08:58:55.333Z"
-last_activity: 2026-06-03 -- Phase 05 planning complete
+last_updated: "2026-06-03T09:29:23.973Z"
+last_activity: 2026-06-03
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 20
-  completed_plans: 16
+  completed_plans: 17
   percent: 50
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** CAP developers can add reliable n8n workflow automation to CAP applications without repeatedly hand-writing integration glue.
-**Current focus:** Phase 5 — workflow import and build validation
+**Current focus:** Phase 05 — workflow-import-and-build-validation
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
+Phase: 05 (workflow-import-and-build-validation) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-03 -- Phase 05 planning complete
+Last activity: 2026-06-03
 
-Progress: [██████████] 100%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -67,6 +67,7 @@ Progress: [██████████] 100%
 | Phase 04 P02 | 12 min | 2 tasks | 8 files |
 | Phase 04 P03 | 10 min | 3 tasks | 7 files |
 | Phase 04 P04 | 12 min | 3 tasks | 4 files |
+| Phase 05 P01 | 9 min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,9 @@ Recent decisions affecting current work:
 - [Phase 04]: [Phase 04 Plan 04]: Demo workflow evidence uses annotations on AdminService.Books rather than domain entities. — Avoids annotation propagation fan-out while keeping the demo app as evidence and package code as the side-effect owner.
 - [Phase 04]: [Phase 04 Plan 04]: The demo service implementation retains ID generation only. — Hard-coded n8n workflow side effects were removed from demo-app/srv/admin-service.js so cap-n8n-plugin annotation registration owns integration behavior.
 - [Phase 04]: [Phase 04 Plan 04]: Registrar condition calls avoid literal eval substrings while preserving the public evaluateCondition helper contract. — The aggregate source gate requires no eval matches under annotation helpers, so registrar uses a computed helper lookup without changing runtime condition behavior.
+- [Phase 05]: Generated CDS action assertions use CAP CSN action definitions. — CAP compiles unbound service actions as separate definitions, so tests assert model output instead of CDS text.
+- [Phase 05]: Workflow helper exports are grouped under cap-n8n-plugin workflowTools. — Preserves existing package exports while exposing the new artifact contract.
+- [Phase 05]: Sanitizer manifests record removed path names only. — Keeps provenance reviewable without serializing removed secret or personal metadata values.
 
 ### Pending Todos
 
@@ -140,6 +144,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T07:57:26.326Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md
+Last session: 2026-06-03T09:29:23.958Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None

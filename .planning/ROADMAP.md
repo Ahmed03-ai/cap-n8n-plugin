@@ -149,7 +149,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md - Create workflow artifact contract, sidecar schema, sanitizer, generated CDS, and demo app artifacts.
+- [x] 05-01-PLAN.md - Create workflow artifact contract, sidecar schema, sanitizer, generated CDS, and demo app artifacts.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -239,7 +239,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
 | 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
-| 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
+| 5. Workflow Import and Build Validation | 1/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
 | 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |

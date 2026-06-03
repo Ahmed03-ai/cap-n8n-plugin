@@ -34,6 +34,7 @@
 **File Storage:**
 - Local n8n data directory - `docker-compose.yml` mounts `./.n8n-data:/home/node/.n8n`; `.gitignore` excludes `.n8n-data/`.
 - Shared workflow fixtures - `docker-compose.yml` mounts `./test-workflows:/test-workflows`; root `package.json` imports and exports `test-workflows/workflows.json`.
+- App-local workflow artifacts - `demo-app/n8n/` stores sanitized workflow JSON, scalar sidecar schema JSON, per-workflow manifests, aggregate manifest, and generated CDS input contracts for deterministic offline validation.
 
 **Caching:**
 - None detected.
@@ -108,6 +109,7 @@
 - Root `package.json` imports workflows with `npm run n8n:import`.
 - Root `package.json` exports workflows with `npm run n8n:export`.
 - Workflow fixture: `test-workflows/workflows.json`.
+- Generated demo workflow artifacts: `demo-app/n8n/workflows/cap-test-trigger/` is produced from the fixture through `cap-n8n-plugin/lib/workflows/artifacts.js` and sanitized before commit.
 
 ---
 

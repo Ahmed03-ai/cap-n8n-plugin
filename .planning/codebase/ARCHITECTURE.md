@@ -44,8 +44,9 @@
 | n8n workflow service | Implements the webhook CAP service used by `cds.connect.to('n8n')`, validates webhook config, exposes a `start` event, normalizes webhook paths, posts JSON to n8n, and returns parsed webhook responses. | `cap-n8n-plugin/lib/N8nWorkflowService.js` |
 | Annotation registrar | Scans served CAP entities for `@n8n.workflow.start` and `@n8n.workflow.cancel`, registers configured CREATE/UPDATE/DELETE after-handlers, routes starts through the transaction-safe n8n service path, and keeps cancellation side effects non-blocking. | `cap-n8n-plugin/lib/annotations/AnnotationRegistrar.js` |
 | Cancellation resolver | Queries active workflow executions by workflowId plus business key/tag and cancels all matches through Phase 3 query/cancel APIs. | `cap-n8n-plugin/lib/annotations/CancellationResolver.js` |
+| Workflow artifact helpers | Normalize scalar sidecar schemas, sanitize n8n workflow JSON, build manifests, generate CDS input contracts, and write/read app-root n8n artifacts. | `cap-n8n-plugin/lib/workflows/*.js` |
 | Mock n8n workflow service | Implements deterministic offline `start` behavior with in-memory start records and explicit opt-in failures. | `cap-n8n-plugin/lib/MockN8nWorkflowService.js` |
-| Plugin package entry | Public package entry that exports `N8nWorkflowService` and `MockN8nWorkflowService`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
+| Plugin package entry | Public package entry that exports `N8nWorkflowService`, `MockN8nWorkflowService`, and `workflowTools`; package subpaths expose webhook and mock services. | `cap-n8n-plugin/index.js` |
 | n8n node package entry | Package `main` target for the planned n8n community node; currently empty. | `cap-n8n-node/index.js` |
 | Demo app configuration | Binds the demo app to the plugin service implementation, configures n8n credentials, and sets the CAP server port. | `demo-app/package.json` |
 | Domain model | Owns Bookshop persistence entities, localized fields, associations, code lists, and Fiori draft annotations. | `demo-app/db/schema.cds` |
@@ -57,6 +58,7 @@
 | UI5 app shells | Minimal Fiori Elements `AppComponent` definitions that load manifests. | `demo-app/app/**/webapp/Component.js` |
 | UI5 manifests | Bind UI apps to `odata/v4/admin/` or `odata/v4/catalog/` and define ListReport/ObjectPage routing. | `demo-app/app/**/webapp/manifest.json` |
 | Shared workflow artifact | Stores exported n8n workflow definitions used by root import/export scripts. | `test-workflows/workflows.json` |
+| Demo workflow artifacts | Stores deterministic sanitized workflow artifacts, scalar sidecar schema, manifest metadata, and generated CDS input contracts for the demo app. | `demo-app/n8n/**` |
 
 ## Pattern Overview
 
@@ -81,7 +83,7 @@
 **CAP Plugin Layer:**
 - Purpose: Provides the reusable CAP-to-n8n service implementation.
 - Location: `cap-n8n-plugin/`
-- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, declarative annotation registration under `cap-n8n-plugin/lib/annotations/`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
+- Contains: CAP bootstrap hook in `cap-n8n-plugin/cds-plugin.js`, config resolver in `cap-n8n-plugin/lib/config.js`, webhook service implementation in `cap-n8n-plugin/lib/N8nWorkflowService.js`, declarative annotation registration under `cap-n8n-plugin/lib/annotations/`, workflow artifact helpers under `cap-n8n-plugin/lib/workflows/`, mock service implementation in `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, and package entry in `cap-n8n-plugin/index.js`.
 - Depends on: `@sap/cds` at runtime from the consuming CAP app and global `fetch` from the Node runtime.
 - Used by: `demo-app/package.json` through `cds.requires.n8n.impl` and by `demo-app/srv/admin-service.js` through `cds.connect.to('n8n')`.
 
@@ -121,11 +123,11 @@
 - Used by: SAP Fiori launch/sandbox and CAP app serving.
 
 **Workflow Artifact Layer:**
-- Purpose: Stores n8n workflow exports for local import.
-- Location: `test-workflows/`
-- Contains: `test-workflows/workflows.json`.
-- Depends on: Root scripts in `package.json`.
-- Used by: `npm run n8n:import` and `npm run n8n:export`.
+- Purpose: Stores raw exported workflow fixtures plus sanitized app-local workflow artifacts and generated CAP input contracts.
+- Location: `test-workflows/` and app-root `n8n/` directories such as `demo-app/n8n/`.
+- Contains: `test-workflows/workflows.json`, sanitized `workflow.json`, sidecar `schema.json`, workflow `manifest.json`, aggregate `manifest.json`, and generated `index.cds`.
+- Depends on: Root scripts in `package.json` for raw fixture import/export and `cap-n8n-plugin/lib/workflows/` for deterministic generated artifacts.
+- Used by: `npm run n8n:import`, `npm run n8n:export`, future workflow import CLI, and future build validation.
 
 ## Data Flow
 
@@ -168,6 +170,11 @@
 - Examples: `cap-n8n-plugin/lib/N8nWorkflowService.js`, `demo-app/package.json`, `demo-app/srv/admin-service.js`.
 - Pattern: Extend `cds.Service`, register event handlers in `init()`, and call through `cds.connect.to('n8n')`.
 
+**Workflow Artifact Helpers:**
+- Purpose: Turn n8n workflow definitions plus scalar sidecar schemas into deterministic app-local artifacts.
+- Examples: `cap-n8n-plugin/lib/workflows/schema.js`, `cap-n8n-plugin/lib/workflows/sanitize.js`, `cap-n8n-plugin/lib/workflows/artifacts.js`, `demo-app/n8n/index.cds`.
+- Pattern: Normalize sidecar input objects, sanitize workflow JSON recursively, write stable JSON under `appRoot/n8n/`, and compile generated CDS for validation.
+
 **CAP Application Services:**
 - Purpose: Pair declarative service definitions with imperative event/action handlers.
 - Examples: `demo-app/srv/admin-service.cds` with `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.cds` with `demo-app/srv/cat-service.js`.
@@ -205,6 +212,11 @@
 - Triggers: `cds.connect.to('n8n')` and `n8n.send('start', ...)`.
 - Responsibilities: Reads `cds.requires.n8n` options, exposes `start`, constructs webhook URLs, sends HTTP POST requests to n8n, and handles response parsing/errors.
 
+**Workflow artifact tools:**
+- Location: `cap-n8n-plugin/index.js` `workflowTools` and `cap-n8n-plugin/lib/workflows/*.js`
+- Triggers: Future package CLI/import flows, tests, and build validation.
+- Responsibilities: Produce sanitized workflow artifacts and generated CDS contracts under a consuming app's `n8n/` directory.
+
 **Demo CAP server:**
 - Location: `demo-app/package.json`
 - Triggers: `npm start` in `demo-app` or `cds watch`/`cds-serve`.
@@ -238,6 +250,7 @@
 - **Service binding:** The demo app explicitly binds `n8n.impl` to `cap-n8n-plugin/service` with `kind: "webhook"` in `demo-app/package.json`; new consumers can provide the same binding, choose `kind: "mock"`, or rely on plugin bootstrap selection.
 - **Runtime fetch:** `cap-n8n-plugin/lib/N8nWorkflowService.js` uses global `fetch`, so runtime must provide it.
 - **Secret handling:** `demo-app/package.json:23` references `{env.N8N_API_KEY}`; secrets must stay in environment configuration such as `.env`, which is ignored by `.gitignore`.
+- **Workflow artifact safety:** Generated `workflow.json` files must be sanitized before commit; manifests may record removed path names but not removed values.
 - **Generated/local data:** `node_modules/`, `.cds-services.json`, `*.log`, and `.n8n-data/` are ignored by `.gitignore` and should not be treated as source.
 
 ## Anti-Patterns
