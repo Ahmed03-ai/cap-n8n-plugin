@@ -66,7 +66,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [ ] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
 - [ ] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
 - [ ] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
-- [ ] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
+- [x] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
 - [x] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
 - [ ] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
 - [ ] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
@@ -173,7 +173,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NODE-07 | Phase 7 | Pending |
 | NODE-08 | Phase 7 | Pending |
 | NODE-09 | Phase 7 | Pending |
-| NODE-10 | Phase 6 | Pending |
+| NODE-10 | Phase 6 | Complete |
 | NODE-11 | Phase 6 | Complete |
 | NODE-12 | Phase 7 | Pending |
 | NODE-13 | Phase 7 | Pending |
