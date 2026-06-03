@@ -507,6 +507,183 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(server.requests[0].url).toBe('/odata/v4/admin/Books(ID=201)')
   })
 
+  it('builds Create, Update, and Delete requests with explicit JSON Body contracts', async () => {
+    const {
+      buildCreateRequest,
+      buildDeleteRequest,
+      buildUpdateRequest,
+      sapCapApiRequest,
+    } = await importDistModule('dist/nodes/SapCap/GenericFunctions.js')
+    const draftKeys = [
+      { name: 'ID', type: 'Edm.Int32' },
+      { name: 'IsActiveEntity', type: 'Edm.Boolean' },
+    ]
+    const createBody = {
+      title: 'Phase 7 Create',
+      price: 19.99,
+    }
+    const updateBody = {
+      price: 24.99,
+    }
+    const createRequest = buildCreateRequest({
+      servicePath: '/odata/v4/admin/',
+      entitySetName: 'Books',
+      body: JSON.stringify(createBody),
+    })
+    const updateRequest = buildUpdateRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'BookDrafts',
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: 201,
+        IsActiveEntity: true,
+      },
+      body: JSON.stringify(updateBody),
+    })
+    const deleteRequest = buildDeleteRequest({
+      servicePath: '/odata/v4/admin',
+      entitySetName: 'BookDrafts',
+      keyDescriptors: draftKeys,
+      keyParts: {
+        ID: 201,
+        IsActiveEntity: true,
+      },
+    })
+
+    expect(createRequest).toEqual({
+      method: 'POST',
+      path: '/odata/v4/admin/Books',
+      body: createBody,
+      headers: {
+        Prefer: 'return=representation',
+      },
+    })
+    expect(updateRequest).toEqual({
+      method: 'PATCH',
+      path: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+      body: updateBody,
+      headers: {
+        Prefer: 'return=representation',
+      },
+    })
+    expect(deleteRequest).toEqual({
+      method: 'DELETE',
+      path: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+    })
+    expect(deleteRequest).not.toHaveProperty('body')
+
+    const server = await createCapServer((request) => ({
+      body: JSON.stringify({
+        ID: 201,
+        method: request.method,
+      }),
+    }))
+
+    await sapCapApiRequest(createExecutionContext({
+      credentials: basicCredentials(server.baseUrl),
+      parametersByItem: [defaultParameters()],
+    }), {
+      ...createRequest,
+      responseFormat: 'json',
+      errorContext: 'odata',
+    })
+    await sapCapApiRequest(createExecutionContext({
+      credentials: basicCredentials(server.baseUrl),
+      parametersByItem: [defaultParameters()],
+    }), {
+      ...updateRequest,
+      responseFormat: 'json',
+      errorContext: 'read',
+    })
+    await sapCapApiRequest(createExecutionContext({
+      credentials: basicCredentials(server.baseUrl),
+      parametersByItem: [defaultParameters()],
+    }), {
+      ...deleteRequest,
+      responseFormat: 'json',
+      errorContext: 'odata',
+    })
+
+    expect(server.requests).toHaveLength(3)
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/odata/v4/admin/Books',
+      body: JSON.stringify(createBody),
+    })
+    expect(server.requests[0].headers.prefer).toBe('return=representation')
+    expect(server.requests[0].headers['content-type']).toContain('application/json')
+    expect(server.requests[1]).toMatchObject({
+      method: 'PATCH',
+      url: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+      body: JSON.stringify(updateBody),
+    })
+    expect(server.requests[1].headers.prefer).toBe('return=representation')
+    expect(server.requests[1].headers['content-type']).toContain('application/json')
+    expect(server.requests[2]).toMatchObject({
+      method: 'DELETE',
+      url: '/odata/v4/admin/BookDrafts(ID=201,IsActiveEntity=true)',
+      body: '',
+    })
+    expect(server.requests[2].headers['content-type']).toBeUndefined()
+  })
+
+  it('rejects invalid Create and Update Body values before sending CAP requests', async () => {
+    const {
+      buildCreateRequest,
+      buildUpdateRequest,
+    } = await importDistModule('dist/nodes/SapCap/GenericFunctions.js')
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+    const unsafeBody = `{"title":"${fakePassword}","Authorization":"Bearer ${fakeBearerToken}"}`
+    const invalidBodyValues = [
+      '',
+      '   ',
+      '{',
+      '[]',
+      '"literal"',
+      'null',
+      [],
+      'unsupported-body',
+    ]
+
+    for (const body of invalidBodyValues) {
+      expect(() => buildCreateRequest({
+        servicePath: '/odata/v4/admin',
+        entitySetName: 'Books',
+        body,
+      })).toThrow('Body must be a JSON object.')
+      expect(() => buildUpdateRequest({
+        servicePath: '/odata/v4/admin',
+        entitySetName: 'Books',
+        keyPredicate: 'ID=201',
+        body,
+      })).toThrow('Body must be a JSON object.')
+    }
+
+    try {
+      buildCreateRequest({
+        servicePath: '/odata/v4/admin',
+        entitySetName: 'Books',
+        body: unsafeBody,
+      })
+      throw new Error('Expected Body validation to fail')
+    } catch (err) {
+      const serialized = JSON.stringify({
+        message: err.message,
+        category: err.category,
+      })
+
+      expect(serialized).not.toContain(fakePassword)
+      expect(serialized).not.toContain(fakeBearerToken)
+      expect(serialized).not.toContain('Authorization')
+      expect(serialized).not.toContain('title')
+    }
+
+    expect(server.requests).toHaveLength(0)
+  })
+
   it('rejects Read key predicates with URL boundary characters before sending CAP requests', async () => {
     const server = await createCapServer(() => ({
       statusCode: 500,
