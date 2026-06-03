@@ -58,16 +58,16 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 ### n8n CAP Action Node
 
 - [x] **NODE-01**: n8n workflow designer can install and load an SAP CAP community node package.
-- [ ] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
-- [ ] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
-- [ ] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
+- [x] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
+- [x] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
+- [x] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
 - [ ] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
 - [ ] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
 - [ ] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
 - [ ] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
 - [ ] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
 - [ ] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
-- [ ] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
+- [x] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
 - [ ] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
 - [ ] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
 
@@ -165,16 +165,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | IMPORT-06 | Phase 5 | Complete |
 | IMPORT-07 | Phase 5 | Complete |
 | NODE-01 | Phase 1 | Complete |
-| NODE-02 | Phase 6 | Pending |
-| NODE-03 | Phase 6 | Pending |
-| NODE-04 | Phase 6 | Pending |
+| NODE-02 | Phase 6 | Complete |
+| NODE-03 | Phase 6 | Complete |
+| NODE-04 | Phase 6 | Complete |
 | NODE-05 | Phase 6 | Pending |
 | NODE-06 | Phase 6 | Pending |
 | NODE-07 | Phase 7 | Pending |
 | NODE-08 | Phase 7 | Pending |
 | NODE-09 | Phase 7 | Pending |
 | NODE-10 | Phase 6 | Pending |
-| NODE-11 | Phase 6 | Pending |
+| NODE-11 | Phase 6 | Complete |
 | NODE-12 | Phase 7 | Pending |
 | NODE-13 | Phase 7 | Pending |
 | DOCS-01 | Phase 8 | Pending |

@@ -179,7 +179,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md - Create SAP CAP credentials and metadata-backed entity discovery.
+- [x] 06-01-PLAN.md - Create SAP CAP credentials and metadata-backed entity discovery.
 - [ ] 06-02-PLAN.md - Create OData response cleanup and sanitized n8n error helpers.
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -250,6 +250,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
-| 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
+| 6. n8n Credentials, Metadata Discovery, and Read Operations | 1/3 | In Progress|  |
 | 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
