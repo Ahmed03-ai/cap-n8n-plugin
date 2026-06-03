@@ -6,9 +6,9 @@
 
 **Workflow Automation:**
 - n8n - CAP business events trigger n8n workflows through HTTP webhook calls.
-  - SDK/Client: Native `fetch` in `cap-n8n-plugin/lib/N8nWorkflowService.js`.
-  - Auth: Optional `N8N_API_KEY` via `demo-app/package.json` `cds.requires.n8n.credentials.apiKey`, sent as `X-N8N-API-KEY` by `cap-n8n-plugin/lib/N8nWorkflowService.js`.
-  - Base URL: `cds.requires.n8n.credentials.baseUrl` in `demo-app/package.json`; webhook mode validates that it is present through `cap-n8n-plugin/lib/config.js`.
+  - SDK/Client: Native `fetch` in `cap-n8n-plugin/lib/N8nWorkflowService.js` for webhook dispatch and `cap-n8n-plugin/lib/workflows/live-client.js` for live workflow import through the n8n public API.
+  - Auth: Optional `N8N_API_KEY` via CAP app `cds.requires.n8n.credentials.apiKey`, sent as `X-N8N-API-KEY` by webhook dispatch and live import when resolved from config/environment.
+  - Base URL: `cds.requires.n8n.credentials.baseUrl` in CAP app package config; webhook mode validates that it is present through `cap-n8n-plugin/lib/config.js`, and live import derives `/api/v1` unless `--api-base-url` is provided.
   - Local runtime: `docker-compose.yml` runs `n8nio/n8n:latest` on port `5678`.
 
 **SAP CAP / OData:**
@@ -35,6 +35,7 @@
 - Local n8n data directory - `docker-compose.yml` mounts `./.n8n-data:/home/node/.n8n`; `.gitignore` excludes `.n8n-data/`.
 - Shared workflow fixtures - `docker-compose.yml` mounts `./test-workflows:/test-workflows`; root `package.json` imports and exports `test-workflows/workflows.json`.
 - App-local workflow artifacts - `demo-app/n8n/` stores sanitized workflow JSON, scalar sidecar schema JSON, per-workflow manifests, aggregate manifest, and generated CDS input contracts for deterministic offline validation.
+- Package workflow import outputs - `cap-n8n import` reads local export JSON or live n8n API responses and writes the same app-root `n8n/` artifact layout through `cap-n8n-plugin/lib/workflows/artifacts.js`.
 
 **Caching:**
 - None detected.
@@ -108,6 +109,7 @@
 **Workflow Synchronization:**
 - Root `package.json` imports workflows with `npm run n8n:import`.
 - Root `package.json` exports workflows with `npm run n8n:export`.
+- Root `package.json` imports sanitized app-local workflow artifacts with `npm run n8n:workflow:import -- --app <app> --from <export> --workflow <id-or-key>`.
 - Workflow fixture: `test-workflows/workflows.json`.
 - Generated demo workflow artifacts: `demo-app/n8n/workflows/cap-test-trigger/` is produced from the fixture through `cap-n8n-plugin/lib/workflows/artifacts.js` and sanitized before commit.
 

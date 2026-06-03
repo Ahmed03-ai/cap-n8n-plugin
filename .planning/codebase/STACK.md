@@ -5,7 +5,7 @@
 ## Languages
 
 **Primary:**
-- JavaScript CommonJS - Runtime code in `cap-n8n-plugin/cds-plugin.js`, `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, `cap-n8n-plugin/lib/config.js`, `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.js`.
+- JavaScript CommonJS - Runtime and CLI code in `cap-n8n-plugin/cds-plugin.js`, `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, `cap-n8n-plugin/lib/config.js`, `cap-n8n-plugin/bin/cap-n8n.js`, `cap-n8n-plugin/lib/workflows/*.js`, `demo-app/srv/admin-service.js`, and `demo-app/srv/cat-service.js`.
 - CDS / CDL - SAP CAP domain, service, authorization, and Fiori annotation models in `demo-app/db/schema.cds`, `demo-app/srv/*.cds`, and `demo-app/app/**/*.cds`.
 
 **Secondary:**
@@ -42,6 +42,7 @@
 
 **Build/Dev:**
 - CAP CLI commands - `demo-app/package.json` uses `cds-serve`; `README.md` instructs running `cds watch`, which requires `@sap/cds-dk` installed globally or otherwise available.
+- Package workflow CLI - `cap-n8n-plugin/bin/cap-n8n.js` is exposed as the package `cap-n8n` bin; root scripts `cap-n8n` and `n8n:workflow:import` call the checked-in CLI for repo-local workflow artifact imports.
 - Docker Compose - root `package.json` scripts `n8n:import` and `n8n:export` call `docker compose exec n8n ...` to sync `test-workflows/workflows.json`.
 - SAP UI5 CDN - `demo-app/app/fiori-apps.html` loads `https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js` and `https://ui5.sap.com/resources/sap-ui-core.js` for the local launchpad shell.
 
@@ -50,7 +51,7 @@
 **Critical:**
 - `@sap/cds` `^9.9.1` / locked `9.9.1` - Required for CAP services, CDS models, OData V4 exposure, service connection via `cds.connect.to('n8n')`, and `cds.log('n8n')`.
 - `cap-n8n-plugin` `*` - Local workspace dependency consumed by `demo-app/package.json`; implements CAP-to-n8n workflow triggering in `cap-n8n-plugin/lib/N8nWorkflowService.js`.
-- Global `fetch` - Used directly in `cap-n8n-plugin/lib/N8nWorkflowService.js`; requires a Node runtime with built-in Fetch support.
+- Global `fetch` - Used directly in `cap-n8n-plugin/lib/N8nWorkflowService.js` for webhook dispatch and `cap-n8n-plugin/lib/workflows/live-client.js` for live workflow import; requires a Node runtime with built-in Fetch support.
 - `@cap-js/sqlite` `^2.4` / locked `2.4.0` - CAP development persistence adapter declared in `demo-app/package.json`.
 
 **Infrastructure:**

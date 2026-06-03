@@ -47,8 +47,8 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### Workflow Import and Build Validation
 
-- [ ] **IMPORT-01**: CAP developer can import a local n8n workflow JSON file without connecting to a live n8n instance.
-- [ ] **IMPORT-02**: CAP developer can import a workflow definition from a live n8n instance using configured credentials.
+- [x] **IMPORT-01**: CAP developer can import a local n8n workflow JSON file without connecting to a live n8n instance.
+- [x] **IMPORT-02**: CAP developer can import a workflow definition from a live n8n instance using configured credentials.
 - [x] **IMPORT-03**: Imported workflow definitions generate CDS artifacts with typed workflow inputs.
 - [x] **IMPORT-04**: Imported workflow artifacts are stored locally in a deterministic, sanitized layout.
 - [ ] **IMPORT-05**: `cds build` validates workflow trigger annotations against generated workflow input definitions.
@@ -157,8 +157,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ANNO-05 | Phase 4 | Complete |
 | ANNO-06 | Phase 4 | Complete |
 | ANNO-07 | Phase 4 | Complete |
-| IMPORT-01 | Phase 5 | Pending |
-| IMPORT-02 | Phase 5 | Pending |
+| IMPORT-01 | Phase 5 | Complete |
+| IMPORT-02 | Phase 5 | Complete |
 | IMPORT-03 | Phase 5 | Complete |
 | IMPORT-04 | Phase 5 | Complete |
 | IMPORT-05 | Phase 5 | Pending |

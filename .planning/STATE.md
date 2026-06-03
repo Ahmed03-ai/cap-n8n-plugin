@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T09:29:23.973Z"
+last_updated: "2026-06-03T09:49:27.038Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 8
   completed_phases: 4
   total_plans: 20
-  completed_plans: 17
+  completed_plans: 18
   percent: 50
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 ## Current Position
 
 Phase: 05 (workflow-import-and-build-validation) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-03
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 85%
 | Phase 04 P03 | 10 min | 3 tasks | 7 files |
 | Phase 04 P04 | 12 min | 3 tasks | 4 files |
 | Phase 05 P01 | 9 min | 3 tasks | 12 files |
+| Phase 05 P02 | 14 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Generated CDS action assertions use CAP CSN action definitions. — CAP compiles unbound service actions as separate definitions, so tests assert model output instead of CDS text.
 - [Phase 05]: Workflow helper exports are grouped under cap-n8n-plugin workflowTools. — Preserves existing package exports while exposing the new artifact contract.
 - [Phase 05]: Sanitizer manifests record removed path names only. — Keeps provenance reviewable without serializing removed secret or personal metadata values.
+- [Phase 05]: [Phase 05 Plan 02]: Root npm wrappers call node cap-n8n-plugin/bin/cap-n8n.js while package consumers still receive cap-n8n bin metadata. — Keeps repo-local wrapper support working in the private workspace without removing package bin support.
+- [Phase 05]: [Phase 05 Plan 02]: Live import resolves API keys from CAP app config placeholders such as {env.N8N_API_KEY} and never supports a literal API-key CLI flag. — Keeps secrets in environment/config and out of shell-history-friendly import arguments.
+- [Phase 05]: [Phase 05 Plan 02]: Successful live workflow payloads stay intact until the shared artifact sanitizer writes committed artifacts. — Avoids generic error-detail truncation before workflow artifact sanitization and manifest generation.
 
 ### Pending Todos
 
@@ -144,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-03T09:29:23.958Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-06-03T09:49:27.025Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

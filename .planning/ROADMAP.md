@@ -153,7 +153,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 05-02-PLAN.md - Add package CLI local/live import with npm wrappers and secret-safe selection behavior.
+- [x] 05-02-PLAN.md - Add package CLI local/live import with npm wrappers and secret-safe selection behavior.
 - [ ] 05-03-PLAN.md - Add shared annotation validator and CAP build integration for typed workflow mappings.
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -239,7 +239,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
 | 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
-| 5. Workflow Import and Build Validation | 1/4 | In Progress|  |
+| 5. Workflow Import and Build Validation | 2/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
 | 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
