@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
+const require = createRequire(import.meta.url)
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(__dirname, '../..')
 const n8nPackageDir = resolve(repoRoot, 'cap-n8n-node')
@@ -353,7 +355,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
   })
 
   it('creates sanitized NodeOperationError instances without wrapping raw HTTP internals', async () => {
-    const { NodeOperationError } = await import('n8n-workflow')
+    const { NodeOperationError } = require('n8n-workflow')
     const { classifySapCapError, toNodeOperationError } = await importResponseHelpers()
     const rawError = statusError(500, `raw CAP failure ${fakeBearerToken} ${fakeResponseBody}`)
     rawError.stack = `Error: ${fakeClientSecret}\n    at unsafe-stack`

@@ -1,6 +1,8 @@
 import {
   IDataObject,
+  INode,
   INodeExecutionData,
+  NodeOperationError,
 } from 'n8n-workflow'
 
 type ODataOperation = 'query' | 'read'
@@ -90,6 +92,45 @@ export function classifySapCapError(
   }
 
   return safeError
+}
+
+export function toContinueOnFailItem(
+  safeError: SafeSapCapError,
+  itemIndex: number
+): INodeExecutionData {
+  const json: IDataObject = {
+    error: safeError.message,
+    category: safeError.category,
+  }
+
+  if (safeError.statusCode !== undefined) {
+    json.statusCode = safeError.statusCode
+  }
+
+  return {
+    json,
+    pairedItem: {
+      item: itemIndex,
+    },
+  }
+}
+
+export function toNodeOperationError(
+  node: INode,
+  safeError: SafeSapCapError,
+  itemIndex: number
+): NodeOperationError {
+  const err = new Error(safeError.message) as Error & { description?: string }
+
+  if (safeError.description) {
+    err.description = safeError.description
+  }
+
+  return new NodeOperationError(node, err, {
+    message: safeError.message,
+    description: safeError.description,
+    itemIndex,
+  })
 }
 
 function toItem(value: IDataObject, itemIndex: number): INodeExecutionData {
