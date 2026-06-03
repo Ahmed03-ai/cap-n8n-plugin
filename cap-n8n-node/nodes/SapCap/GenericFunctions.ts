@@ -48,10 +48,22 @@ type FullHttpResponse = {
   headers?: IDataObject
 }
 
+type OAuth2TokenResponse = {
+  access_token?: unknown
+}
+
 const metadataPathDefault = '/odata/v4/admin/$metadata'
 
 export function normalizeBaseUrl(value: unknown) {
-  const raw = requireString(value, 'Base URL must be a valid http or https URL.')
+  return normalizeHttpUrl(value, 'Base URL must be a valid http or https URL.')
+}
+
+export function normalizeTokenUrl(value: unknown) {
+  return normalizeHttpUrl(value, 'Token URL must be a valid http or https URL.')
+}
+
+function normalizeHttpUrl(value: unknown, message: string) {
+  const raw = requireString(value, message)
 
   try {
     const parsed = new URL(raw)
@@ -69,7 +81,7 @@ export function normalizeBaseUrl(value: unknown) {
     const normalizedPath = parsed.pathname.replace(/\/+$/, '')
     return `${parsed.origin}${normalizedPath === '/' ? '' : normalizedPath}`
   } catch (err) {
-    throw createSapCapRequestError('Base URL must be a valid http or https URL.', {
+    throw createSapCapRequestError(message, {
       category: 'validation',
     })
   }
@@ -166,9 +178,9 @@ export async function sapCapApiRequest(
     headers['Content-Type'] = 'application/json'
   }
 
-  applyAuthentication(headers, credentials)
-
   try {
+    Object.assign(headers, await buildAuthenticationHeaders(context.helpers.httpRequest, credentials))
+
     const response = await context.helpers.httpRequest({
       method: input.method ?? 'GET',
       url,
@@ -220,7 +232,7 @@ export function buildBasicAuthHeaders(credentials: ICredentialDataDecryptedObjec
 
   if (authType !== 'basicAuth') {
     throw createSapCapRequestError(
-      'SAP CAP authentication currently supports Basic Auth only.',
+      'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
       { category: 'configuration' }
     )
   }
@@ -232,6 +244,28 @@ export function buildBasicAuthHeaders(credentials: ICredentialDataDecryptedObjec
   return {
     Authorization: `Basic ${token}`,
   }
+}
+
+export async function buildAuthenticationHeaders(
+  httpRequest: SapCapRequestContext['helpers']['httpRequest'],
+  credentials: ICredentialDataDecryptedObject
+) {
+  const authType = credentials.authType as string
+
+  if (authType === 'basicAuth') {
+    return buildBasicAuthHeaders(credentials)
+  }
+
+  if (authType === 'oauth2') {
+    return {
+      Authorization: `Bearer ${await requestOAuth2Token(httpRequest, credentials)}`,
+    }
+  }
+
+  throw createSapCapRequestError(
+    'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
+    { category: 'configuration' }
+  )
 }
 
 function requireString(value: unknown, message: string) {
@@ -297,10 +331,6 @@ function setIntegerQueryParam(
   params.set(key, String(numberValue))
 }
 
-function applyAuthentication(headers: IDataObject, credentials: ICredentialDataDecryptedObject) {
-  Object.assign(headers, buildBasicAuthHeaders(credentials))
-}
-
 function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read') {
   const category = categoryForStatus(statusCode)
   const message = messageForStatus(statusCode, category, context)
@@ -350,4 +380,68 @@ function networkMessage(context: 'metadata' | 'odata' | 'read') {
 
 function isSapCapRequestError(err: unknown): err is Error & { category: string } {
   return err instanceof Error && typeof (err as Error & { category?: unknown }).category === 'string'
+}
+
+async function requestOAuth2Token(
+  httpRequest: SapCapRequestContext['helpers']['httpRequest'],
+  credentials: ICredentialDataDecryptedObject
+) {
+  const tokenUrl = normalizeTokenUrl(credentials.tokenUrl)
+  const clientId = requireString(credentials.clientId, 'OAuth2 Client ID is required.')
+  const clientSecret = requireString(credentials.clientSecret, 'OAuth2 Client Secret is required.')
+  const scope = typeof credentials.scope === 'string' ? credentials.scope.trim() : ''
+  const body = new URLSearchParams({ grant_type: 'client_credentials' })
+
+  if (scope) body.set('scope', scope)
+
+  try {
+    const response = await httpRequest({
+      method: 'POST',
+      url: tokenUrl,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+      encoding: 'text',
+      returnFullResponse: true,
+      ignoreHttpStatusErrors: true,
+    }) as FullHttpResponse
+
+    if (response.statusCode >= 400) {
+      throw createSapCapRequestError('OAuth2 token request failed. Check the OAuth2 credential fields.', {
+        statusCode: response.statusCode,
+        category: response.statusCode === 401 || response.statusCode === 403 ? 'authentication' : 'configuration',
+      })
+    }
+
+    const tokenBody = parseTokenBody(response.body)
+
+    if (typeof tokenBody.access_token !== 'string' || !tokenBody.access_token.trim()) {
+      throw createSapCapRequestError('OAuth2 token response did not include an access token.', {
+        category: 'responseShape',
+      })
+    }
+
+    return tokenBody.access_token
+  } catch (err) {
+    if (isSapCapRequestError(err)) throw err
+
+    throw createSapCapRequestError('Could not reach OAuth2 token endpoint. Check Token URL and network access from n8n.', {
+      category: 'network',
+    })
+  }
+}
+
+function parseTokenBody(body: unknown): OAuth2TokenResponse {
+  if (typeof body === 'object' && body !== null) return body as OAuth2TokenResponse
+
+  try {
+    return JSON.parse(String(body ?? '')) as OAuth2TokenResponse
+  } catch (err) {
+    throw createSapCapRequestError('OAuth2 token response did not include an access token.', {
+      category: 'responseShape',
+    })
+  }
 }

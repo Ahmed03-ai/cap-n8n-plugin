@@ -11,7 +11,7 @@ import {
 } from 'n8n-workflow'
 
 import {
-  buildBasicAuthHeaders,
+  buildAuthenticationHeaders,
   buildQueryRequest,
   buildReadRequest,
   createSapCapRequestError,
@@ -231,7 +231,10 @@ export class SapCap implements INodeType {
         }
 
         const url = `${normalizeBaseUrl(credentials.baseUrl)}${normalizeMetadataPath(credentials.metadataPath)}`
-        const headers = buildBasicAuthHeaders(credentials)
+        const headers = await buildAuthenticationHeaders(
+          async options => this.helpers.request(options),
+          credentials
+        )
 
         await this.helpers.request({
           method: 'GET',

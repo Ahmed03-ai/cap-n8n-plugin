@@ -191,8 +191,6 @@ describe('package boundaries', () => {
       'authType',
       'username',
       'password',
-    ]))
-    expect(credentialFields).not.toEqual(expect.arrayContaining([
       'tokenUrl',
       'clientId',
       'clientSecret',
@@ -209,10 +207,11 @@ describe('package boundaries', () => {
     expect(propertyByName(credential.properties, 'authType')).toMatchObject({
       default: 'basicAuth',
       required: true,
-      description: 'Authentication method for CAP OData requests. OAuth2 support is planned for a later release.',
+      description: 'Authentication method for CAP OData requests.',
     })
     expect(propertyByName(credential.properties, 'authType').options.map((option) => option.value)).toEqual([
       'basicAuth',
+      'oauth2',
     ])
     expect(propertyByName(credential.properties, 'username')).toMatchObject({
       required: true,
@@ -224,6 +223,28 @@ describe('package boundaries', () => {
         password: true,
       },
       description: 'CAP password for Basic Auth.',
+    })
+    expect(propertyByName(credential.properties, 'tokenUrl')).toMatchObject({
+      required: true,
+      placeholder: 'https://your-tenant.authentication.eu10.hana.ondemand.com/oauth/token',
+      displayOptions: {
+        show: {
+          authType: ['oauth2'],
+        },
+      },
+    })
+    expect(propertyByName(credential.properties, 'clientId')).toMatchObject({
+      required: true,
+      description: 'OAuth2 client ID.',
+    })
+    expect(propertyByName(credential.properties, 'clientSecret')).toMatchObject({
+      required: true,
+      typeOptions: {
+        password: true,
+      },
+    })
+    expect(propertyByName(credential.properties, 'scope')).toMatchObject({
+      placeholder: 'openid',
     })
     expect(credential.test).toBeUndefined()
   })

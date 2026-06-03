@@ -10,7 +10,9 @@ const n8nPackageDir = resolve(repoRoot, 'cap-n8n-node')
 
 const fakeUsername = 'cap-user'
 const fakePassword = 'cap-password-for-test'
+const fakeClientId = 'cap-client-id-for-test'
 const fakeClientSecret = 'cap-client-secret-for-test'
+const fakeBearerToken = 'cap-bearer-token-for-test'
 const keyPredicateBoundaryMessage = 'Key Predicate must not include /, \\, ?, or #.'
 
 const metadataWithEntitySets = `<?xml version="1.0" encoding="utf-8"?>
@@ -146,9 +148,25 @@ function basicCredentials(baseUrl, overrides = {}) {
     authType: 'basicAuth',
     username: fakeUsername,
     password: fakePassword,
+    tokenUrl: '',
+    clientId: '',
     clientSecret: fakeClientSecret,
+    scope: '',
     ...overrides,
   }
+}
+
+function oauth2Credentials(baseUrl, tokenUrl, overrides = {}) {
+  return basicCredentials(baseUrl, {
+    authType: 'oauth2',
+    username: '',
+    password: '',
+    tokenUrl,
+    clientId: fakeClientId,
+    clientSecret: fakeClientSecret,
+    scope: 'openid',
+    ...overrides,
+  })
 }
 
 function serializedError(err) {
@@ -183,6 +201,38 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     expect(server.requests[0].headers.authorization).toBe(
       `Basic ${Buffer.from(`${fakeUsername}:${fakePassword}`).toString('base64')}`
     )
+    expect(options).toEqual([
+      { name: 'Books', value: 'Books', description: 'AdminService.Book' },
+      { name: 'Authors', value: 'Authors', description: 'AdminService.Author' },
+    ])
+  })
+
+  it('loads entity sets from CAP metadata with OAuth2 Client Credentials', async () => {
+    const { loadEntitySetOptions } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+    const tokenServer = await createCapServer(() => ({
+      contentType: 'application/json',
+      body: JSON.stringify({ access_token: fakeBearerToken, token_type: 'bearer' }),
+    }))
+    const metadataServer = await createCapServer(() => ({
+      body: metadataWithEntitySets,
+    }))
+
+    const options = await loadEntitySetOptions.call(createContext(oauth2Credentials(
+      metadataServer.baseUrl,
+      `${tokenServer.baseUrl}/oauth/token`
+    )))
+
+    expect(tokenServer.requests).toHaveLength(1)
+    expect(tokenServer.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/oauth/token',
+    })
+    expect(tokenServer.requests[0].headers.authorization).toBe(
+      `Basic ${Buffer.from(`${fakeClientId}:${fakeClientSecret}`).toString('base64')}`
+    )
+    expect(tokenServer.requests[0].body).toBe('grant_type=client_credentials&scope=openid')
+    expect(metadataServer.requests).toHaveLength(1)
+    expect(metadataServer.requests[0].headers.authorization).toBe(`Bearer ${fakeBearerToken}`)
     expect(options).toEqual([
       { name: 'Books', value: 'Books', description: 'AdminService.Book' },
       { name: 'Authors', value: 'Authors', description: 'AdminService.Author' },
@@ -346,6 +396,14 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       helpers: {
         request: async (options) => {
           requests.push(options)
+
+          if (options.method === 'POST') {
+            return {
+              statusCode: 200,
+              body: JSON.stringify({ access_token: fakeBearerToken }),
+            }
+          }
+
           return { ok: true }
         },
       },
@@ -366,6 +424,35 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
         url: 'https://cap.example.test/app/odata/v4/admin/$metadata',
         headers: {
           Authorization: `Basic ${Buffer.from(`${fakeUsername}:${fakePassword}`).toString('base64')}`,
+        },
+      }),
+    ])
+
+    requests.length = 0
+    const oauthResult = await node.methods.credentialTest.sapCapApiCredentialTest.call(
+      credentialTestContext,
+      { data: oauth2Credentials('https://cap.example.test/app/', 'https://auth.example.test/oauth/token') }
+    )
+
+    expect(oauthResult).toEqual({
+      status: 'OK',
+      message: 'Connection successful',
+    })
+    expect(requests).toEqual([
+      expect.objectContaining({
+        method: 'POST',
+        url: 'https://auth.example.test/oauth/token',
+        headers: expect.objectContaining({
+          Authorization: `Basic ${Buffer.from(`${fakeClientId}:${fakeClientSecret}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        }),
+        body: 'grant_type=client_credentials&scope=openid',
+      }),
+      expect.objectContaining({
+        method: 'GET',
+        url: 'https://cap.example.test/app/odata/v4/admin/$metadata',
+        headers: {
+          Authorization: `Bearer ${fakeBearerToken}`,
         },
       }),
     ])
@@ -393,10 +480,10 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     await expect(
       node.methods.credentialTest.sapCapApiCredentialTest.call(
         credentialTestContext,
-        { data: basicCredentials('https://cap.example.test', { authType: 'oauth2' }) }
+        { data: basicCredentials('https://cap.example.test', { authType: 'none' }) }
       )
     ).rejects.toMatchObject({
-      message: 'SAP CAP authentication currently supports Basic Auth only.',
+      message: 'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
       category: 'configuration',
     })
     expect(requests).toHaveLength(0)

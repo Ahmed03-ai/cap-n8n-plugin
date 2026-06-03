@@ -13,6 +13,7 @@ const n8nPackageDir = resolve(repoRoot, 'cap-n8n-node')
 
 const fakeUsername = 'phase6-cap-user'
 const fakePassword = 'phase6-fake-password'
+const fakeClientId = 'phase6-fake-client-id'
 const fakeClientSecret = 'phase6-fake-client-secret'
 const fakeBearerToken = 'phase6-fake-bearer-token'
 const fakeResponseBody = 'phase6 full response body should not be exposed'
@@ -96,11 +97,24 @@ function basicCredentials(baseUrl, overrides = {}) {
     username: fakeUsername,
     password: fakePassword,
     tokenUrl: 'https://auth.example.test/oauth/token',
-    clientId: 'phase6-fake-client-id',
+    clientId: fakeClientId,
     clientSecret: fakeClientSecret,
     scope: 'openid',
     ...overrides,
   }
+}
+
+function oauth2Credentials(baseUrl, tokenUrl, overrides = {}) {
+  return basicCredentials(baseUrl, {
+    authType: 'oauth2',
+    username: '',
+    password: '',
+    tokenUrl,
+    clientId: fakeClientId,
+    clientSecret: fakeClientSecret,
+    scope: 'openid',
+    ...overrides,
+  })
 }
 
 function defaultParameters(overrides = {}) {
@@ -150,10 +164,15 @@ function createExecutionContext({
     },
     helpers: {
       httpRequest: async (options) => {
+        const requestBody = typeof options.body === 'string'
+          ? options.body
+          : options.body
+            ? JSON.stringify(options.body)
+            : undefined
         const response = await fetch(options.url, {
           method: options.method ?? 'GET',
           headers: options.headers,
-          body: options.body ? JSON.stringify(options.body) : undefined,
+          body: requestBody,
         })
         const bodyText = await response.text()
         const body = options.encoding === 'text'
@@ -726,26 +745,40 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     }
   })
 
-  it('rejects stale OAuth2 credentials before any CAP request is sent', async () => {
-    const server = await createCapServer(() => ({
-      body: JSON.stringify({ value: [] }),
+  it('uses OAuth2 Client Credentials tokens for CAP Query requests', async () => {
+    const tokenServer = await createCapServer(() => ({
+      body: JSON.stringify({ access_token: fakeBearerToken, token_type: 'bearer' }),
+    }))
+    const capServer = await createCapServer(() => ({
+      body: JSON.stringify({
+        value: [
+          { ID: 201, title: 'OAuth2 Query' },
+        ],
+      }),
     }))
 
     const result = await executeSapCap([
       defaultParameters(),
     ], {
-      credentials: basicCredentials(server.baseUrl, {
-        authType: 'oauth2',
-      }),
-      continueOnFail: true,
+      credentials: oauth2Credentials(capServer.baseUrl, `${tokenServer.baseUrl}/oauth/token`),
     })
 
-    expect(server.requests).toHaveLength(0)
+    expect(tokenServer.requests).toHaveLength(1)
+    expect(tokenServer.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/oauth/token',
+      body: 'grant_type=client_credentials&scope=openid',
+    })
+    expect(tokenServer.requests[0].headers.authorization).toBe(
+      `Basic ${Buffer.from(`${fakeClientId}:${fakeClientSecret}`).toString('base64')}`
+    )
+    expect(capServer.requests).toHaveLength(1)
+    expect(capServer.requests[0].headers.authorization).toBe(`Bearer ${fakeBearerToken}`)
     expect(result[0]).toEqual([
       {
         json: {
-          error: 'SAP CAP authentication currently supports Basic Auth only.',
-          category: 'configuration',
+          ID: 201,
+          title: 'OAuth2 Query',
         },
         pairedItem: { item: 0 },
       },
@@ -829,7 +862,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(result[0]).toEqual([
       {
         json: {
-          error: 'SAP CAP authentication currently supports Basic Auth only.',
+          error: 'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.',
           category: 'configuration',
         },
         pairedItem: { item: 0 },

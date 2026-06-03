@@ -205,7 +205,7 @@ function messageForCategory(
   }
 
   if (category === 'configuration') {
-    return 'SAP CAP authentication currently supports Basic Auth only.'
+    return 'SAP CAP authentication must use Basic Auth or OAuth2 Client Credentials.'
   }
 
   if (category === 'network') {
