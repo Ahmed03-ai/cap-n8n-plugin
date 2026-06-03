@@ -2,6 +2,9 @@ const cds = require('@sap/cds');
 const { resolveN8nConfig } = require('./lib/config');
 const { registerN8nAnnotations } = require('./lib/annotations/AnnotationRegistrar');
 
+const BUILD_PLUGIN_ID = 'n8n-workflow-validation';
+const BUILD_PLUGIN_REGISTERED = Symbol.for('cap-n8n-plugin.build-validation-registered');
+
 function ensureN8nConfig() {
   if (!cds.env.requires) cds.env.requires = {};
   if (!cds.env.requires.n8n) cds.env.requires.n8n = {};
@@ -28,6 +31,17 @@ function registerModel() {
 }
 
 registerModel();
+
+function registerBuildPlugin() {
+  if (!cds.build || typeof cds.build.register !== 'function') return;
+  if (cds[BUILD_PLUGIN_REGISTERED]) return;
+
+  const { BuildValidationPlugin } = require('./lib/workflows/BuildValidationPlugin');
+  cds.build.register(BUILD_PLUGIN_ID, BuildValidationPlugin);
+  cds[BUILD_PLUGIN_REGISTERED] = true;
+}
+
+registerBuildPlugin();
 
 function servedServices(services) {
   if (!services) return [];

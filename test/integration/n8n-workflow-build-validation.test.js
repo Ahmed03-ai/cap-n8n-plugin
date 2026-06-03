@@ -271,7 +271,7 @@ describe('n8n workflow build validation', () => {
       }
     })
     const untypedApp = await createValidationApp({
-      schema: undefined,
+      schema: null,
       inputs: {
         bookId: 'ID'
       }
