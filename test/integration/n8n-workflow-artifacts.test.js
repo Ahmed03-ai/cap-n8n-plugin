@@ -223,15 +223,15 @@ describe('n8n workflow artifact contract', () => {
     ])
     const csn = cds.compile.to.csn(cdsSource)
     const inputType = csn.definitions['cap.n8n.workflows.CapTestTriggerInputs']
-    const contractService = csn.definitions['cap.n8n.workflows.WorkflowInputContracts']
+    const contractAction = csn.definitions['cap.n8n.workflows.WorkflowInputContracts.capTestTrigger']
 
     expect(workflowTypeName('cap-test-trigger')).toBe('CapTestTriggerInputs')
     expect(inputType).toBeDefined()
     expect(inputType.elements.bookId.type).toBe('cds.Integer')
     expect(inputType.elements.title.type).toBe('cds.String')
     expect(inputType.elements.event.type).toBe('cds.LargeString')
-    expect(contractService.actions.capTestTrigger.params.inputs.type).toBe('cap.n8n.workflows.CapTestTriggerInputs')
-    expect(contractService.actions.capTestTrigger.returns.type).toBe('cds.Boolean')
+    expect(contractAction.params.inputs.type).toBe('cap.n8n.workflows.CapTestTriggerInputs')
+    expect(contractAction.returns.type).toBe('cds.Boolean')
   })
 
   it('sanitizes workflow JSON recursively while preserving reviewable webhook structure', () => {
@@ -365,7 +365,7 @@ describe('n8n workflow artifact contract', () => {
       }
     ])
     expect(csn.definitions['cap.n8n.workflows.CapTestTriggerInputs']).toBeDefined()
-    expect(csn.definitions['cap.n8n.workflows.WorkflowInputContracts'].actions.capTestTrigger).toBeDefined()
+    expect(csn.definitions['cap.n8n.workflows.WorkflowInputContracts.capTestTrigger']).toBeDefined()
 
     const readBack = await readWorkflowArtifacts(appRoot)
     expect(readBack.workflows[0].workflowKey).toBe('cap-test-trigger')
