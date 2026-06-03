@@ -14,6 +14,18 @@ async function importResponseHelpers() {
   return import(pathToFileURL(modulePath).href)
 }
 
+function expectResponseShapeFailure(run) {
+  try {
+    run()
+    throw new Error('Expected response shape validation to fail')
+  } catch (err) {
+    expect(err).toMatchObject({
+      message: 'CAP response did not match the expected OData shape.',
+      category: 'responseShape',
+    })
+  }
+}
+
 describe('n8n SAP CAP OData response cleanup helpers', () => {
   it('unwraps Query collection responses into cleaned n8n items', async () => {
     const { normalizeODataItems, stripODataMetadata } = await importResponseHelpers()
@@ -132,21 +144,9 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     const { normalizeODataItems } = helpers
 
     expect(helpers).not.toHaveProperty('normalizeRawODataResponse')
-    expect(() => normalizeODataItems('query', { result: [] }, 0)).toThrowErrorMatchingObject({
-      message: 'CAP response did not match the expected OData shape.',
-      category: 'responseShape',
-    })
-    expect(() => normalizeODataItems('query', { value: {} }, 0)).toThrowErrorMatchingObject({
-      message: 'CAP response did not match the expected OData shape.',
-      category: 'responseShape',
-    })
-    expect(() => normalizeODataItems('read', [], 0)).toThrowErrorMatchingObject({
-      message: 'CAP response did not match the expected OData shape.',
-      category: 'responseShape',
-    })
-    expect(() => normalizeODataItems('read', null, 0)).toThrowErrorMatchingObject({
-      message: 'CAP response did not match the expected OData shape.',
-      category: 'responseShape',
-    })
+    expectResponseShapeFailure(() => normalizeODataItems('query', { result: [] }, 0))
+    expectResponseShapeFailure(() => normalizeODataItems('query', { value: {} }, 0))
+    expectResponseShapeFailure(() => normalizeODataItems('read', [], 0))
+    expectResponseShapeFailure(() => normalizeODataItems('read', null, 0))
   })
 })
