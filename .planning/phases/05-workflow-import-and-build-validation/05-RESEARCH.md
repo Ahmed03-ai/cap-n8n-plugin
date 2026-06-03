@@ -388,7 +388,7 @@ The accepted reference list should include the current demo annotation form `web
 
 ### Pattern 4: Generated CDS Model
 
-**What:** Generate an app-local CDS file from sidecar schemas so workflow input types are reviewable and compile-checked. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
+**What:** Generate an app-local CDS file from sidecar schemas so workflow input types and workflow-specific action signatures are reviewable and compile-checked. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
 
 **When to use:** Generate or update `demo-app/n8n/index.cds` after every successful import. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
 
@@ -400,11 +400,15 @@ namespace cap.n8n.generated;
 type CapTestTriggerInputs {
   bookId : Integer;
   title  : String;
-  event  : Map;
+  event  : LargeString;
 };
+
+service WorkflowInputContracts {
+  action capTestTrigger(inputs : CapTestTriggerInputs) returns Boolean;
+}
 ```
 
-CAP official type docs list scalar CDS types such as `String`, `Integer`, `Decimal`, `Boolean`, `Date`, `DateTime`, and `Map`; the exact generated type declaration should be compile-tested in Wave 0. [CITED: https://cap.cloud.sap/docs/cds/types] [ASSUMED]
+The resolved Phase 5 contract uses `namespace cap.n8n.workflows`, one `<PascalWorkflowKey>Inputs` type per typed sidecar, and one `WorkflowInputContracts` service action per typed workflow. `JSON` sidecar inputs map to `LargeString` in generated CDS while remaining `JSON` in schema metadata for validator behavior. The generated actions are compile-time contracts for typed workflow inputs; workflow execution still uses the existing `N8nWorkflowService` runtime surface from prior phases. [CITED: https://cap.cloud.sap/docs/cds/types] [VERIFIED: cap-n8n-plugin/index.cds]
 
 ### Pattern 5: CAP Build Plugin Registration
 
@@ -720,29 +724,28 @@ Test implementation should use temp directories, copy minimal CAP models, and av
 |---|-------|---------|---------------|
 | A1 | Recommended filenames under `cap-n8n-plugin/lib/workflows/**` are planning names, not existing files. | Architecture Patterns | Planner may choose different names, but package ownership should stay unchanged. |
 | A2 | Exact CLI subcommands `import local`, `import live`, and `validate` are recommended under agent discretion. | Pattern 1 | Planner may rename commands, but tests and scripts must match final names. |
-| A3 | Generated CDS structured type syntax should be compile-tested in Wave 0. | Pattern 4 | If syntax differs, import must adjust generator before validation tasks rely on it. |
-| A4 | Sanitizer allowlist for safe n8n workflow fields needs implementation-time tuning against real future workflows. | Sanitization Rules | Over-sanitizing can remove useful workflow review data; under-sanitizing can leak metadata. |
+| A3 | Generated CDS structured type plus action syntax is resolved in Open Questions (RESOLVED) and still must be compile-tested in Wave 1. | Pattern 4 | If CAP compile rejects the resolved shape, Plan 05-01 must adjust the generator before validation tasks rely on it. |
+| A4 | Sanitizer allowlist is resolved in Open Questions (RESOLVED) for Phase 5 fixture coverage; future workflow shapes require explicit fixture additions before widening. | Sanitization Rules | Over-widening can leak metadata; over-narrowing can remove useful workflow review data. |
 | A5 | Live import derives `/api/v1` from configured n8n base URL unless an explicit API base override exists. | Live Fetch | Wrong derivation could break non-standard deployments; planner should include override tests. |
 | A6 | Manifest accepted-reference aliases should include `webhook/<path>` and `webhook-test/<path>`. | Artifact-to-Annotation Matching | Wrong alias set can cause false untyped warnings for valid annotations. |
 | A7 | Type compatibility table includes conservative widening choices such as integer-to-decimal and timestamp-to-DateTime. | Conservative Type Compatibility | Too-permissive compatibility can hide mismatches; planner should lock exact matrix in implementation tests. |
 | A8 | CLI write controls should reject path traversal and enforce app-root `n8n/`. | Security Domain | Missing controls could let import overwrite files outside the app. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact generated CDS type shape**
-   - What we know: CAP supports built-in scalar types used by the sidecar subset. [CITED: https://cap.cloud.sap/docs/cds/types]
-   - What's unclear: The exact generated structured type syntax and namespace should be validated against local `cds compile`. [ASSUMED]
-   - Recommendation: Put CDS generator compile tests in Wave 0 before build-plugin tasks. [ASSUMED]
+1. **Generated CDS type/action shape**
+   - Resolved choice: generated CDS uses `namespace cap.n8n.workflows`, one structured type named `<PascalWorkflowKey>Inputs`, and one `WorkflowInputContracts` service action named `<camelWorkflowKey>(inputs : <PascalWorkflowKey>Inputs) returns Boolean` for each typed workflow. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
+   - Scalar mapping: `String -> String`, `Integer -> Integer`, `Decimal -> Decimal`, `Boolean -> Boolean`, `Date -> Date`, `DateTime -> DateTime`, and `JSON -> LargeString`; the sidecar still records the workflow input as `JSON` so build validation can apply D-19 JSON compatibility. [CITED: https://cap.cloud.sap/docs/cds/types]
+   - Plan reflection: Plan 05-01 Task 1 and Task 2 must compile-test `demo-app/n8n/index.cds` and assert `CapTestTriggerInputs` plus `WorkflowInputContracts.capTestTrigger` exist before Plans 05-03 and 05-04 consume generated contracts. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-01-PLAN.md]
 
 2. **Default workflow key derivation**
-   - What we know: Local keys must be stable and separate from raw n8n IDs. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
-   - What's unclear: Whether default key should prefer webhook path, workflow name slug, or explicit CLI key when all exist. [ASSUMED]
-   - Recommendation: Prefer explicit `--key`; otherwise use unique webhook path; otherwise use slugged workflow name with an ID suffix. [ASSUMED]
+   - Resolved choice: key precedence is explicit CLI `--key` for a single selected workflow, then unique webhook path slug, then workflow name slug, then source n8n workflow ID slug. If the resulting key collides during `--all`, append a short deterministic source-ID suffix and fail if no deterministic disambiguator exists. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
+   - Plan reflection: Plan 05-01 artifact helpers implement the shared key derivation and Plan 05-02 import selection uses the same helper for local and live imports. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-01-PLAN.md] [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-02-PLAN.md]
 
-3. **Sanitized workflow field allowlist**
-   - What we know: Secrets, owners, project metadata, personal identifiers, and runtime counters must be removed. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
-   - What's unclear: Which n8n `settings` fields are always safe and useful to preserve. [ASSUMED]
-   - Recommendation: Start with a narrow allowlist, record removed paths in manifest, and add fixture tests when new workflow shapes appear. [ASSUMED]
+3. **Sanitizer allowlist and redaction provenance**
+   - Resolved choice: sanitized `workflow.json` preserves only reviewable workflow structure: workflow name, nodes, connections, selected safe settings such as execution order, node id/name/type/typeVersion/position, and recursively scrubbed node parameters. It removes credentials, credential IDs, auth headers, owners, shared/project metadata, personal email values, pinned/static data, request/response bodies, stack traces, timestamps, version IDs, and runtime counters at any depth. [CITED: https://docs.n8n.io/workflows/export-import/] [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-CONTEXT.md]
+   - Redaction provenance: manifests may record removed path names under sanitizer metadata such as `removedPaths`, including sensitive field names, but must not store removed values. Structured gates parse JSON so redaction path names are allowed while leaked secret values and unsafe fields in `workflow.json` fail verification. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-01-PLAN.md]
+   - Plan reflection: Plan 05-01 Task 3 uses a structured JSON sanitizer gate instead of a raw forbidden-name regex over manifests, and Plan 05-04 limits implementation source gates to literal sample secrets or unsafe `.env` reads while scanning generated artifacts and CLI output for leaked sensitive values. [VERIFIED: .planning/phases/05-workflow-import-and-build-validation/05-04-PLAN.md]
 
 ## Sources
 
