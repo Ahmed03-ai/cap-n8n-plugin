@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T13:49:32.386Z"
+last_updated: "2026-06-03T13:50:10.036Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 8
@@ -132,6 +132,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Basic Auth is the Phase 6 working credential, metadata test, and entity discovery path; OAuth2 Client Credentials remains a visible scaffold with sanitized configuration failure behavior. — Keeps NODE-02/NODE-03/NODE-04 acceptance focused on the approved Basic Auth success path while avoiding secret leakage from incomplete OAuth2 behavior.
 - [Phase 06]: Phase 6 node metadata exposes only Query and Read, with mutation, action/function, raw response, and trigger controls absent from the visible operation surface. — Prevents the n8n editor from implying Phase 7 write or business-operation support before those requirements are implemented.
 - [Phase 06]: Metadata discovery uses targeted EntitySet extraction without adding an XML parser dependency. — Plan 06-01 only needs EntitySet names and optional EntityType descriptions, so no package legitimacy checkpoint or new parser dependency was required.
+- [Phase 06]: OData response helpers return allowlisted safe-error objects instead of carrying raw HTTP details. — Prevents auth headers, tokens, passwords, client secrets, stack traces, request bodies, and full response bodies from reaching node-visible errors.
+- [Phase 06]: ODataResponse remains a standalone helper module for Plan 06-03 to wire into SapCap.execute(). — Preserves the declared 06-02 scope while exposing stable built helper contracts for the next runtime-wiring plan.
 
 ### Pending Todos
 
