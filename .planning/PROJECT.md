@@ -29,13 +29,15 @@ CAP developers can add reliable n8n workflow automation to CAP applications with
 - [x] Phase 2 added repeatable integration tests for the CAP programmatic API, auth headers, mock runtime, errors, and retry behavior.
 - [x] Phase 3 validated persisted execution tracking, lookup, query, duplicate handling, transaction-safe dispatch, and cancellation semantics.
 - [x] Phase 4 validated declarative CAP annotations for workflow start, cancellation, CAP CRUD event selection, scalar input mapping, and conditional execution.
+- [x] Phase 6 validated SAP CAP n8n node credentials, metadata discovery, Query, Read, response cleanup, and sanitized error handling with deterministic integration coverage.
+- [x] Phase 7 validated SAP CAP n8n node Create, Update, Delete, composite-key handling, combined Action/Function invocation, response cleanup, docs, and visual showcase updates.
 
 ### Active
 
 - [ ] Implement workflow import from local JSON and live n8n, including generated CDS typings.
 - [ ] Validate workflow input mappings at build time.
-- [ ] Implement the n8n community node with SAP CAP credentials, Query, Read, Create, Update, Delete, metadata discovery, action/function invocation, and OData response cleanup.
-- [ ] Add integration tests for remaining workflow import and n8n node behavior.
+- [ ] Validate the installed n8n community node inside a real n8n editor/runtime and document the release-readiness path.
+- [ ] Add integration tests for remaining workflow import and release-readiness behavior.
 - [ ] Document local, hybrid, and SAP BTP deployment setups.
 
 ### Out of Scope
@@ -54,7 +56,7 @@ The CAP plugin surface currently lives mainly in `cap-n8n-plugin/lib/N8nWorkflow
 
 The demo app under `demo-app` is a SAP CAP Bookshop-style application with CDS domain models, OData services, service handlers, Fiori annotations, and sample data. It now demonstrates workflow automation through CDS annotations while keeping reusable integration behavior in `cap-n8n-plugin`.
 
-The n8n node package under `cap-n8n-node` is currently a loadable skeleton. The desired n8n-node behavior is described in `cap_n8n_requirements_v2.md` and partially visualized in `mockups/n8n-node-mockup.html`.
+The n8n node package under `cap-n8n-node` now implements the Phase 6 and Phase 7 SAP CAP node surface: SAP CAP API credentials, metadata discovery, Query, Read, Create, Update, Delete, composite keys, combined Action/Function invocation, OData response cleanup, sanitized errors, and built-node integration tests. Real installed custom-node E2E in a live n8n instance remains Phase 8 release-readiness evidence.
 
 Detailed brownfield mapping lives in `.planning/codebase/` and should be consulted before planning implementation phases.
 
@@ -83,6 +85,7 @@ Detailed brownfield mapping lives in `.planning/codebase/` and should be consult
 | Treat mock runtime executions as evidence | Mock starts, including explicit failed starts, are recorded so integration tests can assert behavior deterministically. | Good |
 | Use CAP CRUD vocabulary for declarative annotations | CAP developers configure `CREATE`, `UPDATE`, and `DELETE` events directly in CDS annotations. | Good |
 | Defer to-one and to-many annotation mappings | Phase 4 intentionally supports scalar mappings only; association and composition mapping need a later design. | Good |
+| Keep live installed n8n custom-node E2E as release-readiness evidence | Phase 7 validated the built node deterministically; installing/mounting it in a real n8n instance belongs to Phase 8. | Good |
 
 ## Evolution
 
@@ -104,4 +107,4 @@ After each milestone:
 4. Update Context with current code, feedback, and verification state.
 
 ---
-*Last updated: 2026-06-02 after Phase 4 completion*
+*Last updated: 2026-06-03 after Phase 7 completion*
