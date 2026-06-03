@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -211,6 +211,16 @@ function expectNoSecrets(value) {
   expect(serialized).not.toContain('Authorization')
   expect(serialized).not.toContain('full CAP response')
   expect(serialized).not.toContain('stack trace should not be exposed')
+}
+
+function sourceWithoutComments(relativePath) {
+  const source = readFileSync(resolve(repoRoot, relativePath), 'utf8')
+
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map((line) => line.replace(/\/\/.*$/, ''))
+    .join('\n')
 }
 
 async function expectNodeOperationError(run, expected) {
@@ -560,5 +570,183 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       },
     ])
     expectNoSecrets(result)
+  })
+
+  it('rejects deferred mutation/action/trigger operations without sending CAP requests', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'create',
+      }),
+      defaultParameters({
+        operation: 'delete',
+      }),
+      defaultParameters({
+        operation: 'action',
+      }),
+      defaultParameters({
+        operation: 'trigger',
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 0 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 1 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 2 },
+      },
+      {
+        json: {
+          error: 'CAP rejected the OData request. Check the OData options.',
+          category: 'validation',
+        },
+        pairedItem: { item: 3 },
+      },
+    ])
+  })
+
+  it('rejects unauthenticated credential modes before any CAP request is sent', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({ error: 'should not be reached' }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters(),
+    ], {
+      credentials: basicCredentials(server.baseUrl, {
+        authType: 'none',
+      }),
+      continueOnFail: true,
+    })
+
+    expect(server.requests).toHaveLength(0)
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
+          category: 'configuration',
+        },
+        pairedItem: { item: 0 },
+      },
+    ])
+    expectNoSecrets(result)
+  })
+
+  it('sanitizes unexpected Query and Read response shapes instead of forwarding raw OData wrappers', async () => {
+    const queryServer = await createCapServer(() => ({
+      body: JSON.stringify({
+        result: [],
+        responseBody: fakeResponseBody,
+      }),
+    }))
+
+    await expectNodeOperationError(
+      () => executeSapCap([
+        defaultParameters(),
+      ], {
+        credentials: basicCredentials(queryServer.baseUrl),
+      }),
+      {
+        message: 'CAP response did not match the expected OData shape.',
+        itemIndex: 0,
+      }
+    )
+
+    const readServer = await createCapServer(() => ({
+      body: JSON.stringify([
+        {
+          ID: 201,
+          title: 'Array is not a Read entity',
+        },
+      ]),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'read',
+        keyPredicate: 'ID=201',
+      }),
+    ], {
+      credentials: basicCredentials(readServer.baseUrl),
+      continueOnFail: true,
+    })
+
+    expect(result[0]).toEqual([
+      {
+        json: {
+          error: 'CAP response did not match the expected OData shape.',
+          category: 'responseShape',
+        },
+        pairedItem: { item: 0 },
+      },
+    ])
+    expectNoSecrets(result)
+  })
+
+  it('keeps built node metadata and runtime source inside Phase 6 read-only scope', async () => {
+    const SapCap = await importSapCapNode()
+    const node = new SapCap()
+    const propertyNames = node.description.properties.map((property) => property.name)
+    const operation = node.description.properties.find((property) => property.name === 'operation')
+    const operationValues = operation.options.map((option) => option.value)
+
+    expect(operationValues).toEqual(['query', 'read'])
+    expect(operationValues).not.toEqual(expect.arrayContaining([
+      'create',
+      'update',
+      'delete',
+      'action',
+      'function',
+      'trigger',
+    ]))
+    expect(propertyNames).not.toEqual(expect.arrayContaining([
+      'body',
+      'rawResponse',
+      'rawODataResponse',
+      'pollInterval',
+      'actionName',
+      'functionName',
+      'entityKey',
+    ]))
+
+    const runtimeSource = [
+      sourceWithoutComments('cap-n8n-node/nodes/SapCap/SapCap.node.ts'),
+      sourceWithoutComments('cap-n8n-node/nodes/SapCap/GenericFunctions.ts'),
+      sourceWithoutComments('cap-n8n-node/nodes/SapCap/ODataResponse.ts'),
+    ].join('\n')
+
+    expect(runtimeSource).not.toMatch(/console\./)
+    expect(runtimeSource).not.toContain(fakePassword)
+    expect(runtimeSource).not.toContain(fakeClientSecret)
+    expect(runtimeSource).not.toContain(fakeBearerToken)
+    expect(runtimeSource).not.toContain(fakeResponseBody)
+    expect(runtimeSource).not.toMatch(/returnFullResponse:\s*false/)
+    expect(runtimeSource).not.toMatch(/raw(?:OData)?Response/i)
+    expect(runtimeSource).not.toMatch(/operation:\s*\[[^\]]*(create|update|delete|action|function|trigger)/i)
   })
 })
