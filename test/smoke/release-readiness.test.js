@@ -11,6 +11,7 @@ const btpGuidePath = resolve(repoRoot, 'docs', 'btp-deployment-guide.md')
 const releaseReadinessPath = resolve(repoRoot, 'docs', 'release-readiness.md')
 const manualShowcasePath = resolve(repoRoot, 'docs', 'manual-visual-showcase.md')
 const localCustomNodePath = resolve(repoRoot, 'docs', 'local-n8n-custom-node-e2e.md')
+const workflowFixturePath = resolve(repoRoot, 'test-workflows', 'workflows.json')
 const cancellationFixturePath = resolve(repoRoot, 'test-workflows', 'cancellation-workflows.json')
 
 function readJson(path) {
@@ -268,6 +269,7 @@ describe('release readiness smoke gates', () => {
       readmePath,
       envExamplePath,
       ...walkFiles(resolve(repoRoot, 'docs'), file => file.endsWith('.md')),
+      workflowFixturePath,
       cancellationFixturePath,
       resolve(repoRoot, 'scripts', 'review-local.js'),
       resolve(repoRoot, 'scripts', 'prepare-n8n-custom-node.js'),
@@ -289,12 +291,18 @@ describe('release readiness smoke gates', () => {
     }
   })
 
-  it('keeps the dedicated cancellation fixture free of n8n owner/project/shared metadata', () => {
-    const fixture = readJson(cancellationFixturePath)
-    const serialized = JSON.stringify(fixture).toLowerCase()
+  it('keeps workflow fixtures free of n8n owner/project/shared metadata', () => {
+    const fixtures = [
+      readJson(workflowFixturePath),
+      readJson(cancellationFixturePath),
+    ]
 
-    for (const forbidden of ['workflow:owner', '"owner"', '"project"', '"shared"', '"pinData"', '"staticData"']) {
-      expect(serialized).not.toContain(forbidden.toLowerCase())
+    for (const fixture of fixtures) {
+      const serialized = JSON.stringify(fixture).toLowerCase()
+
+      for (const forbidden of ['workflow:owner', '"owner"', '"project"', '"shared"', '"pinData"', '"staticData"']) {
+        expect(serialized).not.toContain(forbidden.toLowerCase())
+      }
     }
   })
 

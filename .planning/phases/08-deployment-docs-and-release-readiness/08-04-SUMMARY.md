@@ -12,7 +12,7 @@ provides:
   - README entry point for Phase 8 review and setup paths
   - Advisory Cloud Foundry and Kyma BTP deployment guide
   - Release-readiness traceability matrix for Phase 8 requirements, GitHub stories, evidence states, mockups, fixtures, commands, and manual UAT
-  - Final smoke gates for docs/env/readiness evidence and focused secret checks
+  - Final smoke gates for docs/env/readiness evidence and fixture secret checks
 affects: [phase-08, release-readiness, docs, manual-uat]
 
 tech-stack:
@@ -20,7 +20,7 @@ tech-stack:
   patterns:
     - Placeholder-only root environment example grouped by review workflow
     - Evidence-state traceability with automated and browser/manual evidence separated
-    - Focused static gates for owned release artifacts and new cancellation fixture
+    - Static gates for owned release artifacts and workflow fixtures
 
 key-files:
   created:
@@ -36,11 +36,11 @@ key-decisions:
   - "README is the Phase 8 entry point; focused runbooks hold the detailed local, real n8n, cancellation, BTP, and release-readiness paths."
   - "BTP guidance remains advisory and explicitly claims no Cloud Foundry or Kyma runtime validation."
   - "Release readiness uses only automated verified, browser/manual verified, and manual UAT required evidence states."
-  - "The broad legacy workflow fixture secret scan is documented as out of scope for 08-04 because test-workflows/workflows.json was not in the owned file list."
+  - "Workflow fixtures are sanitized and covered by release-readiness metadata/secret gates."
 
 patterns-established:
   - "Final readiness docs must separate automated review evidence from browser/manual UAT before GitHub statuses move."
-  - "Secret gates should cover owned docs/env/scripts and the new cancellation fixture without rewriting unowned legacy exports."
+  - "Secret gates should cover docs/env/scripts and both committed workflow fixtures."
 
 requirements-completed: [DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, VERIFY-05, VERIFY-06, VERIFY-07]
 
@@ -66,7 +66,7 @@ completed: 2026-06-03T22:54:20Z
 - Updated `README.md` as the Phase 8 entry point with `npm run review:local`, `.env.example`, and focused runbook links.
 - Added `docs/btp-deployment-guide.md` as advisory-only Cloud Foundry and Kyma guidance with no runtime validation claim.
 - Added `docs/release-readiness.md` mapping Phase 8 requirements, roadmap criteria, GitHub issues #16 through #18, #19 through #27, #29, #30, DOCS-06 mockups/fixtures, warning classifications, and manual UAT states.
-- Extended `test/smoke/release-readiness.test.js` to enforce final README/env/docs/evidence/secret gates.
+- Extended `test/smoke/release-readiness.test.js` to enforce final README/env/docs/evidence/fixture secret gates.
 
 ## Task Commits
 
@@ -79,7 +79,7 @@ Per the execution request and prior Phase 8 close-out pattern, all task outputs 
 - `docs/btp-deployment-guide.md` - Advisory BTP Cloud Foundry and Kyma guidance for routing, auth, destinations/connectivity, service binding/secret storage, webhook reachability, stop API reachability, and unresolved validation work.
 - `docs/release-readiness.md` - Traceability matrix for requirements, roadmap criteria, GitHub stories, DOCS-06 mockup/fixture mapping, warning classification, and final gates.
 - `docs/manual-visual-showcase.md` - Added links to focused Phase 8 docs and corrected stale cancellation wording now that the 08-03 fixture/runner exists.
-- `test/smoke/release-readiness.test.js` - Added final docs/env/evidence-state/DOCS-06/BTP/secret gates.
+- `test/smoke/release-readiness.test.js` - Added final docs/env/evidence-state/DOCS-06/BTP/fixture secret gates.
 - `.planning/phases/08-deployment-docs-and-release-readiness/08-04-SUMMARY.md` - This execution summary.
 
 ## Decisions Made
@@ -87,7 +87,7 @@ Per the execution request and prior Phase 8 close-out pattern, all task outputs 
 - Kept BTP content advisory and did not add deployment descriptors, manifests, Helm charts, Kyma resources, or production Dockerfiles.
 - Kept real n8n custom-node E2E and cancellation browser checks as `manual UAT required` until a reviewer records browser/manual evidence.
 - Classified current `DEP0190` output as an `accepted tooling warning` only because `npm run review:local` passed with that warning.
-- Used focused secret gates for owned artifacts plus `test-workflows/cancellation-workflows.json`; the legacy happy-path export remains a documented release warning because it is outside 08-04 ownership.
+- Used secret and metadata gates for release artifacts plus both workflow fixtures.
 
 ## Deviations from Plan
 
@@ -116,7 +116,7 @@ Per the execution request and prior Phase 8 close-out pattern, all task outputs 
 
 ## Issues Encountered
 
-- The exact broad plan secret scan over `test-workflows/` failed on pre-existing `test-workflows/workflows.json`. That file contains legacy n8n export metadata and was explicitly outside the user's allowed 08-04 file list, so it was not rewritten. `docs/release-readiness.md` records this as `fix before release`, and the focused gate over owned docs/env/scripts plus `test-workflows/cancellation-workflows.json` passes.
+- The exact broad plan secret scan over `test-workflows/` initially failed on pre-existing `test-workflows/workflows.json`. Phase 8 close-out sanitized that happy-path fixture and expanded the smoke fixture metadata gate so both workflow fixtures are covered.
 - `npm run review:local` observes Node `DEP0190` from current n8n node tooling and classifies it as `accepted tooling warning`.
 - `.planning/STATE.md` had pre-existing phase-start changes before this plan execution and was not staged or modified by this executor.
 
@@ -140,11 +140,11 @@ Passed:
 - `npx vitest run test/smoke/release-readiness.test.js test/integration/n8n-release-readiness.test.js` - passed, 15 tests.
 - `npm run review:local` - passed, including full smoke/integration tests, workflow annotation validation, and CAP compile with generated workflows.
 - `rg -n "automated verified|browser/manual verified|manual UAT required|fix before release|accepted tooling warning|manual/UAT evidence required" docs/release-readiness.md` - passed.
-- Focused owned-artifact secret gate over README, `.env.example`, docs, `test-workflows/cancellation-workflows.json`, and scripts - passed.
+- Secret and metadata gates over README, `.env.example`, docs, both workflow fixtures, and scripts - passed.
 
-Failed by expected out-of-scope legacy fixture:
+Resolved during close-out:
 
-- Broad plan secret gate over `test-workflows/` - failed on `test-workflows/workflows.json`, which is not an 08-04-owned file.
+- Broad plan secret gate over `test-workflows/` initially failed on `test-workflows/workflows.json`; the fixture was sanitized before phase verification.
 
 ## User Setup Required
 
@@ -156,7 +156,7 @@ Manual UAT remains required for:
 
 ## Next Phase Readiness
 
-Phase 8 documentation and local automated readiness gates are complete for the owned 08-04 scope. Remaining manual UAT must be run and recorded before moving browser-dependent GitHub stories to verified. The legacy happy-path n8n export should be sanitized in a future cleanup before broad repository fixture secret gates include all `test-workflows/*.json`.
+Phase 8 documentation and local automated readiness gates are complete for the 08-04 scope. Remaining manual UAT must be run and recorded before moving browser-dependent GitHub stories to verified.
 
 ## TDD Gate Compliance
 
@@ -168,7 +168,7 @@ Phase 8 documentation and local automated readiness gates are complete for the o
 
 - Created files exist: `.env.example`, `docs/btp-deployment-guide.md`, `docs/release-readiness.md`, and this summary.
 - Modified files contain required Phase 8 links, evidence states, DOCS-06 mapping, and final smoke gates.
-- Focused verification commands pass.
+- Verification commands pass, including fixture secret and metadata gates.
 - `.planning/STATE.md` remains unstaged and is not part of this executor's commit.
 
 ---

@@ -198,7 +198,6 @@ describe('cap-n8n local workflow import CLI', () => {
       workflowKey: 'cap-test-trigger',
       source: {
         type: 'local',
-        workflowId: 'xS2pbMEOrVWMxiT0',
         workflowName: 'CAP n8n Test',
         webhookPath: 'cap-test-trigger'
       }

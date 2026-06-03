@@ -38,7 +38,7 @@ Current warning classification:
 | DOCS-04 | automated verified | `.env.example` covers CAP demo/mock, local n8n webhook, real n8n custom-node E2E, cancellation stop API, cloud n8n, and BTP advisory placeholders. |
 | DOCS-05 | manual UAT required | `docs/btp-deployment-guide.md` covers Cloud Foundry and Kyma advisory considerations, with no runtime validation claim. |
 | DOCS-06 | automated verified | See the dedicated DOCS-06 mapping below for `mockups/n8n-node-mockup.html`, workflow fixtures, and manual runbooks mapped to n8n-specific user stories. |
-| DOCS-07 | automated verified | `test/smoke/release-readiness.test.js`, `test/integration/n8n-release-readiness.test.js`, `.env.example`, and docs gates check placeholder-only release artifacts. The legacy happy-path n8n export remains a release warning outside the 08-04 owned file list. |
+| DOCS-07 | automated verified | `test/smoke/release-readiness.test.js`, `test/integration/n8n-release-readiness.test.js`, `.env.example`, docs gates, and sanitized workflow fixtures check placeholder-only release artifacts. |
 | VERIFY-05 | manual UAT required | `docs/manual-visual-showcase.md` documents the local CAP plus n8n visual path and cancellation checklist; browser evidence must be recorded when run. |
 | VERIFY-06 | automated verified | `npm run review:local` is the repeatable local readiness command and is protected by `test/smoke/release-readiness.test.js`. |
 | VERIFY-07 | manual UAT required | `docs/local-n8n-custom-node-e2e.md` documents installed SAP CAP node browser E2E for Test Connection, metadata options, Query, Read, Create, Update, Delete, and Action/Function. |
@@ -85,7 +85,7 @@ DOCS-06 is about helping reviewers distinguish implemented node behavior, mockup
 | Create, Update, Delete | Issue #22, Issue #23, Issue #24 | `mockups/n8n-node-mockup.html`, `docs/local-n8n-custom-node-e2e.md` | manual UAT required | Mockup shows Body (JSON), key input, and Delete without a body. |
 | Response cleanup and safe errors | Issue #25 | `mockups/n8n-node-mockup.html`, Phase 6/7 integration tests | automated verified | Browser proof can supplement this but is not required for deterministic behavior. |
 | Action/Function and composite keys | Issue #26, Issue #27 | `mockups/n8n-node-mockup.html`, `docs/local-n8n-custom-node-e2e.md` | manual UAT required | Runbook checks metadata/manual operation selection and Parameters (JSON). |
-| CAP-to-n8n happy-path fixture | Issue #16, Issue #18 | `test-workflows/workflows.json`, `docs/manual-visual-showcase.md` | automated verified | Fixture supports local webhook evidence and generated artifacts. The raw export should be sanitized in a later cleanup before broader secret gates include it. |
+| CAP-to-n8n happy-path fixture | Issue #16, Issue #18 | `test-workflows/workflows.json`, `docs/manual-visual-showcase.md` | automated verified | Fixture supports local webhook evidence and generated artifacts with owner/project/shared metadata removed. |
 | Cancellation stop fixture | VERIFY-05 | `test-workflows/cancellation-workflows.json`, `scripts/cancellation-showcase.js`, `docs/manual-visual-showcase.md` | manual UAT required | Fixture and fake stop API are automated; real browser visible start/stop remains manual. |
 
 ## Manual Evidence Checklist
@@ -106,7 +106,7 @@ When a reviewer completes one of these rows, update the state to `browser/manual
 | Warning | Classification | Evidence state | Action |
 |---------|----------------|----------------|--------|
 | n8n node tooling emits `DEP0190` while `npm run review:local` passes | accepted tooling warning | automated verified | Accept for this milestone; revisit on n8n/node-tooling upgrade. |
-| Legacy happy-path workflow export carries non-runtime n8n export metadata | fix before release | manual UAT required | Existing `test-workflows/workflows.json` is outside the 08-04 owned file list; sanitize in a future cleanup before expanding repository-wide fixture gates. |
+| Workflow fixture owner/project/shared metadata | fix before release | automated verified | Fixed during Phase 8 close-out: `test-workflows/workflows.json` and `test-workflows/cancellation-workflows.json` are covered by fixture metadata gates. |
 | Missing real browser evidence for installed node and cancellation | manual/UAT evidence required | manual UAT required | Complete the runbooks before closing browser-dependent stories. |
 
 ## Final Gate Commands

@@ -97,6 +97,65 @@ function fixtureWorkflow() {
   return JSON.parse(readFileSync(workflowFixturePath, 'utf8'))[0]
 }
 
+function unsafeFixtureWorkflow() {
+  const workflow = fixtureWorkflow()
+
+  return {
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    id: 'xS2pbMEOrVWMxiT0',
+    active: true,
+    isArchived: false,
+    ...workflow,
+    nodes: workflow.nodes.map((node) => ({
+      ...node,
+      webhookId: '897fd062-93ee-4390-9dda-78fcb556745c',
+      credentials: {
+        sapCapApi: {
+          id: 'unsafe-credential-id',
+          name: 'Unsafe SAP CAP API'
+        }
+      }
+    })),
+    settings: {
+      ...workflow.settings,
+      binaryMode: 'separate',
+      timeSavedMode: 'fixed',
+      callerPolicy: 'workflowsFromSameOwner',
+      availableInMCP: false,
+      timezone: 'Europe/Berlin',
+      saveExecutionProgress: true
+    },
+    staticData: null,
+    meta: {
+      templateCredsSetupCompleted: true
+    },
+    pinData: {},
+    versionId: 'ab025689-52e7-4e3a-9168-028f55d0e28e',
+    activeVersionId: 'ab025689-52e7-4e3a-9168-028f55d0e28e',
+    versionCounter: 18,
+    triggerCount: 1,
+    tags: [],
+    shared: [
+      {
+        role: 'workflow:owner',
+        workflowId: 'xS2pbMEOrVWMxiT0',
+        projectId: 'unsafe-project-id',
+        project: {
+          id: 'unsafe-project-id',
+          name: 'Fixture Owner <owner@example.invalid>',
+          type: 'personal',
+          creatorId: 'unsafe-creator-id'
+        }
+      }
+    ],
+    versionMetadata: {
+      name: 'Version 1',
+      description: ''
+    }
+  }
+}
+
 function sortedInputNames(schema) {
   return schema.inputs.map((input) => input.name)
 }
@@ -235,7 +294,7 @@ describe('n8n workflow artifact contract', () => {
   })
 
   it('sanitizes workflow JSON recursively while preserving reviewable webhook structure', () => {
-    const { workflow, removedPaths } = sanitizeWorkflow(fixtureWorkflow())
+    const { workflow, removedPaths } = sanitizeWorkflow(unsafeFixtureWorkflow())
 
     expect(workflow).toEqual({
       name: 'CAP n8n Test',
@@ -268,12 +327,12 @@ describe('n8n workflow artifact contract', () => {
       'shared'
     ]))
     assertNoForbiddenWorkflowFields(workflow)
-    expect(JSON.stringify(workflow)).not.toMatch(/gmail\.com|workflow:owner|versionCounter/i)
+    expect(JSON.stringify(workflow)).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|workflow:owner|versionCounter/i)
   })
 
   it('writes byte-stable app-root workflow artifacts, manifests, schemas, and generated CDS', async () => {
     const appRoot = tempAppRoot()
-    const rawWorkflow = fixtureWorkflow()
+    const rawWorkflow = unsafeFixtureWorkflow()
 
     const first = await writeWorkflowArtifacts({
       appRoot,

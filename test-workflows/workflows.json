@@ -1,1 +1,26 @@
-[{"updatedAt":"2026-05-18T09:59:16.862Z","createdAt":"2026-05-18T09:12:40.354Z","id":"xS2pbMEOrVWMxiT0","name":"CAP n8n Test","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"httpMethod":"POST","path":"cap-test-trigger","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,0],"id":"9fd6a43a-1249-4032-9506-56de71fc3c13","name":"Webhook","webhookId":"897fd062-93ee-4390-9dda-78fcb556745c"}],"connections":{},"settings":{"executionOrder":"v1","binaryMode":"separate","timeSavedMode":"fixed","callerPolicy":"workflowsFromSameOwner","availableInMCP":false,"timezone":"Europe/Berlin","saveExecutionProgress":true},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"pinData":{},"versionId":"ab025689-52e7-4e3a-9168-028f55d0e28e","activeVersionId":"ab025689-52e7-4e3a-9168-028f55d0e28e","versionCounter":18,"triggerCount":1,"tags":[],"shared":[{"updatedAt":"2026-05-18T09:12:40.357Z","createdAt":"2026-05-18T09:12:40.357Z","role":"workflow:owner","workflowId":"xS2pbMEOrVWMxiT0","projectId":"vOi5AQTrVKHTEmJ2","project":{"updatedAt":"2026-05-17T20:46:56.719Z","createdAt":"2026-05-17T20:44:05.890Z","id":"vOi5AQTrVKHTEmJ2","name":"Leon Körbs <leon1.koerbs@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"d7be463a-dd71-4f81-9145-c0990e357703"}}],"versionMetadata":{"name":"Version 1","description":""}}]
+[
+  {
+    "name": "CAP n8n Test",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "cap-test-trigger",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "9fd6a43a-1249-4032-9506-56de71fc3c13",
+        "name": "Webhook"
+      }
+    ],
+    "connections": {},
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]
