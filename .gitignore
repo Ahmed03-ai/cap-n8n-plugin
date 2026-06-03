@@ -4,3 +4,4 @@ cap-n8n-node/dist/
 .cds-services.json
 *.log
 .n8n-data/
+.n8n-review-data/

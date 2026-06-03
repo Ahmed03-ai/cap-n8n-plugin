@@ -1,0 +1,19 @@
+services:
+  n8n:
+    image: n8nio/n8n:2.22.5
+    container_name: n8n_cap_node_review
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./.n8n-review-data:/home/node/.n8n
+      - ./test-workflows:/test-workflows
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_USER_MANAGEMENT_DISABLED=true
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_UNVERIFIED_PACKAGES_ENABLED=true
+      - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
