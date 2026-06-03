@@ -89,6 +89,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [ ] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
 - [ ] **VERIFY-05**: Developer can run a documented smoke test covering the demo CAP app, local n8n, and exported workflow fixture.
 - [ ] **VERIFY-06**: CI or an equivalent repeatable local command reports whether the project is ready for review.
+- [ ] **VERIFY-07**: Developer or reviewer can run a real n8n custom-node E2E check that installs or mounts the SAP CAP node in n8n, starts the CAP demo app, creates SAP CAP credentials, runs Test Connection, loads metadata-backed entity options, executes Query and Read, and after Phase 7 also exercises mutation/action modes.
 
 ## v2 Requirements
 
@@ -190,11 +191,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERIFY-04 | Phase 7 | Pending |
 | VERIFY-05 | Phase 8 | Pending |
 | VERIFY-06 | Phase 8 | Pending |
+| VERIFY-07 | Phase 8 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 58 total
-- Mapped to phases: 58
+- v1 requirements: 59 total
+- Mapped to phases: 59
 - Unmapped: 0
 
 ---

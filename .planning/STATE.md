@@ -140,6 +140,7 @@ Recent decisions affecting current work:
 - [Phase 06]: SapCap.execute stays read-only in Phase 6 and rejects unsupported operation values before sending CAP requests. — Keeps Create, Update, Delete, action/function, and trigger behavior deferred to Phase 7 without accidental runtime execution.
 - [Phase 06]: Query and Read runtime success and failure paths use the shared ODataResponse helper contract. — Keeps cleanup, continueOnFail, and NodeOperationError behavior consistent across metadata, response, and runtime tests.
 - [Phase 06]: Unknown or unauthenticated credential modes fail as sanitized configuration errors before transport. — Prevents malformed or stale credentials from creating a hidden unauthenticated CAP request path.
+- [Phase 08]: Real n8n custom-node E2E verification is a distinct release-readiness requirement, separate from deterministic integration tests. — Phase 6 node stories can remain implementation-verified while Phase 8 proves the installed n8n UI/runtime path with the local community node mounted or installed.
 
 ### Pending Todos
 

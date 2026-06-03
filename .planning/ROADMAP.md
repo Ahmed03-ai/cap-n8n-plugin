@@ -206,7 +206,7 @@ Plans:
 
 **Goal**: Developers, platform engineers, and reviewers can run, configure, verify, and assess the integration using documented repeatable commands.
 **Depends on**: Phase 7
-**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, VERIFY-05, VERIFY-06
+**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, VERIFY-05, VERIFY-06, VERIFY-07
 **Success Criteria** (what must be TRUE):
 
   1. Developer can follow documentation to run the CAP demo app with local n8n, cloud n8n, mock mode, and the n8n node against a CAP service.
@@ -214,7 +214,8 @@ Plans:
   3. Platform engineer can follow SAP BTP deployment guidance for credentials, connectivity, and Cloud Foundry or Kyma deployment considerations.
   4. Reviewer can trace n8n mockups, workflow fixtures, and documentation examples to implemented n8n-specific user stories.
   5. Developer can run a documented smoke test and repeatable local or CI command that reports whether the project is ready for review.
-  6. Reviewer can run a no-harness visual showcase for cancellation and the n8n community node, including a long-running/stoppable n8n fixture, documented stop API configuration, and local custom-node installation or mounting instructions.
+  6. Reviewer can run a no-harness visual showcase for cancellation, including a long-running/stoppable n8n fixture and documented stop API configuration.
+  7. Reviewer can run a real n8n custom-node E2E check with the local SAP CAP community node installed or mounted into n8n, the CAP demo app running, SAP CAP credentials created in n8n, `$metadata` Test Connection, metadata-backed entity selection, Query, Read, and after Phase 7 mutation/action flows executed against CAP.
 
 **Plans**: TBD
 
@@ -233,10 +234,10 @@ Optional v2 SAP CAP Trigger Node work remains deferred. It is not mapped to any 
 | Phase 5: Workflow Import and Build Validation | 8 |
 | Phase 6: n8n Credentials, Metadata Discovery, and Read Operations | 7 |
 | Phase 7: n8n Mutations and CAP Actions/Functions | 6 |
-| Phase 8: Deployment, Docs, and Release Readiness | 9 |
-| **Total** | **58** |
+| Phase 8: Deployment, Docs, and Release Readiness | 10 |
+| **Total** | **59** |
 
-All 58 v1 requirements map to exactly one phase. No v2 requirements are included in v1 coverage.
+All 59 v1 requirements map to exactly one phase. No v2 requirements are included in v1 coverage.
 
 ## Progress
 
