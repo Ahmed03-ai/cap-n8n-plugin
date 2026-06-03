@@ -53,7 +53,12 @@ type ActionFunctionDescriptorInput = {
   parameters?: unknown
 }
 
-type ActionFunctionRequestInput = ReadRequestInput & {
+type ActionFunctionRequestInput = {
+  servicePath: unknown
+  entitySetName?: unknown
+  keyPredicate?: unknown
+  keyDescriptors?: MetadataKeyDescriptor[]
+  keyParts?: KeyPartsInput
   operationSource?: unknown
   operationDescriptor?: unknown
   operationKind?: unknown
@@ -68,6 +73,8 @@ type ResolvedActionFunctionDescriptor = {
   qualifiedName?: string
   importName?: string
   isBound: boolean
+  entitySet?: string
+  parameters: Array<{ name: string, type?: string }>
 }
 
 type MetadataKeyDescriptor = {
@@ -318,7 +325,7 @@ export function buildActionFunctionRequest(input: ActionFunctionRequestInput) {
       : descriptor.importName ?? descriptor.name
   )
   const operationPath = descriptor.isBound
-    ? buildBoundActionFunctionPath(servicePath, input, operationSegment)
+    ? buildBoundActionFunctionPath(servicePath, input, descriptor, operationSegment)
     : `${servicePath}/${operationSegment}`
 
   if (descriptor.kind === 'action') {
@@ -332,11 +339,11 @@ export function buildActionFunctionRequest(input: ActionFunctionRequestInput) {
     }
   }
 
-  const query = buildFunctionQuery(parameters)
+  const parameterList = buildFunctionParameterList(parameters, descriptor.parameters)
 
   return {
     method: 'GET' as IHttpRequestMethods,
-    path: `${operationPath}${query ? `?${query}` : ''}`,
+    path: `${operationPath}(${parameterList})`,
   }
 }
 
@@ -366,6 +373,10 @@ export function isActionFunctionRequestBound(input: ActionFunctionRequestInput) 
   return resolveActionFunctionDescriptor(input).isBound
 }
 
+export function resolveActionFunctionEntitySet(input: ActionFunctionRequestInput) {
+  return resolveActionFunctionDescriptor(input).entitySet
+}
+
 function resolveActionFunctionDescriptor(input: ActionFunctionRequestInput): ResolvedActionFunctionDescriptor {
   const operationSource = typeof input.operationSource === 'string' ? input.operationSource : 'metadata'
 
@@ -389,6 +400,7 @@ function resolveActionFunctionDescriptor(input: ActionFunctionRequestInput): Res
       name,
       qualifiedName: name,
       isBound: binding === 'bound',
+      parameters: [],
     }
   }
 
@@ -430,13 +442,18 @@ function normalizeActionFunctionDescriptor(
   const importName = descriptor.importName === undefined
     ? undefined
     : normalizeActionFunctionPathSegment(descriptor.importName)
+  const entitySet = descriptor.entitySet === undefined
+    ? undefined
+    : normalizeEntitySetName(descriptor.entitySet)
 
   return {
     kind,
     name,
     ...(qualifiedName ? { qualifiedName } : {}),
     ...(importName ? { importName } : {}),
+    ...(entitySet ? { entitySet } : {}),
     isBound: descriptor.isBound === true,
+    parameters: normalizeActionFunctionParameters(descriptor.parameters),
   }
 }
 
@@ -463,16 +480,21 @@ function normalizeActionFunctionPathSegment(value: unknown) {
 function buildBoundActionFunctionPath(
   servicePath: string,
   input: ActionFunctionRequestInput,
+  descriptor: ResolvedActionFunctionDescriptor,
   operationSegment: string
 ) {
-  const entitySetName = normalizeEntitySetName(input.entitySetName)
+  const entitySetName = descriptor.entitySet ?? normalizeEntitySetName(input.entitySetName)
   const keyPredicate = resolveKeyPredicate(input)
 
   return `${servicePath}/${entitySetName}${keyPredicate}/${operationSegment}`
 }
 
-function buildFunctionQuery(parameters: IDataObject) {
-  const params = new URLSearchParams()
+function buildFunctionParameterList(
+  parameters: IDataObject,
+  parameterDescriptors: Array<{ name: string, type?: string }>
+) {
+  const parameterTypes = new Map(parameterDescriptors.map((parameter) => [parameter.name, parameter.type]))
+  const parts: string[] = []
 
   for (const [name, value] of Object.entries(parameters)) {
     const parameterName = normalizeFunctionParameterName(name)
@@ -483,10 +505,23 @@ function buildFunctionQuery(parameters: IDataObject) {
       })
     }
 
-    params.set(parameterName, value === null ? 'null' : String(value))
+    parts.push(`${parameterName}=${formatODataFunctionLiteral(value, parameterTypes.get(parameterName))}`)
   }
 
-  return params.toString().replace(/\+/g, '%20')
+  return parts.join(',')
+}
+
+function normalizeActionFunctionParameters(value: unknown) {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .filter(isPlainObject)
+    .map((parameter) => ({
+      name: normalizeFunctionParameterName(parameter.name),
+      ...(typeof parameter.type === 'string' && parameter.type.trim()
+        ? { type: parameter.type.trim() }
+        : {}),
+    }))
 }
 
 function normalizeFunctionParameterName(value: unknown) {
@@ -506,6 +541,29 @@ function isPrimitiveFunctionParameterValue(value: unknown) {
     typeof value === 'string' ||
     typeof value === 'number' ||
     typeof value === 'boolean'
+}
+
+function formatODataFunctionLiteral(value: IDataObject[keyof IDataObject], type: unknown) {
+  if (value === null) return 'null'
+
+  const rawValue = String(value).trim()
+  const typeName = typeof type === 'string' ? type.trim().toLowerCase() : ''
+
+  if (containsUrlBoundary(rawValue)) {
+    throw createSapCapRequestError('Function parameter values must not include /, \\, ?, or #.', {
+      category: 'validation',
+    })
+  }
+
+  if (isBooleanEdmType(typeName) || (!typeName && typeof value === 'boolean')) {
+    return formatBooleanLiteral(rawValue)
+  }
+
+  if (isNumericEdmType(typeName) || (!typeName && typeof value === 'number')) {
+    return formatNumericLiteral(rawValue, typeName || 'edm.double')
+  }
+
+  return `'${rawValue.replace(/'/g, '\'\'')}'`
 }
 
 export async function sapCapApiRequest(
@@ -543,8 +601,12 @@ export async function sapCapApiRequest(
     }
 
     if (responseFormat === 'json') {
+      const bodyText = String(response.body ?? '')
+
+      if (!bodyText.trim()) return undefined
+
       try {
-        return JSON.parse(String(response.body ?? ''))
+        return JSON.parse(bodyText)
       } catch (err) {
         throw createSapCapRequestError('CAP response did not match the expected OData shape.', {
           category: 'responseShape',

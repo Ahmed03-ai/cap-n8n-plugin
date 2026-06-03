@@ -190,6 +190,35 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     ])
   })
 
+  it('drops unsafe object keys while recursively stripping OData metadata', async () => {
+    const { stripODataMetadata } = await importResponseHelpers()
+    const payload = JSON.parse(`{
+      "__proto__": { "polluted": true },
+      "constructor": { "prototype": { "polluted": true } },
+      "prototype": { "polluted": true },
+      "@odata.context": "$metadata#Books",
+      "ID": 201,
+      "details": {
+        "__proto__": { "nested": true },
+        "stock": 7
+      }
+    }`)
+    const cleaned = stripODataMetadata(payload)
+
+    expect(Object.getPrototypeOf(cleaned)).toBeNull()
+    expect(cleaned).toMatchObject({
+      ID: 201,
+      details: {
+        stock: 7,
+      },
+    })
+    expect(cleaned).not.toHaveProperty('__proto__')
+    expect(cleaned).not.toHaveProperty('constructor')
+    expect(cleaned).not.toHaveProperty('prototype')
+    expect(cleaned.details).not.toHaveProperty('__proto__')
+    expect({}.polluted).toBeUndefined()
+  })
+
   it('normalizes Create and Update returned entities into cleaned n8n items', async () => {
     const { normalizeODataItems } = await importResponseHelpers()
 
@@ -285,6 +314,14 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
           value: 1200,
         },
         pairedItem: { item: 7 },
+      },
+    ])
+    expect(normalizeODataItems('actionFunction', undefined, 8)).toEqual([
+      {
+        json: {
+          success: true,
+        },
+        pairedItem: { item: 8 },
       },
     ])
   })

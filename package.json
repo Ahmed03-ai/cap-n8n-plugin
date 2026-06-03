@@ -12,7 +12,7 @@
     "cap:serve": "npm run start --workspace demo-app",
     "cap:compile": "cds compile demo-app/db demo-app/srv demo-app/app --to csn",
     "smoke": "npm run build --workspace n8n-nodes-sap-cap && vitest run test/smoke",
-    "test:integration": "vitest run test/integration",
+    "test:integration": "npm run build --workspace n8n-nodes-sap-cap && vitest run test/integration",
     "test": "npm run smoke && npm run test:integration",
     "cap-n8n": "node cap-n8n-plugin/bin/cap-n8n.js",
     "n8n:workflow:import": "node cap-n8n-plugin/bin/cap-n8n.js import",

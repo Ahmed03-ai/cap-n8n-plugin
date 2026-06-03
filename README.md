@@ -415,7 +415,7 @@ For CAP Action/Function operation mode, switch the service path and metadata pat
 }
 ```
 
-Action/Function uses one combined operation mode. Metadata-backed choices cover actions, functions, imports, and bound operations. Manual fallback lets you provide the operation kind and name directly. Actions send JSON Parameters in the request body; functions encode primitive JSON Parameters as query parameters. Bound Action/Function requests reuse the same metadata key parts or manual Key Predicate path as Read, Update, and Delete.
+Action/Function uses one combined operation mode. Metadata-backed choices cover actions, functions, imports, and bound operations. Manual fallback lets you provide the operation kind and name directly. Actions send JSON Parameters in the request body; functions encode primitive JSON Parameters into the OData function-call segment, for example `bookAvailability(book=201)`. Bound Action/Function requests reuse the same metadata key parts or manual Key Predicate path as Read, Update, and Delete.
 
 Expected result:
 

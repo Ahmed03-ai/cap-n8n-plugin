@@ -767,11 +767,9 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       entitySetName: 'Books',
       parameters: JSON.stringify({ book: 201 }),
     })
-    const functionUrl = new URL(functionRequest.path, 'http://cap.test')
 
     expect(functionRequest.method).toBe('GET')
-    expect(functionUrl.pathname).toBe('/odata/v4/catalog/bookAvailability')
-    expect(functionUrl.searchParams.get('book')).toBe('201')
+    expect(functionRequest.path).toBe('/odata/v4/catalog/bookAvailability(book=201)')
     expect(functionRequest).not.toHaveProperty('body')
 
     const boundActionRequest = buildActionFunctionRequest({
@@ -795,7 +793,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       },
       parameters: JSON.stringify({ currency: 'USD' }),
     })
-    const boundFunctionUrl = new URL(boundFunctionRequest.path, 'http://cap.test')
 
     expect(boundActionRequest).toEqual({
       method: 'POST',
@@ -806,8 +803,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       },
     })
     expect(boundFunctionRequest.method).toBe('GET')
-    expect(boundFunctionUrl.pathname).toBe('/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue')
-    expect(boundFunctionUrl.searchParams.get('currency')).toBe('USD')
+    expect(boundFunctionRequest.path).toBe('/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue(currency=\'USD\')')
 
     expect(buildActionFunctionRequest({
       servicePath: '/odata/v4/catalog',
@@ -817,7 +813,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       operationBinding: 'unbound',
       entitySetName: 'Books',
       parameters: JSON.stringify({ book: 201 }),
-    }).path).toBe('/odata/v4/catalog/manualAvailability?book=201')
+    }).path).toBe('/odata/v4/catalog/manualAvailability(book=201)')
 
     for (const parameters of ['', '{', '[]', '"literal"', 'null', []]) {
       expect(() => buildActionFunctionRequest({
@@ -1007,6 +1003,59 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     ])
   })
 
+  it('follows up successful empty Update responses with a Read by the same key', async () => {
+    const server = await createCapServer((request) => {
+      if (request.method === 'PATCH') {
+        return {
+          statusCode: 204,
+          body: '',
+        }
+      }
+
+      return {
+        body: JSON.stringify({
+          '@odata.context': '$metadata#Books/$entity',
+          ID: 201,
+          price: 24.99,
+          modifiedAt: '2026-06-03T18:55:00Z',
+        }),
+      }
+    })
+
+    const result = await executeSapCap([
+      defaultParameters({
+        operation: 'update',
+        keyPredicate: 'ID=201',
+        body: JSON.stringify({
+          price: 24.99,
+        }),
+      }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+    })
+
+    expect(server.requests).toHaveLength(2)
+    expect(server.requests[0]).toMatchObject({
+      method: 'PATCH',
+      url: '/odata/v4/admin/Books(ID=201)',
+    })
+    expect(server.requests[1]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/admin/Books(ID=201)',
+      body: '',
+    })
+    expect(result[0]).toEqual([
+      {
+        json: {
+          ID: 201,
+          price: 24.99,
+          modifiedAt: '2026-06-03T18:55:00Z',
+        },
+        pairedItem: { item: 0 },
+      },
+    ])
+  })
+
   it('uses metadata-derived key parts for Update and Delete while preserving manual fallback', async () => {
     const server = await createCapServer((request) => {
       if (request.url === '/odata/v4/admin/$metadata') {
@@ -1107,7 +1156,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         }
       }
 
-      if (request.method === 'GET' && request.url === '/odata/v4/catalog/bookAvailability?book=201') {
+      if (request.method === 'GET' && request.url === '/odata/v4/catalog/bookAvailability(book=201)') {
         return {
           body: JSON.stringify({
             '@odata.context': '$metadata#bookAvailability',
@@ -1126,7 +1175,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         }
       }
 
-      if (request.method === 'GET' && request.url === '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue?currency=USD') {
+      if (request.method === 'GET' && request.url === '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue(currency=\'USD\')') {
         return {
           body: JSON.stringify({
             value: 1200,
@@ -1156,6 +1205,8 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
+        entitySet: '',
+        entitySetManual: '',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Action: submitOrder'),
         parameters: JSON.stringify({
@@ -1166,6 +1217,8 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
+        entitySet: '',
+        entitySetManual: '',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Function: bookAvailability'),
         parameters: JSON.stringify({
@@ -1175,7 +1228,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
-        entitySet: 'Books',
+        entitySet: 'Authors',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Action: Books/restock'),
         keyInputMode: 'manual',
@@ -1187,7 +1240,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
-        entitySet: 'Books',
+        entitySet: 'Authors',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Function: Books/inventoryValue'),
         keyInputMode: 'metadata',
@@ -1216,7 +1269,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(server.requests[0].headers.prefer).toBe('return=representation')
     expect(server.requests[1]).toMatchObject({
       method: 'GET',
-      url: '/odata/v4/catalog/bookAvailability?book=201',
+      url: '/odata/v4/catalog/bookAvailability(book=201)',
       body: '',
     })
     expect(server.requests[1].headers['content-type']).toBeUndefined()
@@ -1233,7 +1286,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     })
     expect(server.requests[4]).toMatchObject({
       method: 'GET',
-      url: '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue?currency=USD',
+      url: '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue(currency=\'USD\')',
       body: '',
     })
     expect(result[0]).toEqual([
@@ -1317,7 +1370,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     })
     expect(server.requests[1]).toMatchObject({
       method: 'GET',
-      url: '/odata/v4/catalog/manualAvailability?book=201',
+      url: '/odata/v4/catalog/manualAvailability(book=201)',
       body: '',
     })
     expect(result[0]).toEqual([

@@ -497,7 +497,8 @@ describe('Phase 5 aggregate workflow import and validation evidence', () => {
     const packageJson = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'))
 
     expect(packageJson.scripts.test).toContain('npm run test:integration')
-    expect(packageJson.scripts['test:integration']).toBe('vitest run test/integration')
+    expect(packageJson.scripts['test:integration']).toContain('npm run build --workspace n8n-nodes-sap-cap')
+    expect(packageJson.scripts['test:integration']).toContain('vitest run test/integration')
     expect(packageJson.scripts['n8n:workflow:validate']).toContain('cap-n8n.js validate')
     expect(existsSync(path.join(repoRoot, 'test', 'integration', 'n8n-workflow-artifacts.test.js'))).toBe(true)
     expect(existsSync(path.join(repoRoot, 'test', 'integration', 'n8n-workflow-import.test.js'))).toBe(true)

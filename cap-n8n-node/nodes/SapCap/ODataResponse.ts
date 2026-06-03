@@ -39,10 +39,10 @@ export function stripODataMetadata(value: unknown): unknown {
     return value
   }
 
-  const cleaned: IDataObject = {}
+  const cleaned = Object.create(null) as IDataObject
 
   for (const [key, childValue] of Object.entries(value)) {
-    if (key.startsWith('@odata.') || key.includes('@odata.')) continue
+    if (isUnsafeObjectKey(key) || key.startsWith('@odata.') || key.includes('@odata.')) continue
 
     cleaned[key] = stripODataMetadata(childValue) as IDataObject[keyof IDataObject]
   }
@@ -100,6 +100,17 @@ function toEntityItem(response: unknown, itemIndex: number): INodeExecutionData 
 }
 
 function toActionFunctionItem(response: unknown, itemIndex: number): INodeExecutionData {
+  if (response === undefined) {
+    return {
+      json: {
+        success: true,
+      },
+      pairedItem: {
+        item: itemIndex,
+      },
+    }
+  }
+
   const cleaned = stripODataMetadata(response)
 
   if (isPlainObject(cleaned)) {
@@ -223,6 +234,10 @@ function createResponseShapeError(): Error & SafeSapCapError {
 
 function isPlainObject(value: unknown): value is IDataObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isUnsafeObjectKey(key: string) {
+  return key === '__proto__' || key === 'constructor' || key === 'prototype'
 }
 
 function extractStatusCode(err: unknown, context: SapCapErrorContext) {

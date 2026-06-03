@@ -21,6 +21,7 @@ import {
   isActionFunctionRequestBound,
   normalizeMetadataPath,
   parseJsonObjectParameter,
+  resolveActionFunctionEntitySet,
   resolveEntitySetName,
   sapCapApiRequest,
 } from './GenericFunctions'
@@ -407,7 +408,7 @@ export class SapCap implements INodeType {
         default: '{}',
         required: true,
         placeholder: '{ "book": 201, "quantity": 1 }',
-        description: 'Explicit JSON object sent as action parameters or encoded as function query parameters.',
+        description: 'Explicit JSON object sent as action parameters or encoded into OData function-call parameters.',
         displayOptions: {
           show: {
             operation: ['actionFunction'],
@@ -467,23 +468,8 @@ export class SapCap implements INodeType {
       try {
         operation = resolveOperation(this.getNodeParameter('operation', itemIndex))
         const servicePath = this.getNodeParameter('servicePath', itemIndex) as string
-        const entitySetName = resolveEntitySetName({
-          entitySetSource: this.getNodeParameter('entitySetSource', itemIndex) as string,
-          entitySet: this.getNodeParameter('entitySet', itemIndex, '') as string,
-          entitySetManual: this.getNodeParameter('entitySetManual', itemIndex, '') as string,
-        })
-        const request = await buildOperationRequest(this, operation, itemIndex, servicePath, entitySetName)
-        const response = operation === 'delete'
-          ? await executeDeleteRequest(this, request, entitySetName)
-          : await sapCapApiRequest(this, {
-            ...request,
-            responseFormat: 'json',
-            errorContext: operation === 'read'
-              ? 'read'
-              : operation === 'actionFunction'
-                ? 'actionFunction'
-                : 'odata',
-          })
+        const request = await buildOperationRequest(this, operation, itemIndex, servicePath)
+        const response = await executeOperationRequest(this, operation, request)
 
         returnData.push(...normalizeODataItems(operation, response, itemIndex))
       } catch (err) {
@@ -506,10 +492,11 @@ async function buildOperationRequest(
   context: IExecuteFunctions,
   operation: SapCapOperation,
   itemIndex: number,
-  servicePath: string,
-  entitySetName: string
+  servicePath: string
 ) {
   if (operation === 'query') {
+    const entitySetName = resolveEntitySetParameter(context, itemIndex)
+
     return buildQueryRequest({
       servicePath,
       entitySetName,
@@ -522,6 +509,8 @@ async function buildOperationRequest(
   }
 
   if (operation === 'create') {
+    const entitySetName = resolveEntitySetParameter(context, itemIndex)
+
     return buildCreateRequest({
       servicePath,
       entitySetName,
@@ -537,19 +526,23 @@ async function buildOperationRequest(
       operationKind: context.getNodeParameter('actionFunctionKind', itemIndex, 'action'),
       operationName: context.getNodeParameter('actionFunctionName', itemIndex, ''),
       operationBinding: context.getNodeParameter('actionFunctionBinding', itemIndex, 'unbound'),
-      entitySetName,
       parameters: context.getNodeParameter('parameters', itemIndex),
     }
-    const keyInput = isActionFunctionRequestBound(actionFunctionInput)
-      ? await resolveKeyInput(context, itemIndex, entitySetName)
+    const actionFunctionEntitySetName = isActionFunctionRequestBound(actionFunctionInput)
+      ? resolveActionFunctionEntitySet(actionFunctionInput) ?? resolveEntitySetParameter(context, itemIndex)
+      : undefined
+    const keyInput = actionFunctionEntitySetName
+      ? await resolveKeyInput(context, itemIndex, actionFunctionEntitySetName)
       : {}
 
     return buildActionFunctionRequest({
       ...actionFunctionInput,
+      ...(actionFunctionEntitySetName ? { entitySetName: actionFunctionEntitySetName } : {}),
       ...keyInput,
     })
   }
 
+  const entitySetName = resolveEntitySetParameter(context, itemIndex)
   const keyInput = await resolveKeyInput(context, itemIndex, entitySetName)
 
   if (operation === 'read') {
@@ -579,6 +572,14 @@ async function buildOperationRequest(
 
   throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query, Read, Create, Update, Delete, or Action/Function.', {
     category: 'validation',
+  })
+}
+
+function resolveEntitySetParameter(context: IExecuteFunctions, itemIndex: number) {
+  return resolveEntitySetName({
+    entitySetSource: context.getNodeParameter('entitySetSource', itemIndex) as string,
+    entitySet: context.getNodeParameter('entitySet', itemIndex, '') as string,
+    entitySetManual: context.getNodeParameter('entitySetManual', itemIndex, '') as string,
   })
 }
 
@@ -631,10 +632,53 @@ async function resolveKeyInput(
   }
 }
 
+async function executeOperationRequest(
+  context: IExecuteFunctions,
+  operation: SapCapOperation,
+  request: ReturnType<typeof buildOperationRequest> extends Promise<infer T> ? T : never
+) {
+  if (operation === 'delete') {
+    return executeDeleteRequest(context, request as ReturnType<typeof buildDeleteRequest>)
+  }
+
+  if (operation === 'update') {
+    return executeUpdateRequest(context, request as ReturnType<typeof buildUpdateRequest>)
+  }
+
+  return sapCapApiRequest(context, {
+    ...request,
+    responseFormat: 'json',
+    errorContext: operation === 'read'
+      ? 'read'
+      : operation === 'actionFunction'
+        ? 'actionFunction'
+        : 'odata',
+  })
+}
+
+async function executeUpdateRequest(
+  context: IExecuteFunctions,
+  request: ReturnType<typeof buildUpdateRequest>
+) {
+  const response = await sapCapApiRequest(context, {
+    ...request,
+    responseFormat: 'json',
+    errorContext: 'odata',
+  })
+
+  if (response !== undefined) return response
+
+  return sapCapApiRequest(context, {
+    method: 'GET',
+    path: request.path,
+    responseFormat: 'json',
+    errorContext: 'read',
+  })
+}
+
 async function executeDeleteRequest(
   context: IExecuteFunctions,
-  request: ReturnType<typeof buildDeleteRequest>,
-  entitySetName: string
+  request: ReturnType<typeof buildDeleteRequest>
 ) {
   await sapCapApiRequest(context, {
     ...request,
@@ -644,16 +688,21 @@ async function executeDeleteRequest(
 
   return {
     deleted: true,
-    entitySet: entitySetName,
-    key: extractKeyFromPath(request.path, entitySetName),
+    entitySet: extractEntitySetFromPath(request.path),
+    key: extractKeyFromPath(request.path),
   }
 }
 
-function extractKeyFromPath(path: string, entitySetName: string) {
-  const marker = `/${entitySetName}`
-  const index = path.lastIndexOf(marker)
+function extractEntitySetFromPath(path: string) {
+  const match = /\/([A-Za-z_][A-Za-z0-9_]*)\(/.exec(path)
 
-  return index >= 0 ? path.slice(index + marker.length) : ''
+  return match?.[1] ?? ''
+}
+
+function extractKeyFromPath(path: string) {
+  const match = /\/[A-Za-z_][A-Za-z0-9_]*(\([^/]+\))/.exec(path)
+
+  return match?.[1] ?? ''
 }
 
 function resolveOperation(value: unknown): SapCapOperation {
