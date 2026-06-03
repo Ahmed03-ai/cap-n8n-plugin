@@ -13,6 +13,7 @@ const fakePassword = 'cap-password-for-test'
 const fakeClientId = 'cap-client-id-for-test'
 const fakeClientSecret = 'cap-client-secret-for-test'
 const fakeBearerToken = 'cap-bearer-token-for-test'
+const fakeResponseBody = 'metadata-response-body-secret'
 const keyPredicateBoundaryMessage = 'Key Predicate must not include /, \\, ?, or #.'
 
 const metadataWithEntitySets = `<?xml version="1.0" encoding="utf-8"?>
@@ -404,7 +405,10 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
             }
           }
 
-          return { ok: true }
+          return {
+            statusCode: 200,
+            body: metadataWithEntitySets,
+          }
         },
       },
     }
@@ -422,9 +426,9 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       expect.objectContaining({
         method: 'GET',
         url: 'https://cap.example.test/app/odata/v4/admin/$metadata',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: `Basic ${Buffer.from(`${fakeUsername}:${fakePassword}`).toString('base64')}`,
-        },
+        }),
       }),
     ])
 
@@ -451,12 +455,74 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       expect.objectContaining({
         method: 'GET',
         url: 'https://cap.example.test/app/odata/v4/admin/$metadata',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: `Bearer ${fakeBearerToken}`,
-        },
+        }),
       }),
     ])
 
+    requests.length = 0
+
+    const htmlMetadataContext = {
+      helpers: {
+        request: async (options) => {
+          requests.push(options)
+          return {
+            statusCode: 200,
+            body: '<html><form>Login</form></html>',
+          }
+        },
+      },
+    }
+
+    await expect(
+      node.methods.credentialTest.sapCapApiCredentialTest.call(
+        htmlMetadataContext,
+        { data: basicCredentials('https://cap.example.test/app/') }
+      )
+    ).rejects.toMatchObject({
+      message: 'CAP metadata response is not valid OData metadata.',
+      category: 'responseShape',
+    })
+    expect(requests).toHaveLength(1)
+    requests.length = 0
+
+    const leakingErrorContext = {
+      helpers: {
+        request: async (options) => {
+          requests.push(options)
+          throw new Error([
+            `Authorization ${options.headers?.Authorization}`,
+            fakePassword,
+            fakeClientSecret,
+            fakeBearerToken,
+            fakeResponseBody,
+          ].join(' '))
+        },
+      },
+    }
+
+    let safeError
+    try {
+      await node.methods.credentialTest.sapCapApiCredentialTest.call(
+        leakingErrorContext,
+        { data: basicCredentials('https://cap.example.test/app/') }
+      )
+    } catch (err) {
+      safeError = err
+    }
+
+    expect(safeError).toMatchObject({
+      message: 'Could not reach CAP metadata endpoint. Check Base URL and network access from n8n.',
+      category: 'network',
+    })
+    const serialized = serializedError(safeError)
+    expect(serialized).not.toContain(fakePassword)
+    expect(serialized).not.toContain(fakeClientSecret)
+    expect(serialized).not.toContain(fakeBearerToken)
+    expect(serialized).not.toContain(fakeResponseBody)
+    expect(serialized).not.toContain('Authorization')
+    expect(requests).toHaveLength(1)
     requests.length = 0
 
     await expect(

@@ -11,16 +11,14 @@ import {
 } from 'n8n-workflow'
 
 import {
-  buildAuthenticationHeaders,
   buildQueryRequest,
   buildReadRequest,
   createSapCapRequestError,
-  normalizeBaseUrl,
   normalizeMetadataPath,
   resolveEntitySetName,
   sapCapApiRequest,
 } from './GenericFunctions'
-import { loadEntitySetOptions } from './ODataMetadata'
+import { extractEntitySetOptions, loadEntitySetOptions } from './ODataMetadata'
 import {
   classifySapCapError,
   normalizeODataItems,
@@ -230,17 +228,19 @@ export class SapCap implements INodeType {
           })
         }
 
-        const url = `${normalizeBaseUrl(credentials.baseUrl)}${normalizeMetadataPath(credentials.metadataPath)}`
-        const headers = await buildAuthenticationHeaders(
-          async options => this.helpers.request(options),
-          credentials
-        )
-
-        await this.helpers.request({
+        const metadataXml = await sapCapApiRequest({
+          getCredentials: async () => credentials,
+          helpers: {
+            httpRequest: async options => this.helpers.request(options),
+          },
+        }, {
           method: 'GET',
-          url,
-          headers,
-        })
+          path: normalizeMetadataPath(credentials.metadataPath),
+          responseFormat: 'text',
+          errorContext: 'metadata',
+        }) as string
+
+        extractEntitySetOptions(metadataXml)
 
         return {
           status: 'OK',
