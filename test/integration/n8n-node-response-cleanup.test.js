@@ -6,6 +6,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(__dirname, '../..')
 const n8nPackageDir = resolve(repoRoot, 'cap-n8n-node')
+const fakePassword = 'super-secret-password-for-test'
+const fakeBearerToken = 'Bearer secret-bearer-token-for-test'
+const fakeBasicToken = 'Basic dXNlcjpzdXBlci1zZWNyZXQ='
+const fakeClientSecret = 'client-secret-value-for-test'
+const fakeResponseBody = 'full CAP response should not be exposed'
 
 async function importResponseHelpers() {
   const modulePath = resolve(n8nPackageDir, 'dist/nodes/SapCap/ODataResponse.js')
@@ -24,6 +29,47 @@ function expectResponseShapeFailure(run) {
       category: 'responseShape',
     })
   }
+}
+
+function statusError(statusCode, message = `HTTP ${statusCode}`) {
+  return Object.assign(new Error(message), {
+    statusCode,
+    response: {
+      statusCode,
+      headers: {
+        authorization: fakeBearerToken,
+        cookie: 'cap-session-cookie-for-test',
+      },
+      body: {
+        error: message,
+        password: fakePassword,
+        clientSecret: fakeClientSecret,
+        responseBody: fakeResponseBody,
+      },
+    },
+    request: {
+      headers: {
+        Authorization: fakeBasicToken,
+      },
+      body: {
+        password: fakePassword,
+      },
+    },
+  })
+}
+
+function expectSerializedSafeError(value) {
+  const serialized = JSON.stringify(value)
+
+  expect(serialized).not.toContain(fakePassword)
+  expect(serialized).not.toContain(fakeBearerToken)
+  expect(serialized).not.toContain(fakeBasicToken)
+  expect(serialized).not.toContain(fakeClientSecret)
+  expect(serialized).not.toContain(fakeResponseBody)
+  expect(serialized).not.toContain('authorization')
+  expect(serialized).not.toContain('cookie')
+  expect(serialized).not.toContain('request')
+  expect(serialized).not.toContain('stack')
 }
 
 describe('n8n SAP CAP OData response cleanup helpers', () => {
@@ -148,5 +194,130 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     expectResponseShapeFailure(() => normalizeODataItems('query', { value: {} }, 0))
     expectResponseShapeFailure(() => normalizeODataItems('read', [], 0))
     expectResponseShapeFailure(() => normalizeODataItems('read', null, 0))
+  })
+
+  it('classifies CAP and OData failures into sanitized n8n categories', async () => {
+    const { classifySapCapError } = await importResponseHelpers()
+    const cases = [
+      [
+        statusError(401),
+        { operation: 'query' },
+        {
+          message: 'CAP authentication failed. Check the SAP CAP API credential.',
+          statusCode: 401,
+          category: 'authentication',
+        },
+      ],
+      [
+        statusError(403),
+        { operation: 'query' },
+        {
+          message: 'CAP authorization failed. This credential cannot access the CAP service.',
+          statusCode: 403,
+          category: 'authorization',
+        },
+      ],
+      [
+        statusError(404),
+        { operation: 'read' },
+        {
+          message: 'CAP entity was not found for the selected entity set and key predicate.',
+          statusCode: 404,
+          category: 'notFound',
+        },
+      ],
+      [
+        statusError(404),
+        { operation: 'metadata' },
+        {
+          message: 'CAP metadata endpoint was not found. Check Base URL and Metadata Path.',
+          statusCode: 404,
+          category: 'notFound',
+        },
+      ],
+      [
+        statusError(404),
+        { operation: 'query' },
+        {
+          message: 'CAP OData endpoint was not found. Check the service path and entity set.',
+          statusCode: 404,
+          category: 'notFound',
+        },
+      ],
+      [
+        statusError(400),
+        { operation: 'query' },
+        {
+          message: 'CAP rejected the OData request. Check the OData options.',
+          statusCode: 400,
+          category: 'validation',
+        },
+      ],
+      [
+        statusError(502),
+        { operation: 'query' },
+        {
+          message: 'CAP service returned a server error. Try again or check the CAP service logs.',
+          statusCode: 502,
+          category: 'server',
+        },
+      ],
+      [
+        new Error(`getaddrinfo ENOTFOUND ${fakeBearerToken} ${fakePassword}`),
+        { operation: 'query' },
+        {
+          message: 'Could not reach CAP service. Check Base URL and network access from n8n.',
+          category: 'network',
+        },
+      ],
+      [
+        Object.assign(new Error('raw bad shape'), { category: 'responseShape' }),
+        { operation: 'query' },
+        {
+          message: 'CAP response did not match the expected OData shape.',
+          category: 'responseShape',
+        },
+      ],
+      [
+        Object.assign(new Error(`OAuth failed with ${fakeClientSecret}`), { category: 'configuration' }),
+        { operation: 'query' },
+        {
+          message: 'OAuth2 Client Credentials is not fully configured for this CAP service. Check the OAuth2 credential fields or use Basic Auth.',
+          category: 'configuration',
+        },
+      ],
+    ]
+
+    for (const [err, context, expected] of cases) {
+      const safeError = classifySapCapError(err, context)
+
+      expect(safeError).toEqual(expected)
+      expectSerializedSafeError(safeError)
+    }
+  })
+
+  it('omits auth headers, tokens, secrets, stack traces, and full response bodies from safe errors', async () => {
+    const { classifySapCapError } = await importResponseHelpers()
+    const err = statusError(500, `CAP exploded with ${fakeBearerToken} and ${fakePassword}`)
+    err.stack = `Error: ${fakeClientSecret}\n    at unsafe-stack`
+
+    const safeError = classifySapCapError(err, {
+      operation: 'query',
+      requestOptions: {
+        headers: {
+          Authorization: fakeBasicToken,
+        },
+        body: {
+          password: fakePassword,
+        },
+      },
+    })
+
+    expect(safeError).toEqual({
+      message: 'CAP service returned a server error. Try again or check the CAP service logs.',
+      statusCode: 500,
+      category: 'server',
+    })
+    expectSerializedSafeError(safeError)
   })
 })
