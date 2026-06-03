@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-06-03T18:28:41.315Z"
+status: verifying
+last_updated: "2026-06-03T18:42:46.631Z"
 last_activity: 2026-06-03
 progress:
   total_phases: 8
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 27
-  completed_plans: 26
-  percent: 75
+  completed_plans: 27
+  percent: 88
 ---
 
 # Project State
@@ -26,10 +26,10 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 
 Phase: 07 (n8n Mutations and CAP Actions/Functions) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-03
 
-Progress: [██████████] 96%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -78,6 +78,7 @@ Progress: [██████████] 96%
 | Phase 07 P01 | 8min | 2 tasks | 3 files |
 | Phase 07 P02 | 12min | 3 tasks | 6 files |
 | Phase 07 P03 | 12min | 3 tasks | 8 files |
+| Phase 07 P04 | 8min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,9 @@ Recent decisions affecting current work:
 - [Phase 07]: Metadata option values carry only allowlisted descriptor fields: kind, name, qualifiedName, importName, isBound, bindingType, entitySet, and parameters.
 - [Phase 07]: Bound Action/Function requests reuse the same metadata key parts and manual Key Predicate path as Read, Update, and Delete.
 - [Phase 07]: Action/Function output is always one n8n item; object returns are cleaned directly and primitive or array returns are wrapped under value.
+- [Phase 07]: Phase 7 docs treat deterministic built-node integration tests as VERIFY-04 evidence while keeping real installed n8n custom-node E2E as Phase 8 release-readiness evidence. — Keeps Phase 7 documentation accurate without overstating Phase 8 live-n8n validation.
+- [Phase 07]: The mockup shows explicit Body JSON, Parameters JSON, metadata key parts, and Manual Key Predicate fallback instead of generated entity or parameter editors. — Matches Phase 7 UX decisions D-01 through D-17 and avoids implying deferred generated editors exist.
+- [Phase 07]: README and manual examples use placeholder Basic auth header values instead of committed encoded credentials. — Keeps docs useful for local presenters without storing reusable credential material.
 
 ### Pending Todos
 
@@ -182,6 +186,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-06-03T18:28:25.483Z
+Last session: 2026-06-03T18:41:20.177Z
 Stopped at: Completed 07-03-PLAN.md
 Resume file: None

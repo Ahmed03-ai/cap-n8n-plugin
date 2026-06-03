@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models. (completed 2026-06-02)
 - [ ] **Phase 5: Workflow Import and Build Validation** - CAP developers can import workflows into typed local artifacts and validate mappings during build.
 - [x] **Phase 6: n8n Credentials, Metadata Discovery, and Read Operations** - n8n workflow designers can securely discover and read CAP OData data. (completed 2026-06-03)
-- [ ] **Phase 7: n8n Mutations and CAP Actions/Functions** - n8n workflow designers can write CAP data and invoke CAP business operations.
+- [x] **Phase 7: n8n Mutations and CAP Actions/Functions** - n8n workflow designers can write CAP data and invoke CAP business operations. (completed 2026-06-03)
 - [ ] **Phase 8: Deployment, Docs, and Release Readiness** - Developers and reviewers can run, configure, verify, and assess the integration without hidden setup.
 
 ## Phase Details
@@ -217,7 +217,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 07-04-PLAN.md - Update README, manual visual showcase, and mockup for Phase 7.
+- [x] 07-04-PLAN.md - Update README, manual visual showcase, and mockup for Phase 7.
 
 ### Phase 8: Deployment, Docs, and Release Readiness
 
@@ -269,5 +269,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
 | 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
 | 6. n8n Credentials, Metadata Discovery, and Read Operations | 3/3 | Complete    | 2026-06-03 |
-| 7. n8n Mutations and CAP Actions/Functions | 3/4 | In Progress|  |
+| 7. n8n Mutations and CAP Actions/Functions | 4/4 | Complete   | 2026-06-03 |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |
