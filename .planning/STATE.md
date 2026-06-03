@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-06-03T17:36:40.406Z"
-last_activity: 2026-06-03 -- Phase 07 planning complete
+last_updated: "2026-06-03T17:52:52.089Z"
+last_activity: 2026-06-03
 progress:
   total_phases: 8
   completed_phases: 6
   total_plans: 27
-  completed_plans: 23
+  completed_plans: 24
   percent: 75
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-31)
 
 **Core value:** CAP developers can add reliable n8n workflow automation to CAP applications without repeatedly hand-writing integration glue.
-**Current focus:** Phase 7 — n8n mutations and cap actions/functions
+**Current focus:** Phase 07 — n8n Mutations and CAP Actions/Functions
 
 ## Current Position
 
-Phase: 7
-Plan: Not started
+Phase: 07 (n8n Mutations and CAP Actions/Functions) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-06-03 -- Phase 07 planning complete
+Last activity: 2026-06-03
 
-Progress: [██████████] 100%
+Progress: [█████████░] 89%
 
 ## Performance Metrics
 
@@ -75,6 +75,7 @@ Progress: [██████████] 100%
 | Phase 06 P01 | 15min | 3 tasks | 6 files |
 | Phase 06 P02 | 11min | 3 tasks | 2 files |
 | Phase 06 P03 | 8min | 3 tasks | 3 files |
+| Phase 07 P01 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,9 @@ Recent decisions affecting current work:
 - [Phase 06]: Query and Read runtime success and failure paths use the shared ODataResponse helper contract. — Keeps cleanup, continueOnFail, and NodeOperationError behavior consistent across metadata, response, and runtime tests.
 - [Phase 06]: Unknown or unauthenticated credential modes fail as sanitized configuration errors before transport. — Prevents malformed or stale credentials from creating a hidden unauthenticated CAP request path.
 - [Phase 08]: Real n8n custom-node E2E verification is a distinct release-readiness requirement, separate from deterministic integration tests. — Phase 6 node stories can remain implementation-verified while Phase 8 proves the installed n8n UI/runtime path with the local community node mounted or installed.
+- [Phase 07]: [Phase 07 Plan 01]: Metadata key descriptors use a compact name/type contract per EntitySet for downstream CRUD and bound Action/Function helpers. — Keeps the helper contract narrow while preserving enough EDM type information for composite-key predicates.
+- [Phase 07]: [Phase 07 Plan 01]: Unknown EDM key types use conservative quoted literals; numeric and boolean EDM types stay unquoted. — Prevents malformed OData literals while keeping unsupported custom types safe by default.
+- [Phase 07]: [Phase 07 Plan 01]: Manual Key Predicate remains the fallback when metadata key descriptors are not supplied. — Preserves Phase 6 Read behavior and supports D-08 fallback for metadata gaps.
 
 ### Pending Todos
 
@@ -168,6 +172,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-06-03T16:51:47.634Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md
+Last session: 2026-06-03T17:52:52.070Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None

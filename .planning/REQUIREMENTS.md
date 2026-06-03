@@ -69,7 +69,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
 - [x] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
 - [ ] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
-- [ ] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
+- [x] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
 
 ### Documentation and Deployment
 
@@ -86,7 +86,7 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 - [x] **VERIFY-01**: Developer can run integration tests for the CAP programmatic API, authentication, errors, retry behavior, and mock runtime.
 - [x] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
 - [x] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
-- [ ] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
+- [x] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
 - [ ] **VERIFY-05**: Developer can run a documented smoke test covering the demo CAP app, local n8n, and exported workflow fixture.
 - [ ] **VERIFY-06**: CI or an equivalent repeatable local command reports whether the project is ready for review.
 - [ ] **VERIFY-07**: Developer or reviewer can run a real n8n custom-node E2E check that installs or mounts the SAP CAP node in n8n, starts the CAP demo app, creates SAP CAP credentials, runs Test Connection, loads metadata-backed entity options, executes Query and Read, and after Phase 7 also exercises mutation/action modes.
@@ -177,7 +177,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NODE-10 | Phase 6 | Complete |
 | NODE-11 | Phase 6 | Complete |
 | NODE-12 | Phase 7 | Pending |
-| NODE-13 | Phase 7 | Pending |
+| NODE-13 | Phase 7 | Complete |
 | DOCS-01 | Phase 8 | Pending |
 | DOCS-02 | Phase 8 | Pending |
 | DOCS-03 | Phase 8 | Pending |
@@ -188,7 +188,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VERIFY-01 | Phase 2 | Complete |
 | VERIFY-02 | Phase 4 | Complete |
 | VERIFY-03 | Phase 5 | Complete |
-| VERIFY-04 | Phase 7 | Pending |
+| VERIFY-04 | Phase 7 | Complete |
 | VERIFY-05 | Phase 8 | Pending |
 | VERIFY-06 | Phase 8 | Pending |
 | VERIFY-07 | Phase 8 | Pending |
