@@ -5,7 +5,7 @@ import {
   NodeOperationError,
 } from 'n8n-workflow'
 
-type ODataOperation = 'query' | 'read'
+type ODataOperation = 'query' | 'read' | 'create' | 'update' | 'delete'
 
 export type SapCapErrorCategory =
   | 'authentication'

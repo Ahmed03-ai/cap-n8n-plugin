@@ -11,14 +11,22 @@ import {
 } from 'n8n-workflow'
 
 import {
+  buildCreateRequest,
+  buildDeleteRequest,
   buildQueryRequest,
   buildReadRequest,
+  buildUpdateRequest,
   createSapCapRequestError,
   normalizeMetadataPath,
+  parseJsonObjectParameter,
   resolveEntitySetName,
   sapCapApiRequest,
 } from './GenericFunctions'
-import { extractEntitySetOptions, loadEntitySetOptions } from './ODataMetadata'
+import {
+  extractEntityKeyDescriptors,
+  extractEntitySetOptions,
+  loadEntitySetOptions,
+} from './ODataMetadata'
 import {
   classifySapCapError,
   normalizeODataItems,
@@ -26,7 +34,7 @@ import {
   toNodeOperationError,
 } from './ODataResponse'
 
-type Phase6Operation = 'query' | 'read'
+type SapCapOperation = 'query' | 'read' | 'create' | 'update' | 'delete'
 
 export class SapCap implements INodeType {
   description: INodeTypeDescription = {
@@ -68,6 +76,24 @@ export class SapCap implements INodeType {
             value: 'read',
             description: 'Retrieve one CAP entity by key predicate.',
             action: 'Read a CAP entity',
+          },
+          {
+            name: 'Create',
+            value: 'create',
+            description: 'Create one CAP entity from an explicit JSON Body.',
+            action: 'Create a CAP entity',
+          },
+          {
+            name: 'Update',
+            value: 'update',
+            description: 'Patch one CAP entity by key using an explicit JSON Body.',
+            action: 'Update a CAP entity',
+          },
+          {
+            name: 'Delete',
+            value: 'delete',
+            description: 'Delete one CAP entity by key.',
+            action: 'Delete a CAP entity',
           },
         ],
         default: 'query',
@@ -195,6 +221,44 @@ export class SapCap implements INodeType {
         },
       },
       {
+        displayName: 'Key Input',
+        name: 'keyInputMode',
+        type: 'options',
+        options: [
+          {
+            name: 'Metadata Key Parts',
+            value: 'metadata',
+          },
+          {
+            name: 'Manual Key Predicate',
+            value: 'manual',
+          },
+        ],
+        default: 'manual',
+        required: true,
+        description: 'Choose metadata-derived key parts or a manual OData key predicate.',
+        displayOptions: {
+          show: {
+            operation: ['read', 'update', 'delete'],
+          },
+        },
+      },
+      {
+        displayName: 'Key Parts (JSON)',
+        name: 'keyParts',
+        type: 'json',
+        default: '',
+        required: true,
+        placeholder: '{ "ID": 201, "IsActiveEntity": true }',
+        description: 'JSON object containing values for every key part from CAP metadata.',
+        displayOptions: {
+          show: {
+            operation: ['read', 'update', 'delete'],
+            keyInputMode: ['metadata'],
+          },
+        },
+      },
+      {
         displayName: 'Key Predicate',
         name: 'keyPredicate',
         type: 'string',
@@ -204,7 +268,22 @@ export class SapCap implements INodeType {
         description: 'OData key predicate. Parentheses are optional; examples: ID=201 or ID=201,IsActiveEntity=true.',
         displayOptions: {
           show: {
-            operation: ['read'],
+            operation: ['read', 'update', 'delete'],
+            keyInputMode: ['manual'],
+          },
+        },
+      },
+      {
+        displayName: 'Body (JSON)',
+        name: 'body',
+        type: 'json',
+        default: '',
+        required: true,
+        placeholder: '{ "title": "New Book" }',
+        description: 'Explicit JSON object sent as the CAP entity payload.',
+        displayOptions: {
+          show: {
+            operation: ['create', 'update'],
           },
         },
       },
@@ -255,7 +334,7 @@ export class SapCap implements INodeType {
     const returnData: INodeExecutionData[] = []
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
-      let operation: Phase6Operation = 'query'
+      let operation: SapCapOperation = 'query'
 
       try {
         operation = resolveOperation(this.getNodeParameter('operation', itemIndex))
@@ -265,27 +344,14 @@ export class SapCap implements INodeType {
           entitySet: this.getNodeParameter('entitySet', itemIndex, '') as string,
           entitySetManual: this.getNodeParameter('entitySetManual', itemIndex, '') as string,
         })
-        const request = operation === 'read'
-          ? buildReadRequest({
-            servicePath,
-            entitySetName,
-            keyPredicate: this.getNodeParameter('keyPredicate', itemIndex) as string,
+        const request = await buildOperationRequest(this, operation, itemIndex, servicePath, entitySetName)
+        const response = operation === 'delete'
+          ? await executeDeleteRequest(this, request, entitySetName)
+          : await sapCapApiRequest(this, {
+            ...request,
+            responseFormat: 'json',
+            errorContext: operation === 'read' ? 'read' : 'odata',
           })
-          : buildQueryRequest({
-            servicePath,
-            entitySetName,
-            filter: this.getNodeParameter('filter', itemIndex, '') as string,
-            orderBy: this.getNodeParameter('orderBy', itemIndex, '') as string,
-            select: this.getNodeParameter('select', itemIndex, '') as string,
-            top: this.getNodeParameter('top', itemIndex, 100) as number,
-            skip: this.getNodeParameter('skip', itemIndex, 0) as number,
-          })
-
-        const response = await sapCapApiRequest(this, {
-          ...request,
-          responseFormat: 'json',
-          errorContext: operation === 'read' ? 'read' : 'odata',
-        })
 
         returnData.push(...normalizeODataItems(operation, response, itemIndex))
       } catch (err) {
@@ -304,12 +370,139 @@ export class SapCap implements INodeType {
   }
 }
 
-function resolveOperation(value: unknown): Phase6Operation {
-  if (value === 'query' || value === 'read') {
+async function buildOperationRequest(
+  context: IExecuteFunctions,
+  operation: SapCapOperation,
+  itemIndex: number,
+  servicePath: string,
+  entitySetName: string
+) {
+  if (operation === 'query') {
+    return buildQueryRequest({
+      servicePath,
+      entitySetName,
+      filter: context.getNodeParameter('filter', itemIndex, '') as string,
+      orderBy: context.getNodeParameter('orderBy', itemIndex, '') as string,
+      select: context.getNodeParameter('select', itemIndex, '') as string,
+      top: context.getNodeParameter('top', itemIndex, 100) as number,
+      skip: context.getNodeParameter('skip', itemIndex, 0) as number,
+    })
+  }
+
+  if (operation === 'create') {
+    return buildCreateRequest({
+      servicePath,
+      entitySetName,
+      body: context.getNodeParameter('body', itemIndex),
+    })
+  }
+
+  const keyInput = await resolveKeyInput(context, itemIndex, entitySetName)
+
+  if (operation === 'read') {
+    return buildReadRequest({
+      servicePath,
+      entitySetName,
+      ...keyInput,
+    })
+  }
+
+  if (operation === 'update') {
+    return buildUpdateRequest({
+      servicePath,
+      entitySetName,
+      ...keyInput,
+      body: context.getNodeParameter('body', itemIndex),
+    })
+  }
+
+  return buildDeleteRequest({
+    servicePath,
+    entitySetName,
+    ...keyInput,
+  })
+}
+
+async function resolveKeyInput(
+  context: IExecuteFunctions,
+  itemIndex: number,
+  entitySetName: string
+) {
+  const keyInputMode = context.getNodeParameter('keyInputMode', itemIndex, 'manual')
+
+  if (keyInputMode === 'manual') {
+    return {
+      keyPredicate: context.getNodeParameter('keyPredicate', itemIndex) as string,
+    }
+  }
+
+  if (keyInputMode !== 'metadata') {
+    throw createSapCapRequestError('Key Input must use Metadata Key Parts or Manual Key Predicate.', {
+      category: 'validation',
+    })
+  }
+
+  const credentials = await context.getCredentials('sapCapApi')
+  const metadataXml = await sapCapApiRequest(context, {
+    method: 'GET',
+    path: normalizeMetadataPath(credentials.metadataPath),
+    responseFormat: 'text',
+    errorContext: 'metadata',
+  }) as string
+  const keyDescriptors = extractEntityKeyDescriptors(metadataXml, entitySetName)
+
+  if (keyDescriptors.length === 0) {
+    const fallbackPredicate = context.getNodeParameter('keyPredicate', itemIndex, '') as string
+
+    if (fallbackPredicate.trim()) {
+      return {
+        keyPredicate: fallbackPredicate,
+      }
+    }
+
+    throw createSapCapRequestError(
+      'Metadata key descriptors were not found for the selected entity set. Use Manual Key Predicate.',
+      { category: 'validation' }
+    )
+  }
+
+  return {
+    keyDescriptors,
+    keyParts: parseJsonObjectParameter(context.getNodeParameter('keyParts', itemIndex), 'Key Parts'),
+  }
+}
+
+async function executeDeleteRequest(
+  context: IExecuteFunctions,
+  request: ReturnType<typeof buildDeleteRequest>,
+  entitySetName: string
+) {
+  await sapCapApiRequest(context, {
+    ...request,
+    responseFormat: 'text',
+    errorContext: 'delete',
+  })
+
+  return {
+    deleted: true,
+    entitySet: entitySetName,
+    key: extractKeyFromPath(request.path, entitySetName),
+  }
+}
+
+function extractKeyFromPath(path: string, entitySetName: string) {
+  const marker = `/${entitySetName}`
+  const index = path.lastIndexOf(marker)
+
+  return index >= 0 ? path.slice(index + marker.length) : ''
+}
+
+function resolveOperation(value: unknown): SapCapOperation {
+  if (value === 'query' || value === 'read' || value === 'create' || value === 'update' || value === 'delete') {
     return value
   }
 
-  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query or Read.', {
+  throw createSapCapRequestError('SAP CAP operation is not supported in this release. Use Query, Read, Create, Update, or Delete.', {
     category: 'validation',
   })
 }
