@@ -5,7 +5,7 @@ CAP n8n Integration connects SAP CAP applications with n8n workflow automation.
 This repository is an npm workspace with two product surfaces:
 
 - `cap-n8n-plugin/` - CAP plugin and service implementations for CAP to n8n workflow starts.
-- `cap-n8n-node/` - n8n community node package for read-oriented CAP OData access: credentials, metadata discovery, Query, Read, cleanup, and sanitized errors.
+- `cap-n8n-node/` - n8n community node package for CAP OData access: credentials, metadata discovery, Query, Read, Create, Update, Delete, Action/Function, composite keys, response cleanup, and sanitized errors.
 - `demo-app/` - demo SAP CAP Bookshop application used as integration evidence.
 
 ## Prerequisites
@@ -168,7 +168,7 @@ Send a book create request. PowerShell:
 ```powershell
 curl.exe -X POST "http://localhost:3000/odata/v4/admin/Books" `
   -H "Content-Type: application/json" `
-  -H "Authorization: Basic YWxpY2U6" `
+  -H "Authorization: Basic <base64-demo-basic-auth>" `
   -d '{"IsActiveEntity":true,"title":"Manual n8n Trigger Book","author_ID":101,"genre_ID":"10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","price":25.50,"stock":100}'
 ```
 
@@ -293,12 +293,21 @@ npm run test:integration -- --run test/integration/n8n-workflow-phase5.test.js
 
 Use this path to manually validate the n8n community node against the CAP demo app after the local community node has been installed or mounted into n8n. The default `docker-compose.yml` starts plain n8n and does not install `cap-n8n-node` into the container.
 
-This covers the current n8n -> CAP node slice for credentials, dynamic metadata discovery, Query, Read, OData response cleanup, and sanitized errors. Create, Update, Delete, CAP actions/functions, and polling triggers are deferred to later phases and are intentionally not exposed by the current node surface.
+This covers the current n8n -> CAP node slice for credentials, dynamic metadata discovery, Query, Read, Create, Update, Delete, Action/Function, composite keys, OData response cleanup, and sanitized errors. Polling triggers and a real installed custom-node E2E walkthrough in live n8n remain outside this Phase 7 slice.
 
-First build the node package and start the CAP demo app:
+First build and verify the node package:
 
 ```bash
 npm run build --workspace n8n-nodes-sap-cap
+npx vitest run test/integration/n8n-node-read-operations.test.js test/integration/n8n-node-metadata-discovery.test.js test/integration/n8n-node-response-cleanup.test.js test/smoke/package-boundaries.test.js
+npm test
+```
+
+These commands are the deterministic Phase 7 `VERIFY-04` evidence. They exercise credential handling, metadata discovery, Query, Read, Create, Update, Delete, response cleanup, Action/Function, composite keys, sanitized errors, and built-node metadata. A live n8n UI run is still useful when the local community node is installed or mounted, but the default Docker Compose service does not install `cap-n8n-node` automatically.
+
+Start the CAP demo app:
+
+```bash
 npm run cap:serve
 ```
 
@@ -312,7 +321,7 @@ In n8n, configure the `SAP CAP API` credentials:
 
 OAuth2 Client Credentials is also available. Configure Token URL, Client ID, Client Secret, and optional Scope when testing against a CAP service protected by an OAuth2 token endpoint.
 
-For each SAP CAP node operation in the current read slice, use:
+For entity operations against the demo Admin service, use:
 
 - Service Path: `/odata/v4/admin`
 - Entity Set Source: `From Metadata` for the dropdown, or `Manual` if metadata discovery is unavailable
@@ -332,10 +341,89 @@ Read:
 ID=201,IsActiveEntity=true
 ```
 
+The same keyed operations support composite keys through either:
+
+- Key Input: `From Metadata`, with Key Parts JSON such as `{"ID":201,"IsActiveEntity":true}`.
+- Key Input: `Manual Key Predicate`, with a predicate such as `ID=201,IsActiveEntity=true`.
+
+When metadata key descriptors are available, every key part is required and string-like values are quoted according to OData rules. If metadata is unavailable, use the manual Key Predicate fallback.
+
+Create:
+
+- Operation: `Create`
+- Body (JSON):
+
+```json
+{
+  "IsActiveEntity": true,
+  "title": "Workflow Demo Book",
+  "author_ID": 101,
+  "genre_ID": "10aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  "price": 19.99,
+  "stock": 25
+}
+```
+
+Create uses one explicit JSON Body field. The Body must parse as a non-array JSON object, and the output is the cleaned created CAP entity, including server-generated fields returned by CAP.
+
+Update:
+
+- Operation: `Update`
+- Key Input: metadata Key Parts JSON or Manual Key Predicate
+- Body (JSON):
+
+```json
+{
+  "price": 24.99,
+  "stock": 30
+}
+```
+
+Update sends a PATCH to the keyed entity URL with one explicit Body (JSON) object. It requests the updated representation and falls back to reading the same key when CAP returns a successful empty mutation response.
+
+Delete:
+
+- Operation: `Delete`
+- Key Input: metadata Key Parts JSON or Manual Key Predicate
+- Body: none
+- Extra confirmation checkbox: none
+
+Delete sends `DELETE` to the keyed entity URL with no request body. Success returns one confirmation item such as:
+
+```json
+{
+  "deleted": true,
+  "entitySet": "Books",
+  "key": "(ID=201,IsActiveEntity=true)"
+}
+```
+
+If CAP returns `404 Not Found`, the node reports a concise n8n-native not-found error by default.
+
+For CAP Action/Function operation mode, switch the service path and metadata path to the Catalog service when using the demo `submitOrder` action:
+
+- Service Path: `/odata/v4/catalog`
+- Metadata Path: `/odata/v4/catalog/$metadata`
+- Operation: `Action/Function`
+- Operation Source: `From Metadata` when the dropdown is available, or `Manual` when metadata loading is unavailable
+- Parameters (JSON):
+
+```json
+{
+  "book": 201,
+  "quantity": 1
+}
+```
+
+Action/Function uses one combined operation mode. Metadata-backed choices cover actions, functions, imports, and bound operations. Manual fallback lets you provide the operation kind and name directly. Actions send JSON Parameters in the request body; functions encode primitive JSON Parameters as query parameters. Bound Action/Function requests reuse the same metadata key parts or manual Key Predicate path as Read, Update, and Delete.
+
 Expected result:
 
 - Query returns one n8n item per CAP entity.
 - Read returns the selected CAP entity.
+- Create and Update return one cleaned CAP entity item.
+- Delete returns one confirmation item and sends no request body.
+- Action/Function returns one cleaned n8n item; primitive or array results are wrapped under `value`.
 - Returned items do not include raw `@odata.*` metadata fields.
 - CAP/OData failures are reported with concise n8n-native errors that do not expose credentials, auth headers, tokens, stack traces, or full response bodies.
 
