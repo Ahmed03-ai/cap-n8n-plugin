@@ -5,7 +5,7 @@ CAP n8n Integration connects SAP CAP applications with n8n workflow automation.
 This repository is an npm workspace with two product surfaces:
 
 - `cap-n8n-plugin/` - CAP plugin and service implementations for CAP to n8n workflow starts.
-- `cap-n8n-node/` - n8n community node package skeleton for n8n to CAP OData access.
+- `cap-n8n-node/` - n8n community node package for read-oriented CAP OData access: credentials, metadata discovery, Query, Read, cleanup, and sanitized errors.
 - `demo-app/` - demo SAP CAP Bookshop application used as integration evidence.
 
 ## Prerequisites
@@ -293,7 +293,7 @@ npm run test:integration -- --run test/integration/n8n-workflow-phase5.test.js
 
 Use this path to manually validate the n8n community node against the CAP demo app after the local community node has been installed or mounted into n8n. The default `docker-compose.yml` starts plain n8n and does not install `cap-n8n-node` into the container.
 
-This covers the current n8n -> CAP node slice for credentials, Query, Read, Create, Update, Delete, and OData response cleanup.
+This covers the current n8n -> CAP node slice for credentials, dynamic metadata discovery, Query, Read, OData response cleanup, and sanitized errors. Create, Update, Delete, CAP actions/functions, and polling triggers are deferred to later phases and are intentionally not exposed by the current node surface.
 
 First build the node package and start the CAP demo app:
 
@@ -310,34 +310,23 @@ In n8n, configure the `SAP CAP API` credentials:
 - Password: leave empty for the local demo user
 - Metadata Path: `/odata/v4/admin/$metadata`
 
-For each SAP CAP node operation, use:
+OAuth2 Client Credentials is also available. Configure Token URL, Client ID, Client Secret, and optional Scope when testing against a CAP service protected by an OAuth2 token endpoint.
+
+For each SAP CAP node operation in the current read slice, use:
 
 - Service Path: `/odata/v4/admin`
+- Entity Set Source: `From Metadata` for the dropdown, or `Manual` if metadata discovery is unavailable
 - Entity Set: `Books`
 
-Create:
+Query:
 
-```json
-{ "ID": 202, "title": "Dune", "stock": 10 }
-```
+- Filter: `stock gt 0`
+- Order By: `title asc`
+- Select Fields: `ID,title,stock`
+- Top: `5`
+- Skip: `0`
 
 Read:
-
-```text
-ID=201,IsActiveEntity=true
-```
-
-Update:
-
-```text
-ID=201,IsActiveEntity=true
-```
-
-```json
-{ "stock": 99 }
-```
-
-Delete:
 
 ```text
 ID=201,IsActiveEntity=true
@@ -347,10 +336,8 @@ Expected result:
 
 - Query returns one n8n item per CAP entity.
 - Read returns the selected CAP entity.
-- Create returns the created entity.
-- Update returns the updated entity.
-- Delete returns a `{ "deleted": true }` confirmation.
 - Returned items do not include raw `@odata.*` metadata fields.
+- CAP/OData failures are reported with concise n8n-native errors that do not expose credentials, auth headers, tokens, stack traces, or full response bodies.
 
 ## Runtime Configuration
 

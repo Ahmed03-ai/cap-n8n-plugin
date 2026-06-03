@@ -25,6 +25,7 @@ Implemented and demoable from the current repository:
 - Generated `demo-app/n8n` artifacts provide sanitized workflow JSON, a sidecar input schema, manifests, and generated CDS.
 - `cap-n8n validate` checks CDS annotations against generated workflow artifacts and returns sanitized text or JSON diagnostics.
 - CAP build validation uses the same workflow annotation validator.
+- The SAP CAP n8n community node package builds and includes the Phase 6 read-side slice: SAP CAP API credentials, Basic Auth, OAuth2 Client Credentials, `$metadata` Test Connection, dynamic entity-set discovery, Query mode, Read mode, OData response cleanup, and sanitized errors.
 
 ## What Not To Showcase As Finished Yet
 
@@ -33,7 +34,8 @@ Be precise about these limitations:
 - The current local n8n fixture is intentionally minimal. It contains one Webhook workflow named `CAP n8n Test`.
 - The visual n8n demo proves "CAP sent an annotated payload to n8n"; it does not show a rich downstream workflow.
 - Declarative cancellation is implemented, but there is no no-harness visual demo that seeds a long-running/stoppable n8n execution and shows cancellation in the n8n UI.
-- The SAP CAP n8n community node package builds and contains CRUD operations, but `docker-compose.yml` does not install or mount that custom node into the local n8n container. Do not claim that the SAP CAP node appears automatically in the Docker n8n UI.
+- The SAP CAP n8n community node is not installed or mounted into the default Docker n8n container. Do not claim that the SAP CAP node appears automatically in the Docker n8n UI.
+- Create, Update, Delete, CAP actions/functions, and polling triggers are not implemented in the current n8n community node surface. They are deferred to the mutation/action phase.
 - To-one and to-many annotation input mappings are deferred. Scalar mappings are implemented.
 - The Phase 5 package CLI is implemented, but there is no deep `cds import --from n8n` command yet.
 - Live workflow import requires a reachable n8n API and credentials from CAP config/environment. Do not pass or display literal API keys.
@@ -502,20 +504,22 @@ Expected result:
 
 Current implemented code includes:
 
-- SAP CAP API credential fields.
+- SAP CAP API credential fields with Basic Auth and OAuth2 Client Credentials.
+- `$metadata` Test Connection with OData metadata validation.
+- Dynamic entity-set discovery from CAP `$metadata`.
 - Query mode.
 - Read mode.
-- Create mode.
-- Update mode.
-- Delete mode.
-- OData response cleanup.
+- Plain n8n item output with OData metadata stripped.
+- Sanitized n8n-native errors for authentication, authorization, validation, not-found, server, network, configuration, and response-shape failures.
 
 But do not run a live n8n UI demo of the SAP CAP node from the default Docker setup unless you have separately installed or mounted the local community node into n8n. The repository's `docker-compose.yml` currently starts plain n8n with workflow fixtures; it does not install `cap-n8n-node` into that container.
+
+Do not claim Create, Update, Delete, CAP actions/functions, or polling trigger support from the current n8n node. Those modes are the next n8n-node slice.
 
 Presenter wording:
 
 ```text
-The package builds and the code contains the node operations, but the no-harness visual n8n-node showcase belongs to the later n8n-node and release-readiness phases.
+The package builds and the read-side node slice is implemented: credentials, metadata discovery, Query, Read, cleanup, and safe errors. The default Docker n8n does not install the custom node yet, and mutation/action modes are still future work.
 ```
 
 ## Recommended Five-Minute Demo Script
@@ -599,11 +603,13 @@ The presenter can claim:
 - Workflow import writes deterministic sanitized app-root artifacts.
 - `cap-n8n validate` and CAP build validation use generated workflow manifests and typed sidecar schemas.
 - Phase 5 integration tests cover local import, fake-live import, generated CDS, direct validation, CAP build validation, and sanitization gates.
+- Phase 6 integration tests cover SAP CAP credentials, OAuth2 Client Credentials, metadata discovery, Query, Read, OData response cleanup, and sanitized n8n errors.
 
 The presenter should not claim yet:
 
 - To-one/to-many annotation mappings are implemented.
 - The SAP CAP n8n node is automatically installed in local Docker n8n.
+- The SAP CAP n8n node supports Create, Update, Delete, CAP actions/functions, or polling triggers.
 - Declarative cancellation has a polished no-harness visual UI walkthrough.
 - Local n8n fixtures demonstrate a rich workflow beyond receiving a webhook.
 - A deep `cds import --from n8n` command exists.
