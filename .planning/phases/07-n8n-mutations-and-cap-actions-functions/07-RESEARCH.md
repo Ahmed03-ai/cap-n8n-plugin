@@ -471,22 +471,19 @@ service CatalogService @(path: '/catalog') {
 | A4 | Action/function outputs should be one cleaned n8n item, wrapping primitive or array results under `value` when needed because n8n item JSON is object-shaped. | Architecture Patterns, Code Examples | Users might expect collection-returning functions to emit multiple items; requirement wording favors one item. |
 | A5 | Fake-server integration tests are sufficient for Phase 7 acceptance because live installed custom-node E2E remains Phase 8. | Standard Stack, Don't Hand-Roll | A packaging/runtime-only bug could escape until Phase 8. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exact metadata key field UI shape**
    - What we know: hybrid key handling is locked and manual fallback is required. `[VERIFIED: .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md]`
-   - What's unclear: whether the best n8n property representation is fixed-collection key fields, generated hidden property groups, or a simpler per-key manual field pattern. `[ASSUMED]`
-   - Recommendation: planner should choose the smallest property shape that supports composite keys and preserves manual fallback. `[ASSUMED]`
+   - RESOLVED: Phase 7 uses the smallest metadata-derived key field/helper shape needed to support metadata-backed key parts, including composite keys, while preserving the manual OData Key Predicate fallback as the reliable escape hatch. Exact n8n UI implementation details remain executor/planner discretion inside this hybrid contract. `[VERIFIED: D-05, D-06, D-08 in .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md + 07-01-PLAN.md]`
 
 2. **Function URL parameter literal format for non-primitive parameters**
    - What we know: OData functions use `GET` with parameter values in the URL. `[CITED: docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html]`
-   - What's unclear: whether Phase 7 must support complex/collection function parameters beyond primitive CAP examples. `[ASSUMED]`
-   - Recommendation: support primitive JSON parameter values with URL encoding and document complex function parameters as manual-fallback territory. `[ASSUMED]`
+   - RESOLVED: Phase 7 supports primitive JSON Parameters for functions and maps those values to encoded OData URL parameters. Complex and collection function parameters are documented/manual fallback territory and deferred beyond the primitive Phase 7 function path. `[VERIFIED: D-15, D-16 in .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md + 07-03-PLAN.md]`
 
 3. **Update representation fallback**
    - What we know: Create/Update must output the returned CAP entity, and OData has `Prefer: return=representation`. `[VERIFIED: .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md]` `[CITED: docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part1-protocol.html]`
-   - What's unclear: whether all target CAP services will honor `Prefer: return=representation` for `PATCH`. `[ASSUMED]`
-   - Recommendation: plan an optional follow-up Read after 204/no-body Update so Phase 7 cannot regress to confirmation-only output. `[ASSUMED]`
+   - RESOLVED: Update sends `Prefer: return=representation`; if CAP returns `204 No Content` or any successful response with no body, the node follows up with a Read by the same key so Update still returns the cleaned entity item required by D-04 instead of confirmation-only output. `[VERIFIED: D-04 in .planning/phases/07-n8n-mutations-and-cap-actions-functions/07-CONTEXT.md + 07-02-PLAN.md]`
 
 ## Environment Availability
 
