@@ -154,6 +154,12 @@
       color: #666;
       cursor: pointer;
       background: #fafafa;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
     }
     .mode-btn.active {
       border-color: #ff6d5a;
@@ -286,7 +292,7 @@
 <body>
 
   <h1>SAP CAP Community Node — UI Mockups</h1>
-  <p class="page-subtitle">Wireframes for the n8n node editor panels · Current Phase 6 surface: credentials, Query, Read · Mutation panels are future concepts</p>
+  <p class="page-subtitle">Wireframes for the n8n node editor panels · Current Phase 7 surface: credentials, Query, Read, Create, Update, Delete, Action/Function, composite keys</p>
 
   <!-- ═══════════════════════════════════════════ -->
   <!-- SECTION 1 — CREDENTIAL SCREEN              -->
@@ -438,6 +444,10 @@
             <div class="mode-grid">
               <div class="mode-btn active">Query</div>
               <div class="mode-btn">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action/Function</div>
             </div>
             <div class="callout">
               <strong>Query</strong> — I don't know the ID yet. Search or browse a list of records, optionally filtered and sorted.
@@ -509,6 +519,10 @@
             <div class="mode-grid">
               <div class="mode-btn">Query</div>
               <div class="mode-btn active">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn">Action/Function</div>
             </div>
             <div class="callout">
               <strong>Read</strong> — I already know the exact ID. Fetch that one specific record directly.
@@ -526,9 +540,22 @@
           <hr class="divider" />
 
           <div class="field-group">
-            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
-            <div class="field-input">42</div>
-            <div class="field-hint">Fetches Books(42) — returns exactly one record or a "not found" error</div>
+            <div class="field-label">Key Input <span class="field-required">*</span></div>
+            <div class="field-select">From Metadata <span class="arrow">▾</span></div>
+            <div class="field-hint">Manual Key Predicate is available when metadata cannot provide key parts.</div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Key Parts (JSON) <span class="field-required">*</span></div>
+            <div class="field-input" style="font-family:monospace;font-size:11px;line-height:1.5">
+              {"ID":201,"IsActiveEntity":true}
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div class="field-label">Key Predicate <span class="badge badge-optional">Manual</span></div>
+            <div class="field-input">ID=201,IsActiveEntity=true</div>
+            <div class="field-hint">Fetches a keyed entity and returns exactly one record or a not-found error.</div>
           </div>
 
         </div>
@@ -544,10 +571,7 @@
   <!-- ═══════════════════════════════════════════ -->
   <!-- SECTION 3 — CREATE / UPDATE / DELETE       -->
   <!-- ═══════════════════════════════════════════ -->
-  <p class="section-title">Future Mockup 3 — Create, Update and Delete Modes</p>
-  <div class="future-note">
-    These panels are design concepts for the mutation phase. The current built SAP CAP node exposes only Query and Read, plus credentials, metadata discovery, response cleanup, and sanitized errors.
-  </div>
+  <p class="section-title">Mockup 3 — Create, Update, Delete, and Action/Function Modes</p>
   <div class="mockup-row">
 
     <!-- CREATE -->
@@ -573,7 +597,7 @@
               <div class="mode-btn active">Create</div>
               <div class="mode-btn">Update</div>
               <div class="mode-btn">Delete</div>
-              <div class="mode-btn">Action</div>
+              <div class="mode-btn">Action/Function</div>
             </div>
           </div>
           <div class="field-group">
@@ -594,7 +618,7 @@
         </div>
       </div>
       <div class="caption">
-        <h3>Future Create mode</h3>
+        <h3>Create mode</h3>
         <p>Sends a POST request with the JSON body. The created record — including any server-generated fields like ID — is returned as output for the next node.</p>
       </div>
     </div>
@@ -622,7 +646,7 @@
               <div class="mode-btn">Create</div>
               <div class="mode-btn active">Update</div>
               <div class="mode-btn">Delete</div>
-              <div class="mode-btn">Action</div>
+              <div class="mode-btn">Action/Function</div>
             </div>
           </div>
           <div class="field-group">
@@ -631,8 +655,15 @@
           </div>
           <hr class="divider" />
           <div class="field-group">
-            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
-            <div class="field-input">42</div>
+            <div class="field-label">Key Input <span class="field-required">*</span></div>
+            <div class="field-select">From Metadata <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Key Parts (JSON) <span class="field-required">*</span></div>
+            <div class="field-input" style="font-family:monospace;font-size:11px;line-height:1.5">
+              {"ID":201,"IsActiveEntity":true}
+            </div>
+            <div class="field-hint">Manual Key Predicate fallback: ID=201,IsActiveEntity=true</div>
           </div>
           <div class="field-group">
             <div class="field-label">Body (JSON) <span class="field-required">*</span></div>
@@ -646,7 +677,7 @@
         </div>
       </div>
       <div class="caption">
-        <h3>Future Update mode</h3>
+        <h3>Update mode</h3>
         <p>You provide the ID of the record and only the fields you want to change. Fields you leave out are not touched. Uses PATCH, not PUT.</p>
       </div>
     </div>
@@ -674,7 +705,7 @@
               <div class="mode-btn">Create</div>
               <div class="mode-btn">Update</div>
               <div class="mode-btn active">Delete</div>
-              <div class="mode-btn">Action</div>
+              <div class="mode-btn">Action/Function</div>
             </div>
           </div>
           <div class="field-group">
@@ -683,15 +714,81 @@
           </div>
           <hr class="divider" />
           <div class="field-group">
-            <div class="field-label">ID (Primary Key) <span class="field-required">*</span></div>
-            <div class="field-input">42</div>
-            <div class="field-hint">Sends DELETE to Books(42). Returns confirmation or a "not found" error.</div>
+            <div class="field-label">Key Input <span class="field-required">*</span></div>
+            <div class="field-select">Manual Key Predicate <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Key Predicate <span class="field-required">*</span></div>
+            <div class="field-input">ID=201,IsActiveEntity=true</div>
+            <div class="field-hint">Sends DELETE to the keyed entity URL. No body is sent.</div>
           </div>
         </div>
       </div>
       <div class="caption">
-        <h3>Future Delete mode</h3>
-        <p>Provide the ID of the record to remove. Returns a confirmation on success, or a clear "not found" error if the record doesn't exist.</p>
+        <h3>Delete mode</h3>
+        <p>Provide an explicit key to remove one record. The panel has no additional confirm control and no request body. Success returns a confirmation item; missing records return a clear not-found error.</p>
+      </div>
+    </div>
+
+    <!-- ACTION / FUNCTION -->
+    <div class="mockup-card">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="icon">C</div>
+          <div>
+            <div class="title">SAP CAP Node</div>
+            <div class="subtitle">Action/Function - invoke CAP logic</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="field-group">
+            <div class="field-label">Credential <span class="field-required">*</span></div>
+            <div class="field-select">My CAP Service <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Operation <span class="field-required">*</span></div>
+            <div class="mode-grid">
+              <div class="mode-btn">Query</div>
+              <div class="mode-btn">Read</div>
+              <div class="mode-btn">Create</div>
+              <div class="mode-btn">Update</div>
+              <div class="mode-btn">Delete</div>
+              <div class="mode-btn active">Action/Function</div>
+            </div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Operation Source <span class="field-required">*</span></div>
+            <div class="field-select">From Metadata <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Action/Function <span class="field-required">*</span></div>
+            <div class="field-select">submitOrder (Action Import) <span class="arrow">▾</span></div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Manual Operation <span class="badge badge-optional">Fallback</span></div>
+            <div class="field-input">CatalogService.submitOrder</div>
+          </div>
+          <div class="field-group">
+            <div class="field-label">Binding Key <span class="badge badge-optional">Bound Ops</span></div>
+            <div class="field-input">ID=201,IsActiveEntity=true</div>
+            <div class="field-hint">Bound operations reuse the same Key Parts JSON or Key Predicate path.</div>
+          </div>
+          <hr class="divider" />
+          <div class="field-group">
+            <div class="field-label">Parameters (JSON) <span class="field-required">*</span></div>
+            <div class="field-input" style="font-family:monospace;font-size:11px;line-height:1.5">
+              {<br/>
+              &nbsp;&nbsp;"book": 201,<br/>
+              &nbsp;&nbsp;"quantity": 1<br/>
+              }
+            </div>
+            <div class="field-hint">Actions send JSON parameters as a body. Functions encode primitive parameters in the URL.</div>
+          </div>
+        </div>
+      </div>
+      <div class="caption">
+        <h3>Action/Function mode</h3>
+        <p>Select an operation from metadata or enter a manual fallback. A single Parameters JSON object supplies action body fields or function query values.</p>
       </div>
     </div>
 
