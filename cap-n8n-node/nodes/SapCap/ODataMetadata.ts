@@ -20,6 +20,15 @@ export function extractEntitySetOptions(metadataXml: string): EntitySetOption[] 
     })
   }
 
+  if (!hasMetadataTag(metadataXml, 'Edmx') ||
+    !hasMetadataTag(metadataXml, 'DataServices') ||
+    !hasMetadataTag(metadataXml, 'EntityContainer')
+  ) {
+    throw createSapCapRequestError('CAP metadata response is not valid OData metadata.', {
+      category: 'responseShape',
+    })
+  }
+
   const entitySetPattern = /<(?:(?:\w+):)?EntitySet\b([^>]*)\/?>/g
   const options: EntitySetOption[] = []
   let match: RegExpExecArray | null
@@ -60,14 +69,18 @@ export async function loadEntitySetOptions(this: ILoadOptionsFunctions) {
 
 function parseAttributes(rawAttributes: string) {
   const attributes: Record<string, string> = {}
-  const attributePattern = /(\w+)\s*=\s*"([^"]*)"/g
+  const attributePattern = /([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g
   let match: RegExpExecArray | null
 
   while ((match = attributePattern.exec(rawAttributes)) !== null) {
-    attributes[match[1]] = decodeXmlEntities(match[2])
+    attributes[match[1]] = decodeXmlEntities(match[2] ?? match[3] ?? '')
   }
 
   return attributes
+}
+
+function hasMetadataTag(metadataXml: string, tagName: string) {
+  return new RegExp(`<(?:(?:\\w+):)?${tagName}\\b`, 'i').test(metadataXml)
 }
 
 function decodeXmlEntities(value: string) {

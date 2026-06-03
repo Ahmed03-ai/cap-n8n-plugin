@@ -35,6 +35,17 @@ const metadataWithoutEntitySets = `<?xml version="1.0" encoding="utf-8"?>
   </edmx:DataServices>
 </edmx:Edmx>`
 
+const metadataWithSingleQuotedAttributes = `<?xml version='1.0' encoding='utf-8'?>
+<edmx:Edmx Version='4.0' xmlns:edmx='http://docs.oasis-open.org/odata/ns/edmx'>
+  <edmx:DataServices>
+    <Schema Namespace='AdminService' xmlns='http://docs.oasis-open.org/odata/ns/edm'>
+      <EntityContainer Name='EntityContainer'>
+        <EntitySet Name='Books' EntityType='AdminService.Book' />
+      </EntityContainer>
+    </Schema>
+  </edmx:DataServices>
+</edmx:Edmx>`
+
 let servers = []
 
 async function importDistModule(relativePath) {
@@ -184,8 +195,29 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       { name: 'Books', value: 'Books', description: 'AdminService.Book' },
       { name: 'Authors', value: 'Authors', description: 'AdminService.Author' },
     ])
+    expect(extractEntitySetOptions(metadataWithSingleQuotedAttributes)).toEqual([
+      { name: 'Books', value: 'Books', description: 'AdminService.Book' },
+    ])
     expect(extractEntitySetOptions(metadataWithoutEntitySets)).toEqual([])
     expect(() => extractEntitySetOptions('not xml')).toThrow('CAP metadata response is not valid XML.')
+    expect(() => extractEntitySetOptions('<html><form>Login</form></html>')).toThrow('CAP metadata response is not valid OData metadata.')
+  })
+
+  it('rejects HTML metadata responses returned with HTTP 200', async () => {
+    const { loadEntitySetOptions } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+    const server = await createCapServer(() => ({
+      contentType: 'text/html',
+      body: '<html><body>Login required</body></html>',
+    }))
+
+    await expect(
+      loadEntitySetOptions.call(createContext(basicCredentials(server.baseUrl)))
+    ).rejects.toMatchObject({
+      message: 'CAP metadata response is not valid OData metadata.',
+      category: 'responseShape',
+    })
+
+    expect(server.requests).toHaveLength(1)
   })
 
   it('classifies metadata HTTP failures without serializing credentials or response bodies', async () => {
