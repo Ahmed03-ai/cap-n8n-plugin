@@ -192,19 +192,22 @@ export function normalizeKeyPredicate(value: unknown) {
 export function formatODataKeyLiteral(value: unknown, type: unknown) {
   const rawValue = normalizeScalarKeyValue(value)
   const typeName = typeof type === 'string' ? type.trim().toLowerCase() : ''
+  const validationValue = isBooleanEdmType(typeName) || isNumericEdmType(typeName)
+    ? rawValue.trim()
+    : rawValue
 
-  if (containsUrlBoundary(rawValue)) {
+  if (containsUrlBoundary(validationValue)) {
     throw createSapCapRequestError('Key values must not include /, \\, ?, or #.', {
       category: 'validation',
     })
   }
 
   if (isBooleanEdmType(typeName)) {
-    return formatBooleanLiteral(rawValue)
+    return formatBooleanLiteral(validationValue)
   }
 
   if (isNumericEdmType(typeName)) {
-    return formatNumericLiteral(rawValue, typeName)
+    return formatNumericLiteral(validationValue, typeName)
   }
 
   return formatODataStringLiteral(rawValue)
@@ -546,21 +549,26 @@ function isPrimitiveFunctionParameterValue(value: unknown) {
 function formatODataFunctionLiteral(value: IDataObject[keyof IDataObject], type: unknown) {
   if (value === null) return 'null'
 
-  const rawValue = String(value).trim()
+  const rawValue = String(value)
   const typeName = typeof type === 'string' ? type.trim().toLowerCase() : ''
+  const validationValue = isBooleanEdmType(typeName) ||
+    isNumericEdmType(typeName) ||
+    (!typeName && (typeof value === 'boolean' || typeof value === 'number'))
+    ? rawValue.trim()
+    : rawValue
 
-  if (containsUrlBoundary(rawValue)) {
+  if (containsUrlBoundary(validationValue)) {
     throw createSapCapRequestError('Function parameter values must not include /, \\, ?, or #.', {
       category: 'validation',
     })
   }
 
   if (isBooleanEdmType(typeName) || (!typeName && typeof value === 'boolean')) {
-    return formatBooleanLiteral(rawValue)
+    return formatBooleanLiteral(validationValue)
   }
 
   if (isNumericEdmType(typeName) || (!typeName && typeof value === 'number')) {
-    return formatNumericLiteral(rawValue, typeName || 'edm.double')
+    return formatNumericLiteral(validationValue, typeName || 'edm.double')
   }
 
   return formatODataStringLiteral(rawValue)
@@ -797,7 +805,7 @@ function normalizeScalarKeyValue(value: unknown) {
     })
   }
 
-  return String(value).trim()
+  return String(value)
 }
 
 function isMissingKeyValue(value: unknown) {

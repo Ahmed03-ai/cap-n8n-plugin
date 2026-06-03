@@ -831,6 +831,23 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         code: '201%27,quantity=999,%28x%3Dy%29,%27',
       }),
     }).path).toBe('/odata/v4/catalog/lookupByCode(code=\'201%2527,quantity=999,%2528x%253Dy%2529,%2527\')')
+    expect(buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: JSON.stringify({
+        kind: 'function',
+        name: 'lookupByCode',
+        qualifiedName: 'CatalogService.lookupByCode',
+        importName: 'lookupByCode',
+        isBound: false,
+        parameters: [
+          { name: 'code', type: 'Edm.String' },
+        ],
+      }),
+      parameters: JSON.stringify({
+        code: ' A ',
+      }),
+    }).path).toBe('/odata/v4/catalog/lookupByCode(code=\' A \')')
 
     for (const parameters of ['', '{', '[]', '"literal"', 'null', []]) {
       expect(() => buildActionFunctionRequest({
