@@ -17,7 +17,6 @@
   "cds": {
     "requires": {
       "n8n": {
-        "impl": "cap-n8n-plugin/service",
         "kind": "webhook",
         "credentials": {
           "baseUrl": "http://localhost:5678",

@@ -23,8 +23,25 @@ function implementationForKind(kind) {
 function registerModel() {
   const n8nConfig = ensureN8nConfig();
 
+  // Mark n8n as an external (required-only) service so `cds serve` does NOT
+  // instantiate it as a generic provider and cache it in cds.services['n8n'].
+  // Without this, the served generic ApplicationService (which has no start())
+  // shadows our kind-based impl, causing `n8n.start is not a function` when an
+  // annotation handler calls cds.connect.to('n8n'). With external:true, serve
+  // skips it and the factory's remote branch resolves o.impl (webhook/mock).
+  if (n8nConfig.external === undefined) {
+    n8nConfig.external = true;
+  }
+
   if (!n8nConfig.model) {
-    n8nConfig.model = require.resolve('./index.cds');
+    // Load BOTH the entity model (index.cds) and the service definition
+    // (n8n-service.cds). The service must live in its own .cds file with no
+    // sibling .js so CAP's factory falls through to the kind-based impl
+    // (webhook vs. mock) instead of auto-binding index.js via _sibling().
+    n8nConfig.model = [
+      require.resolve('./index.cds'),
+      require.resolve('./n8n-service.cds'),
+    ];
   }
 
   return n8nConfig;
