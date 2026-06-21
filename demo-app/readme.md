@@ -47,3 +47,30 @@ Notes:
 - The demo CAP app accepts the local `alice` user with an empty password for convenience in the demo environment; the examples above show a Basic auth header or `-u "alice:"` usage.
 - The `genre_ID` value must be a valid genre GUID present in the demo dataset (the demo includes sample genre IDs).
 
+## Update an existing Book's stock (Windows)
+
+When you already have a `Books` entity and want to update only the `stock` quantity, use one of the commands below from PowerShell. These examples target the OData key template used by the demo app and assume the local demo CAP server is running on `http://localhost:3000`.
+
+- Using `Invoke-RestMethod` (recommended):
+
+```powershell
+# Replace with an actual numeric ID for the Book you want to patch
+$BID = Get-Random
+$body = @{ stock = 5 } | ConvertTo-Json -Depth 2
+$headers = @{ Authorization = 'Basic YWxpY2U6'; Accept = 'application/json' }
+Invoke-RestMethod -Uri "http://localhost:3000/odata/v4/admin/Books(ID=$BID,IsActiveEntity=true)" -Method Patch -Body $body -ContentType 'application/json' -Headers $headers
+```
+
+- Using `curl.exe` from PowerShell (careful with quoting):
+
+```powershell
+$BID = Get-Random
+$body = "{\"stock\":5}"
+curl.exe -X PATCH "http://localhost:3000/odata/v4/admin/Books(ID=$BID,IsActiveEntity=true)" -u "alice:" -H "Content-Type: application/json" -H "Accept: application/json" -d $body
+```
+
+Notes:
+- Use the `Invoke-RestMethod` variant when possible — it handles JSON and headers more naturally in PowerShell.
+- The demo app accepts the demo `alice` user with an empty password by default; the examples above include a Basic auth header or `-u "alice:"` usage for curl.exe.
+- If you need to PATCH a draft entity (Fiori draft flow) the OData key may differ; refer to `demo-app/srv/admin-service.cds` for the service projection used by the demo.
+
