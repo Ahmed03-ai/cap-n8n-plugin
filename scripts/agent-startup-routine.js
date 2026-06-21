@@ -14,7 +14,10 @@ const localAdminAuthHeaders = {
 }
 const runtimeDir = path.join(repoRoot, '.n8n-review-data')
 const capPidFile = path.join(runtimeDir, 'cap.pid')
-const workflowImportSourcePath = path.join(repoRoot, 'test-workflows', 'workflows.json')
+const workflowsDir = path.join(repoRoot, 'test-workflows')
+const defaultWorkflowImportName = 'stock update discord msg test workflow'
+const defaultWorkflowImportSourcePath = path.join(workflowsDir, `${defaultWorkflowImportName}.json`)
+const fallbackWorkflowImportSourcePath = path.join(workflowsDir, 'workflows.json')
 const workflowImportHostPath = path.join(repoRoot, 'test-workflows', '.agent-startup-routine-workflows.json')
 const workflowImportContainerPath = '/test-workflows/.agent-startup-routine-workflows.json'
 const customComposeFile = 'docker-compose.n8n-node.yml'
@@ -26,15 +29,22 @@ Usage:
   npm run agent:startup
   npm run agent:startup -- --check
   npm run agent:startup -- --plain-n8n
+  npm run agent:startup -- --workflow "stock update discord msg test workflow"
+  npm run agent:startup -- --workflow-file test-workflows/workflows.json
   npm run agent:startup -- --skip-n8n
   npm run agent:startup -- --stop
 
 Options:
   --check          Run prerequisite checks without starting services
   --plain-n8n      Start the plain n8n compose profile instead of the custom-node review profile
+  --workflow <name>
+                  Import the selected workflow by workflow name, ID, webhook path, or fixture file name
+                  Default: ${defaultWorkflowImportName}
+  --workflow-file <path>
+                  Import workflow JSON from a specific file under test-workflows
   --skip-prepare   Do not rebuild and install the local n8n community node package
   --skip-workflow-import
-                  Do not import demo workflows into n8n
+                  Do not import the selected workflow into n8n
   --skip-n8n       Do not start n8n
   --skip-cap       Do not start the CAP demo app
   --install        Run npm install before startup, even if node_modules exists
@@ -55,6 +65,8 @@ function parseArgs(argv) {
     skipWorkflowImport: false,
     skipN8n: false,
     skipCap: false,
+    workflowName: defaultWorkflowImportName,
+    workflowFile: null,
     install: false,
     noInstall: false,
     strict: false,
@@ -64,10 +76,22 @@ function parseArgs(argv) {
     help: false
   }
 
-  for (const arg of argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]
+
     if (arg === '--check') options.check = true
     else if (arg === '--plain-n8n') options.plainN8n = true
-    else if (arg === '--skip-prepare') options.skipPrepare = true
+    else if (arg === '--workflow') {
+      options.workflowName = readRequiredOptionValue(argv, index, arg)
+      index += 1
+    } else if (arg.startsWith('--workflow=')) {
+      options.workflowName = readInlineOptionValue(arg, '--workflow=')
+    } else if (arg === '--workflow-file') {
+      options.workflowFile = resolveWorkflowFile(readRequiredOptionValue(argv, index, arg))
+      index += 1
+    } else if (arg.startsWith('--workflow-file=')) {
+      options.workflowFile = resolveWorkflowFile(readInlineOptionValue(arg, '--workflow-file='))
+    } else if (arg === '--skip-prepare') options.skipPrepare = true
     else if (arg === '--skip-workflow-import') options.skipWorkflowImport = true
     else if (arg === '--skip-n8n') options.skipN8n = true
     else if (arg === '--skip-cap') options.skipCap = true
@@ -86,6 +110,41 @@ function parseArgs(argv) {
   }
 
   return options
+}
+
+function readRequiredOptionValue(argv, index, flag) {
+  const value = argv[index + 1]
+
+  if (!value || value.startsWith('--')) {
+    throw new Error(`${flag} requires a value`)
+  }
+
+  return value
+}
+
+function readInlineOptionValue(arg, prefix) {
+  const value = arg.slice(prefix.length)
+
+  if (!value) {
+    throw new Error(`${prefix.slice(0, -1)} requires a value`)
+  }
+
+  return value
+}
+
+function isInsideDirectory(filePath, directoryPath) {
+  const relativePath = path.relative(directoryPath, filePath)
+  return relativePath && !relativePath.startsWith('..') && !path.isAbsolute(relativePath)
+}
+
+function resolveWorkflowFile(value) {
+  const resolvedPath = path.resolve(repoRoot, value)
+
+  if (!isInsideDirectory(resolvedPath, workflowsDir)) {
+    throw new Error('--workflow-file must point to a file under test-workflows')
+  }
+
+  return resolvedPath
 }
 
 function log(message = '') {
@@ -322,24 +381,93 @@ function workflowIdFromWorkflow(workflow, index) {
   return id || `workflow-${index + 1}`
 }
 
-function writeWorkflowImportFile() {
-  if (!existsSync(workflowImportSourcePath)) {
-    throw new Error(`Missing workflow fixture: ${path.relative(repoRoot, workflowImportSourcePath)}`)
+function workflowWebhookPath(workflow) {
+  return workflow.nodes
+    ?.map(node => node?.parameters?.path)
+    .find(Boolean)
+}
+
+function normalizedSearchValue(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+}
+
+function workflowMatches(workflow, target, sourcePath) {
+  const sourceName = path.basename(sourcePath, path.extname(sourcePath))
+  const normalizedTarget = normalizedSearchValue(target)
+  const values = [
+    workflow.name,
+    workflow.id,
+    workflowWebhookPath(workflow),
+    sourceName
+  ].map(normalizedSearchValue)
+
+  return values.includes(normalizedTarget)
+}
+
+function workflowNames(workflows, sourcePath) {
+  const sourceName = path.basename(sourcePath, path.extname(sourcePath))
+
+  return workflows
+    .map(workflow => workflow.name || workflow.id || workflowWebhookPath(workflow) || sourceName)
+    .filter(Boolean)
+}
+
+function resolveWorkflowImportSourcePath(options) {
+  if (options.workflowFile) return options.workflowFile
+
+  const namedWorkflowFile = options.workflowName === defaultWorkflowImportName
+    ? defaultWorkflowImportSourcePath
+    : path.resolve(workflowsDir, `${options.workflowName}.json`)
+
+  if (isInsideDirectory(namedWorkflowFile, workflowsDir) && existsSync(namedWorkflowFile)) {
+    return namedWorkflowFile
   }
 
-  const workflows = JSON.parse(readFileSync(workflowImportSourcePath, 'utf8'))
+  return fallbackWorkflowImportSourcePath
+}
 
-  if (!Array.isArray(workflows)) {
-    throw new Error('Workflow fixture must be a JSON array')
+function readWorkflowFixture(sourcePath) {
+  if (!existsSync(sourcePath)) {
+    throw new Error(`Missing workflow fixture: ${path.relative(repoRoot, sourcePath)}`)
   }
 
-  const normalizedWorkflows = workflows.map((workflow, index) => ({
+  const parsed = JSON.parse(readFileSync(sourcePath, 'utf8'))
+
+  if (Array.isArray(parsed)) return parsed
+  if (parsed && typeof parsed === 'object') return [parsed]
+
+  throw new Error('Workflow fixture must be a JSON object or JSON array')
+}
+
+function selectWorkflowsForImport(workflows, options, sourcePath) {
+  const selected = workflows.filter(workflow => workflowMatches(workflow, options.workflowName, sourcePath))
+
+  if (selected.length > 0) return selected
+  if (options.workflowFile && workflows.length === 1) return workflows
+
+  const available = workflowNames(workflows, sourcePath)
+  const availableText = available.length > 0 ? available.join(', ') : 'none'
+  throw new Error(`Workflow "${options.workflowName}" was not found in ${path.relative(repoRoot, sourcePath)}. Available: ${availableText}`)
+}
+
+function writeWorkflowImportFile(options) {
+  const sourcePath = resolveWorkflowImportSourcePath(options)
+  const workflows = readWorkflowFixture(sourcePath)
+  const selectedWorkflows = selectWorkflowsForImport(workflows, options, sourcePath)
+  const normalizedWorkflows = selectedWorkflows.map((workflow, index) => ({
     ...workflow,
     id: workflowIdFromWorkflow(workflow, index),
     active: Boolean(workflow.active)
   }))
 
   writeFileSync(workflowImportHostPath, `${JSON.stringify(normalizedWorkflows, null, 2)}\n`)
+
+  return {
+    sourcePath,
+    workflows: normalizedWorkflows
+  }
 }
 
 function cleanupWorkflowImportFile() {
@@ -350,12 +478,19 @@ function cleanupWorkflowImportFile() {
 
 function importDemoWorkflows(compose, composeFile, options) {
   if (options.skipWorkflowImport) {
-    info('Skipping demo workflow import')
+    info('Skipping workflow import')
     return
   }
 
-  step('Import demo n8n workflows')
-  writeWorkflowImportFile()
+  step('Import n8n workflow')
+  const importFile = writeWorkflowImportFile(options)
+  const workflowNamesForLog = importFile.workflows.map(workflow => workflow.name || workflow.id).join(', ')
+  info(`Import source: ${path.relative(repoRoot, importFile.sourcePath)}`)
+  info(`Selected workflow: ${workflowNamesForLog}`)
+
+  if (JSON.stringify(importFile.workflows).includes('$env.DISCORD_WEBHOOK_URL') && !process.env.DISCORD_WEBHOOK_URL) {
+    warn('DISCORD_WEBHOOK_URL is not set. The workflow will import, but the Discord HTTP step needs that environment variable to execute.')
+  }
 
   try {
     const actionArgs = ['exec', '-T', 'n8n', 'n8n', 'import:workflow', `--input=${workflowImportContainerPath}`]

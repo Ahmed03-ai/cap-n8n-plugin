@@ -1,5 +1,5 @@
 {
-  "name": "CAP n8n Test",
+  "name": "stock update discord msg test workflow",
   "nodes": [
     {
       "parameters": {
@@ -79,7 +79,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://discordapp.com/api/webhooks/1518261254882332713/4nSUBOCuO5uqlRj3QGf5cKZQQyP00vOnqenGu_sTFisvQdUYzmnmCib9mt-82zdxACal",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [

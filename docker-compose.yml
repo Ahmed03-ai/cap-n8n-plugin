@@ -13,5 +13,6 @@ services:
       - N8N_PROTOCOL=http
       - NODE_ENV=production
       - WEBHOOK_URL=http://localhost:5678/
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
       # Optional: Disable user management for simple local dev
       - N8N_USER_MANAGEMENT_DISABLED=true

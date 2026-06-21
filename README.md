@@ -37,6 +37,7 @@ npm run build
 npm run cap:compile
 npm run agent:startup
 npm run agent:startup -- --check
+npm run agent:startup -- --workflow "stock update discord msg test workflow"
 npm run review:local
 npm run smoke
 npm run test:integration
@@ -53,7 +54,7 @@ What they do:
 
 - `npm run build` - builds workspace packages that define a build script.
 - `npm run cap:compile` - compiles the CAP demo app models with repo-local CAP tooling.
-- `npm run agent:startup` - runs the agent startup routine. It checks Node/npm/Docker, prepares the local n8n custom node, starts the custom-node n8n review profile, imports the demo workflow, starts CAP, polls CAP and n8n endpoints, and prints the browser handoff.
+- `npm run agent:startup` - runs the agent startup routine. It checks Node/npm/Docker, prepares the local n8n custom node, starts the custom-node n8n review profile, imports `stock update discord msg test workflow`, starts CAP, polls CAP and n8n endpoints, and prints the browser handoff.
 - `npm run agent:startup -- --check` - runs the same prerequisite checks without starting services.
 - `npm run review:local` - runs the deterministic automated release-readiness command. It covers tests, workflow annotation validation, CAP compile with generated workflow artifacts, and warning classification. It does not run browser/manual n8n UAT.
 - `npm run smoke` - builds the n8n node package and verifies package boundaries.
@@ -99,7 +100,7 @@ The helper performs these steps:
 - checks the git position, supported Node version, npm availability, dependency install state, Docker daemon access, and Compose command shape
 - runs `scripts/prepare-n8n-custom-node.js` so n8n sees the local `n8n-nodes-sap-cap` package
 - starts `docker-compose.n8n-node.yml` with either `docker compose` or `docker-compose`
-- imports the demo n8n workflow fixture from `test-workflows/workflows.json`
+- imports the selected n8n workflow fixture. By default this is `stock update discord msg test workflow` from `test-workflows/stock update discord msg test workflow.json`
 - starts CAP through `npm run cap:serve`
 - waits for `http://localhost:5678/healthz`, `http://localhost:5678`, `http://localhost:3000/odata/v4/admin/$metadata`, and `http://localhost:3000/odata/v4/catalog/$metadata`
 - uses the local mocked CAP user `alice` for the Admin metadata probe
@@ -109,6 +110,8 @@ Useful variants:
 ```bash
 npm run agent:startup -- --check
 npm run agent:startup -- --plain-n8n
+npm run agent:startup -- --workflow "stock update discord msg test workflow"
+npm run agent:startup -- --workflow-file test-workflows/workflows.json
 npm run agent:startup -- --skip-workflow-import
 npm run agent:startup -- --skip-n8n
 npm run agent:startup -- --stop
@@ -117,8 +120,12 @@ npm run agent:startup -- --stop
 Behavior notes:
 
 - Default n8n profile: `docker-compose.n8n-node.yml`, which is the review profile with the local custom node installed.
+- Default imported workflow: `stock update discord msg test workflow`. It keeps workflow ID and Webhook path `cap-test-trigger`, so it still matches the demo app annotation `webhook-test/cap-test-trigger`.
+- `--workflow` selects a workflow by workflow name, ID, Webhook path, or fixture file name.
+- `--workflow-file` imports a specific JSON file under `test-workflows/`. Single workflow exports and array exports are both supported.
 - `--plain-n8n` uses `docker-compose.yml` and skips the custom-node install step.
-- `--skip-workflow-import` starts n8n without seeding the demo workflow.
+- `--skip-workflow-import` starts n8n without seeding the selected workflow.
+- The Discord HTTP step reads `DISCORD_WEBHOOK_URL` from the n8n container environment. Set it in your shell before startup if you want the imported workflow to send a real Discord message.
 - `npm run start:local-review` remains as a backwards-compatible alias, but new docs should use `npm run agent:startup`.
 - If Docker is installed but the current user cannot reach the daemon, the helper reports the Docker blocker and still starts CAP unless `--strict` is passed.
 - CAP stays attached to the terminal. Press `Ctrl+C` to stop CAP, or use `npm run agent:startup -- --stop` to stop CAP started by the helper and the selected n8n profile.
