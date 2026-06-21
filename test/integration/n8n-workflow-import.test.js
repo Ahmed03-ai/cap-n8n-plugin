@@ -14,8 +14,14 @@ const fixturePath = path.join(repoRoot, 'test-workflows', 'workflows.json')
 const tempRoots = []
 const typedSchema = {
   inputs: {
+    authorId: { type: 'Integer' },
     bookId: { type: 'Integer', required: true },
+    currencyCode: { type: 'String' },
+    description: { type: 'String' },
     event: { type: 'JSON' },
+    genreId: { type: 'String' },
+    price: { type: 'Decimal' },
+    stock: { type: 'Integer', required: true },
     title: { type: 'String', required: true }
   }
 }
@@ -190,15 +196,21 @@ describe('cap-n8n local workflow import CLI', () => {
 
     expect(workflow.nodes[0].parameters.path).toBe('cap-test-trigger')
     expect(schema.inputs).toEqual({
+      authorId: { type: 'Integer', required: false },
       bookId: { type: 'Integer', required: true },
+      currencyCode: { type: 'String', required: false },
+      description: { type: 'String', required: false },
       event: { type: 'JSON', required: false },
+      genreId: { type: 'String', required: false },
+      price: { type: 'Decimal', required: false },
+      stock: { type: 'Integer', required: true },
       title: { type: 'String', required: true }
     })
     expect(manifest).toMatchObject({
       workflowKey: 'cap-test-trigger',
       source: {
         type: 'local',
-        workflowName: 'CAP n8n Test',
+        workflowName: 'stock update discord msg test workflow',
         webhookPath: 'cap-test-trigger'
       }
     })

@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: human_verification
 last_updated: "2026-06-21T17:45:00Z"
-last_activity: 2026-06-22 -- Completed quick task 260622-pld: Expand demo workflow payload
+last_activity: 2026-06-22 -- Completed quick task 260622-e2e: Replace demo workflow fixture
 progress:
   total_phases: 8
   completed_phases: 7
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 Phase: 08 (deployment-docs-and-release-readiness) - HUMAN UAT
 Plan: 4 of 4 completed
 Status: Automated verification passed; human UAT pending
-Last activity: 2026-06-22 -- Completed quick task 260622-pld: Expand demo workflow payload
+Last activity: 2026-06-22 -- Completed quick task 260622-e2e: Replace demo workflow fixture
 
 Progress: [██████████] 100%
 

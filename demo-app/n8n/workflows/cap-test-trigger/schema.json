@@ -1,11 +1,11 @@
 {
   "inputs": {
-    "bookId": {
-      "required": true,
-      "type": "Integer"
-    },
     "authorId": {
       "required": false,
+      "type": "Integer"
+    },
+    "bookId": {
+      "required": true,
       "type": "Integer"
     },
     "currencyCode": {

@@ -38,9 +38,15 @@ const typedSchema = {
 
 const capTestSchema = {
   inputs: {
+    authorId: { type: 'Integer' },
     bookId: { type: 'Integer', required: true },
-    title: { type: 'String', required: true },
-    event: { type: 'JSON' }
+    currencyCode: { type: 'String' },
+    description: { type: 'String' },
+    event: { type: 'JSON' },
+    genreId: { type: 'String' },
+    price: { type: 'Decimal' },
+    stock: { type: 'Integer', required: true },
+    title: { type: 'String', required: true }
   }
 }
 
@@ -286,9 +292,15 @@ describe('n8n workflow artifact contract', () => {
 
     expect(workflowTypeName('cap-test-trigger')).toBe('CapTestTriggerInputs')
     expect(inputType).toBeDefined()
+    expect(inputType.elements.authorId.type).toBe('cds.Integer')
     expect(inputType.elements.bookId.type).toBe('cds.Integer')
+    expect(inputType.elements.currencyCode.type).toBe('cds.String')
+    expect(inputType.elements.description.type).toBe('cds.String')
     expect(inputType.elements.title.type).toBe('cds.String')
     expect(inputType.elements.event.type).toBe('cds.LargeString')
+    expect(inputType.elements.genreId.type).toBe('cds.String')
+    expect(inputType.elements.price.type).toBe('cds.Decimal')
+    expect(inputType.elements.stock.type).toBe('cds.Integer')
     expect(contractAction.params.inputs.type).toBe('cap.n8n.workflows.CapTestTriggerInputs')
     expect(contractAction.returns.type).toBe('cds.Boolean')
   })
@@ -296,27 +308,36 @@ describe('n8n workflow artifact contract', () => {
   it('sanitizes workflow JSON recursively while preserving reviewable webhook structure', () => {
     const { workflow, removedPaths } = sanitizeWorkflow(unsafeFixtureWorkflow())
 
-    expect(workflow).toEqual({
-      name: 'CAP n8n Test',
-      nodes: [
-        expect.objectContaining({
-          id: '9fd6a43a-1249-4032-9506-56de71fc3c13',
-          name: 'Webhook',
-          type: 'n8n-nodes-base.webhook',
-          typeVersion: 2.1,
-          position: [0, 0],
-          parameters: {
-            httpMethod: 'POST',
-            path: 'cap-test-trigger',
-            options: {}
-          }
-        })
-      ],
-      connections: {},
+    expect(workflow).toEqual(expect.objectContaining({
+      name: 'stock update discord msg test workflow',
       settings: {
         executionOrder: 'v1'
       }
-    })
+    }))
+    expect(workflow.nodes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'CAP Book Event',
+        type: 'n8n-nodes-base.webhook',
+        typeVersion: 2.1,
+        parameters: {
+          httpMethod: 'POST',
+          path: 'cap-test-trigger',
+          options: {}
+        }
+      }),
+      expect.objectContaining({
+        name: 'AI Enrichment',
+        type: '@n8n/n8n-nodes-langchain.agent'
+      }),
+      expect.objectContaining({
+        name: 'SAP CAP',
+        type: 'CUSTOM.sapCap',
+        parameters: expect.objectContaining({
+          entitySet: 'Books',
+          operation: 'update'
+        })
+      })
+    ]))
     expect(removedPaths).toEqual(expect.arrayContaining([
       'updatedAt',
       'createdAt',
@@ -384,8 +405,14 @@ describe('n8n workflow artifact contract', () => {
     assertNoForbiddenWorkflowFields(workflow)
     await assertNoSecretFragments(path.join(appRoot, 'n8n'))
     expect(schema.inputs).toEqual({
+      authorId: { type: 'Integer', required: false },
       bookId: { type: 'Integer', required: true },
+      currencyCode: { type: 'String', required: false },
+      description: { type: 'String', required: false },
       event: { type: 'JSON', required: false },
+      genreId: { type: 'String', required: false },
+      price: { type: 'Decimal', required: false },
+      stock: { type: 'Integer', required: true },
       title: { type: 'String', required: true }
     })
     expect(manifest).toMatchObject({
@@ -393,7 +420,7 @@ describe('n8n workflow artifact contract', () => {
       source: {
         type: 'local',
         workflowId: 'xS2pbMEOrVWMxiT0',
-        workflowName: 'CAP n8n Test',
+        workflowName: 'stock update discord msg test workflow',
         webhookPath: 'cap-test-trigger'
       },
       artifacts: {
@@ -405,7 +432,7 @@ describe('n8n workflow artifact contract', () => {
       acceptedReferences: expect.arrayContaining([
         'cap-test-trigger',
         'xS2pbMEOrVWMxiT0',
-        'cap-n8n-test',
+        'stock-update-discord-msg-test-workflow',
         'webhook/cap-test-trigger',
         'webhook-test/cap-test-trigger'
       ]),

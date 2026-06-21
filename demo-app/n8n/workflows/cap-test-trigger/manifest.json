@@ -1,10 +1,9 @@
 {
   "acceptedReferences": [
-    "cap-n8n-test",
     "cap-test-trigger",
+    "stock-update-discord-msg-test-workflow",
     "webhook-test/cap-test-trigger",
-    "webhook/cap-test-trigger",
-    "xS2pbMEOrVWMxiT0"
+    "webhook/cap-test-trigger"
   ],
   "artifacts": {
     "cds": "index.cds",
@@ -15,35 +14,23 @@
   "sanitizer": {
     "removedPaths": [
       "active",
-      "activeVersionId",
-      "createdAt",
-      "description",
       "id",
-      "isArchived",
       "meta",
       "nodes.0.webhookId",
+      "nodes.4.credentials",
+      "nodes.5.credentials",
+      "nodes.8.credentials",
       "pinData",
-      "settings.availableInMCP",
       "settings.binaryMode",
-      "settings.callerPolicy",
-      "settings.saveExecutionProgress",
-      "settings.timeSavedMode",
-      "settings.timezone",
-      "shared",
-      "staticData",
       "tags",
-      "triggerCount",
-      "updatedAt",
-      "versionCounter",
-      "versionId",
-      "versionMetadata"
+      "versionId"
     ]
   },
   "source": {
     "type": "local",
     "webhookPath": "cap-test-trigger",
-    "workflowId": "xS2pbMEOrVWMxiT0",
-    "workflowName": "CAP n8n Test"
+    "workflowId": "cap-test-trigger",
+    "workflowName": "stock update discord msg test workflow"
   },
   "typed": true,
   "workflowKey": "cap-test-trigger"
