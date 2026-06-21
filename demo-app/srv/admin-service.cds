@@ -7,6 +7,7 @@ service AdminService {
   entity Genres  as projection on my.Genres;
 }
 
+// Creating or updating a book will trigger the workflow, but only if the stock is greater than 0
 annotate AdminService.Books with @n8n.workflow.start: {
   workflowId: 'webhook-test/cap-test-trigger',
   on: ['CREATE', 'UPDATE'],
@@ -20,6 +21,7 @@ annotate AdminService.Books with @n8n.workflow.start: {
   tag: 'admin-books'
 };
 
+// Deleting a book only has an effect on the workflow if it is still active 
 annotate AdminService.Books with @n8n.workflow.cancel: {
   workflowId: 'webhook-test/cap-test-trigger',
   on: ['DELETE'],
