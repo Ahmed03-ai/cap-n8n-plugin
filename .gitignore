@@ -5,3 +5,5 @@ cap-n8n-node/dist/
 *.log
 .n8n-data/
 .n8n-review-data/
+test-workflows/.agent-startup-routine-workflows.json
+test-workflows/.start-local-review-workflows.json

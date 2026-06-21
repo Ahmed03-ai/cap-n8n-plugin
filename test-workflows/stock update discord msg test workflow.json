@@ -1,0 +1,190 @@
+{
+  "name": "CAP n8n Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cap-test-trigger",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9fd6a43a-1249-4032-9506-56de71fc3c13",
+      "name": "CAP Book Event",
+      "webhookId": "4beadf34-6b6b-4d88-b35c-4da8971d82a9"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c59297a9-6e7c-4c3b-9992-a0cd0370e430",
+              "leftValue": "={{ $json.body.stock }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6e86a2bf-7380-4812-adf1-17ca67f55858",
+      "name": "Stock low? (<20)"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        512,
+        240
+      ],
+      "id": "b5ffe978-b8d2-4f16-b591-ab000a96134f",
+      "name": "Stock OK (no action)"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Hi, create a short discord message telling the user that the stock of his book with title {{ $('CAP Book Event').item.json.body.title }}, with ID {{ $('CAP Book Event').item.json.body.bookId }} and stock level {{ $('CAP Book Event').item.json.body.stock }} is low. Only write the message and nothing else. I trust your decision. Thanks",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        416,
+        -224
+      ],
+      "id": "3fbfaa32-3afe-4937-bc3e-f2ca0e8a1dc5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discordapp.com/api/webhooks/1518261254882332713/4nSUBOCuO5uqlRj3QGf5cKZQQyP00vOnqenGu_sTFisvQdUYzmnmCib9mt-82zdxACal",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "63c8e654-fdd4-40c7-844f-2e9e1f3daa59",
+      "name": "Send Discord Alert"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1dbce8a2-cb6f-4eb8-8c1e-543008475c67",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZVL9rlVbuSUSHXU0",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "CAP Book Event": {
+      "main": [
+        [
+          {
+            "node": "Stock low? (<20)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stock low? (<20)": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stock OK (no action)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Discord Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ded486bf-3b73-41b7-bf64-b83ad9241e8d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c29469de0b0e02c66f5ca4e54e9647d066dfa6976928db347e779d3d6210d298"
+  },
+  "id": "cap-test-trigger",
+  "tags": []
+}

@@ -15,6 +15,8 @@
     "test:integration": "npm run build --workspace n8n-nodes-sap-cap && vitest run test/integration",
     "test": "npm run smoke && npm run test:integration",
     "review:local": "node scripts/review-local.js",
+    "agent:startup": "node scripts/agent-startup-routine.js",
+    "start:local-review": "node scripts/agent-startup-routine.js",
     "cap-n8n": "node cap-n8n-plugin/bin/cap-n8n.js",
     "n8n:workflow:import": "node cap-n8n-plugin/bin/cap-n8n.js import",
     "n8n:workflow:validate": "node cap-n8n-plugin/bin/cap-n8n.js validate",
