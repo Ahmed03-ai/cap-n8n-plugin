@@ -26,7 +26,12 @@ The merge conflicts were resolved in favor of `n8n-community-node-port` for the 
 - `npm run cap:compile` passed.
 - `npm run agent:startup -- --check` passed.
 - `npm run agent:startup -- --skip-cap` prepared the custom node, started n8n, and imported `stock update discord msg test workflow`.
+- `npm run test:integration` passed: 21 files, 161 tests.
 - Generated artifacts were kept out of Git.
+
+## Follow-up Fix
+
+The full integration suite exposed that the demo annotation sends `stock`, but the demo workflow sidecar contract did not list `stock`. The schema and generated CDS contract now include `stock : Integer`, and the long Phase 5 import/build-validation test has an explicit timeout so the full parallel integration run is stable.
 
 ## Manual Test State
 

@@ -417,7 +417,7 @@ describe('Phase 5 aggregate workflow import and validation evidence', () => {
     expectSafeOutput(compiled)
     expectSafeOutput(built)
     await expectArtifactJsonSafe(path.join(appRoot, 'n8n'))
-  })
+  }, 15000)
 
   it('resolves demo-app AdminService.Books annotations through manifest accepted references', async () => {
     const manifest = await readJson(path.join(repoRoot, 'demo-app', 'n8n', 'workflows', 'cap-test-trigger', 'manifest.json'))

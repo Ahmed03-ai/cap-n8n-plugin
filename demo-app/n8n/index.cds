@@ -3,6 +3,7 @@ namespace cap.n8n.workflows;
 type CapTestTriggerInputs {
   bookId : Integer;
   event : LargeString;
+  stock : Integer;
   title : String;
 }
 

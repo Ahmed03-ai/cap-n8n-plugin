@@ -8,6 +8,10 @@
       "required": false,
       "type": "JSON"
     },
+    "stock": {
+      "required": true,
+      "type": "Integer"
+    },
     "title": {
       "required": true,
       "type": "String"
