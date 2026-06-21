@@ -10,7 +10,15 @@ This repository is an npm workspace with two product surfaces:
 
 ## Prerequisites
 
-- Node.js 20 or newer. The locked `@sap/cds` dependency requires Node 20+.
+- Node.js 20 or 24 (recommended). The locked `@sap/cds` dependency requires Node 20–24; Node 25+ or newer may cause native addon incompatibilities (for example `better-sqlite3`).
+  
+Note: If you are running a newer Node.js (25/26+), native modules such as `better-sqlite3` may be incompatible with prebuilt binaries. Prefer switching to Node 20 or 24 (using nvm or similar). As a fallback you can attempt to rebuild the native module locally (Windows users need the appropriate build tools):
+
+```bash
+npm rebuild better-sqlite3 --build-from-source
+```
+
+If rebuild fails or you prefer not to build native addons, install Node 20 or 24 and re-run `npm install`.
 - npm, using the root workspace lockfile.
 - Docker Engine and Docker Compose, only when testing against a live local n8n instance.
 
@@ -27,6 +35,8 @@ Run these from the repository root unless noted otherwise.
 ```bash
 npm run build
 npm run cap:compile
+npm run agent:startup
+npm run agent:startup -- --check
 npm run review:local
 npm run smoke
 npm run test:integration
@@ -43,6 +53,8 @@ What they do:
 
 - `npm run build` - builds workspace packages that define a build script.
 - `npm run cap:compile` - compiles the CAP demo app models with repo-local CAP tooling.
+- `npm run agent:startup` - runs the agent startup routine. It checks Node/npm/Docker, prepares the local n8n custom node, starts the custom-node n8n review profile, imports the demo workflow, starts CAP, polls CAP and n8n endpoints, and prints the browser handoff.
+- `npm run agent:startup -- --check` - runs the same prerequisite checks without starting services.
 - `npm run review:local` - runs the deterministic automated release-readiness command. It covers tests, workflow annotation validation, CAP compile with generated workflow artifacts, and warning classification. It does not run browser/manual n8n UAT.
 - `npm run smoke` - builds the n8n node package and verifies package boundaries.
 - `npm run test:integration` - runs CAP plugin integration tests without Docker n8n.
@@ -58,6 +70,7 @@ What they do:
 Use this README as the entry point, then follow the focused Phase 8 docs for each run path:
 
 - [Manual Visual Showcase Guide](docs/manual-visual-showcase.md) - local CAP demo, local n8n webhook, annotation-driven starts, cancellation showcase, and presenter checklist.
+- Demo app quick test: see `demo-app/readme.md` for a copyable PowerShell `Invoke-RestMethod` and `curl.exe` example to create a `Books` entry and trigger the annotated n8n workflow.
 - [Local n8n Custom-Node E2E Runbook](docs/local-n8n-custom-node-e2e.md) - real n8n custom-node E2E with the local `SAP CAP` node installed in the isolated review profile.
 - [Cloud n8n Runbook](docs/cloud-n8n-runbook.md) - local CAP demo configured through `CDS_CONFIG` to send annotation webhooks to a reachable cloud n8n instance.
 - [SAP BTP Deployment Advisory Guide](docs/btp-deployment-guide.md) - Cloud Foundry and Kyma considerations for routing, credentials, connectivity, and secrets.
@@ -72,6 +85,43 @@ Run paths are intentionally separate:
 - Real n8n custom-node E2E and cancellation browser checks remain checklist evidence until a reviewer completes them. If they have not been run in the current review environment, record `manual UAT required`.
 - Cloud n8n has a concrete local-CAP-to-cloud-n8n runbook, but runtime validation remains manual UAT until a reviewer completes it against a real cloud n8n instance.
 - BTP guidance is advisory and does not claim Cloud Foundry or Kyma runtime validation.
+
+### 0. Agent Startup Routine
+
+Use this first when a reviewer, colleague, or agent needs the local CAP app plus the n8n custom-node review profile:
+
+```bash
+npm run agent:startup
+```
+
+The helper performs these steps:
+
+- checks the git position, supported Node version, npm availability, dependency install state, Docker daemon access, and Compose command shape
+- runs `scripts/prepare-n8n-custom-node.js` so n8n sees the local `n8n-nodes-sap-cap` package
+- starts `docker-compose.n8n-node.yml` with either `docker compose` or `docker-compose`
+- imports the demo n8n workflow fixture from `test-workflows/workflows.json`
+- starts CAP through `npm run cap:serve`
+- waits for `http://localhost:5678/healthz`, `http://localhost:5678`, `http://localhost:3000/odata/v4/admin/$metadata`, and `http://localhost:3000/odata/v4/catalog/$metadata`
+- uses the local mocked CAP user `alice` for the Admin metadata probe
+
+Useful variants:
+
+```bash
+npm run agent:startup -- --check
+npm run agent:startup -- --plain-n8n
+npm run agent:startup -- --skip-workflow-import
+npm run agent:startup -- --skip-n8n
+npm run agent:startup -- --stop
+```
+
+Behavior notes:
+
+- Default n8n profile: `docker-compose.n8n-node.yml`, which is the review profile with the local custom node installed.
+- `--plain-n8n` uses `docker-compose.yml` and skips the custom-node install step.
+- `--skip-workflow-import` starts n8n without seeding the demo workflow.
+- `npm run start:local-review` remains as a backwards-compatible alias, but new docs should use `npm run agent:startup`.
+- If Docker is installed but the current user cannot reach the daemon, the helper reports the Docker blocker and still starts CAP unless `--strict` is passed.
+- CAP stays attached to the terminal. Press `Ctrl+C` to stop CAP, or use `npm run agent:startup -- --stop` to stop CAP started by the helper and the selected n8n profile.
 
 ### 1. Baseline Verification
 
