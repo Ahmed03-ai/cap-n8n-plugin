@@ -1,1 +1,247 @@
-[{"updatedAt":"2026-05-18T09:59:16.862Z","createdAt":"2026-05-18T09:12:40.354Z","id":"xS2pbMEOrVWMxiT0","name":"CAP n8n Test","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"httpMethod":"POST","path":"cap-test-trigger","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,0],"id":"9fd6a43a-1249-4032-9506-56de71fc3c13","name":"Webhook","webhookId":"897fd062-93ee-4390-9dda-78fcb556745c"}],"connections":{},"settings":{"executionOrder":"v1","binaryMode":"separate","timeSavedMode":"fixed","callerPolicy":"workflowsFromSameOwner","availableInMCP":false,"timezone":"Europe/Berlin","saveExecutionProgress":true},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"pinData":{},"versionId":"ab025689-52e7-4e3a-9168-028f55d0e28e","activeVersionId":"ab025689-52e7-4e3a-9168-028f55d0e28e","versionCounter":18,"triggerCount":1,"tags":[],"shared":[{"updatedAt":"2026-05-18T09:12:40.357Z","createdAt":"2026-05-18T09:12:40.357Z","role":"workflow:owner","workflowId":"xS2pbMEOrVWMxiT0","projectId":"vOi5AQTrVKHTEmJ2","project":{"updatedAt":"2026-05-17T20:46:56.719Z","createdAt":"2026-05-17T20:44:05.890Z","id":"vOi5AQTrVKHTEmJ2","name":"Leon Körbs <leon1.koerbs@gmail.com>","type":"personal","icon":null,"description":null,"creatorId":"d7be463a-dd71-4f81-9145-c0990e357703"}}],"versionMetadata":{"name":"Version 1","description":""}}]
+[
+  {
+    "connections": {
+      "AI Enrichment": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "SAP CAP",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "AI Reminder Agent": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Send Discord Alert",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "CAP Book Event": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Stock low? (<20)",
+              "type": "main"
+            },
+            {
+              "index": 0,
+              "node": "AI Enrichment",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Google Gemini Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "AI Reminder Agent",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Google Gemini Enrichment": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "AI Enrichment",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Stock low? (<20)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "AI Reminder Agent",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Stock OK (no action)",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "name": "stock update discord msg test workflow",
+    "nodes": [
+      {
+        "id": "9fd6a43a-1249-4032-9506-56de71fc3c13",
+        "name": "CAP Book Event",
+        "parameters": {
+          "httpMethod": "POST",
+          "options": {},
+          "path": "cap-test-trigger"
+        },
+        "position": [
+          0,
+          0
+        ],
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1
+      },
+      {
+        "id": "6e86a2bf-7380-4812-adf1-17ca67f55858",
+        "name": "Stock low? (<20)",
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "c59297a9-6e7c-4c3b-9992-a0cd0370e430",
+                "leftValue": "={{ $json.body.stock }}",
+                "operator": {
+                  "operation": "lt",
+                  "type": "number"
+                },
+                "rightValue": 20
+              }
+            ],
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            }
+          },
+          "options": {}
+        },
+        "position": [
+          208,
+          0
+        ],
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3
+      },
+      {
+        "id": "b5ffe978-b8d2-4f16-b591-ab000a96134f",
+        "name": "Stock OK (no action)",
+        "parameters": {},
+        "position": [
+          512,
+          240
+        ],
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1
+      },
+      {
+        "id": "63c8e654-fdd4-40c7-844f-2e9e1f3daa59",
+        "name": "Send Discord Alert",
+        "parameters": {
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "content",
+                "value": "={{ $json.output }}"
+              }
+            ]
+          },
+          "method": "POST",
+          "options": {},
+          "sendBody": true,
+          "url": "={{ $env.DISCORD_WEBHOOK_URL }}"
+        },
+        "position": [
+          768,
+          -224
+        ],
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.4
+      },
+      {
+        "id": "1dbce8a2-cb6f-4eb8-8c1e-543008475c67",
+        "name": "Google Gemini Chat Model",
+        "parameters": {
+          "modelName": "models/gemini-2.5-flash-lite",
+          "options": {}
+        },
+        "position": [
+          416,
+          0
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "cfd78982-c871-4148-9dfb-5dec2a7a8375",
+        "name": "SAP CAP",
+        "parameters": {
+          "body": "={\n  \"descr\": \"={{ $json.output }}\"\n}",
+          "entitySet": "Books",
+          "keyPredicate": "=ID={{ $('CAP Book Event').item.json.body.bookId }},IsActiveEntity=true",
+          "operation": "update"
+        },
+        "position": [
+          672,
+          560
+        ],
+        "type": "CUSTOM.sapCap",
+        "typeVersion": 1
+      },
+      {
+        "id": "3fbfaa32-3afe-4937-bc3e-f2ca0e8a1dc5",
+        "name": "AI Reminder Agent",
+        "parameters": {
+          "options": {},
+          "promptType": "define",
+          "text": "=Hi, create a short discord message telling the user that the stock of his book with title {{ $('CAP Book Event').item.json.body.title }}, with ID {{ $('CAP Book Event').item.json.body.bookId }} and stock level {{ $('CAP Book Event').item.json.body.stock }} is low. Only write the message and nothing else. I trust your decision. Thanks"
+        },
+        "position": [
+          416,
+          -224
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1
+      },
+      {
+        "id": "2824063b-59a6-4f93-887d-0ce5fe217e02",
+        "name": "AI Enrichment",
+        "parameters": {
+          "options": {},
+          "promptType": "define",
+          "text": "=You enrich book metadata for a CAP Book entity.\n\nInput:\nTitle: {{ $('CAP Book Event').item.json.body.title }}\nCurrent description: {{ $('CAP Book Event').item.json.body.description }}\nCurrent author ID: {{ $('CAP Book Event').item.json.body.authorId }}\nCurrent genre ID: {{ $('CAP Book Event').item.json.body.genreId }}\n\nTask:\nWrite an improved book description for this book.\n\nRules:\n- Return only the improved description as plain text.\n- Keep it factual and concise.\n- Do not mention that you are an AI.\n- Do not include JSON, markdown, labels, bullets, or quotes.\n- Length: 6 to 8 sentences.\n- Preserve the original meaning, but add useful context if obvious from the title and description."
+        },
+        "position": [
+          256,
+          560
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1
+      },
+      {
+        "id": "40520234-c078-4bf8-8c67-6fb2be92b2cd",
+        "name": "Google Gemini Enrichment",
+        "parameters": {
+          "modelName": "models/gemini-2.5-flash-lite",
+          "options": {}
+        },
+        "position": [
+          256,
+          768
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+        "typeVersion": 1.1
+      }
+    ],
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]

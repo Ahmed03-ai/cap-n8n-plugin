@@ -21,28 +21,5 @@ module.exports = class AdminService extends cds.ApplicationService { init() {
    */
   this.before('CREATE', Books, assignNextBookId)
 
-
-  /**
-   * Proof of Concept: Programmatically trigger an n8n workflow
-   * when a new Book is created.
-   */
-  this.after ('CREATE', Books, async (data, req) => {
-    try {
-      const n8n = await cds.connect.to('n8n')
-      // Use the webhook path defined in the n8n UI
-      await n8n.send('start', { 
-        workflowId: 'webhook-test/cap-test-trigger', 
-        inputs: { 
-          event: 'BookCreated',
-          bookId: data.ID,
-          title: data.title
-        } 
-      })
-      cds.log('n8n').info('Successfully notified n8n about new Book')
-    } catch (err) {
-      cds.log('n8n').error('Could not notify n8n about new Book:', err.message)
-    }
-  })
-
   return super.init()
 }}

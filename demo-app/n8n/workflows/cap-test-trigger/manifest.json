@@ -1,0 +1,37 @@
+{
+  "acceptedReferences": [
+    "cap-test-trigger",
+    "stock-update-discord-msg-test-workflow",
+    "webhook-test/cap-test-trigger",
+    "webhook/cap-test-trigger"
+  ],
+  "artifacts": {
+    "cds": "index.cds",
+    "manifest": "workflows/cap-test-trigger/manifest.json",
+    "schema": "workflows/cap-test-trigger/schema.json",
+    "workflow": "workflows/cap-test-trigger/workflow.json"
+  },
+  "sanitizer": {
+    "removedPaths": [
+      "active",
+      "id",
+      "meta",
+      "nodes.0.webhookId",
+      "nodes.4.credentials",
+      "nodes.5.credentials",
+      "nodes.8.credentials",
+      "pinData",
+      "settings.binaryMode",
+      "tags",
+      "versionId"
+    ]
+  },
+  "source": {
+    "type": "local",
+    "webhookPath": "cap-test-trigger",
+    "workflowId": "cap-test-trigger",
+    "workflowName": "stock update discord msg test workflow"
+  },
+  "typed": true,
+  "workflowKey": "cap-test-trigger"
+}

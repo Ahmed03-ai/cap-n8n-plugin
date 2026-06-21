@@ -16,12 +16,12 @@ This roadmap turns the brownfield prototype into two package-owned integration s
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Package Foundations and Tooling** - Developers can consume both packages and run pinned local tooling without hidden global dependencies. (completed 2026-05-31)
-- [ ] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability.
-- [ ] **Phase 3: Execution Store and Transaction-Safe Dispatch** - CAP developers can track, query, and cancel correlated workflow executions safely.
-- [ ] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models.
+- [x] **Phase 2: Typed CAP Service, Mock Runtime, and Configuration** - CAP developers can use a typed n8n service with mock/profile/runtime reliability. (completed 2026-05-31)
+- [x] **Phase 3: Execution Store and Transaction-Safe Dispatch** - CAP developers can track, query, and cancel correlated workflow executions safely. (completed 2026-06-02)
+- [x] **Phase 4: Declarative CAP Annotations** - CAP developers can trigger and cancel workflows declaratively from CDS models. (completed 2026-06-02)
 - [ ] **Phase 5: Workflow Import and Build Validation** - CAP developers can import workflows into typed local artifacts and validate mappings during build.
-- [ ] **Phase 6: n8n Credentials, Metadata Discovery, and Read Operations** - n8n workflow designers can securely discover and read CAP OData data.
-- [ ] **Phase 7: n8n Mutations and CAP Actions/Functions** - n8n workflow designers can write CAP data and invoke CAP business operations.
+- [x] **Phase 6: n8n Credentials, Metadata Discovery, and Read Operations** - n8n workflow designers can securely discover and read CAP OData data. (completed 2026-06-03)
+- [x] **Phase 7: n8n Mutations and CAP Actions/Functions** - n8n workflow designers can write CAP data and invoke CAP business operations. (completed 2026-06-03)
 - [ ] **Phase 8: Deployment, Docs, and Release Readiness** - Developers and reviewers can run, configure, verify, and assess the integration without hidden setup.
 
 ## Phase Details
@@ -65,7 +65,24 @@ Plans:
   4. Production startup fails with a clear sanitized error when required n8n base URL or credentials are missing.
   5. CAP developer receives structured sanitized CDS errors and configurable timeout/retry behavior for n8n communication failures.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [x] 04-01-PLAN.md - Create annotation parser, condition, and payload helper contracts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 04-02-PLAN.md - Register annotated CREATE/UPDATE/DELETE workflow starts through the CAP plugin lifecycle.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 04-03-PLAN.md - Add declarative cancellation matching through Phase 3 query and cancel APIs.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 04-04-PLAN.md - Move demo evidence to CDS annotations and run aggregate Phase 4 verification.
 
 ### Phase 3: Execution Store and Transaction-Safe Dispatch
 
@@ -80,7 +97,24 @@ Plans:
   4. CAP developer can detect duplicate or ambiguous workflow start attempts through persisted correlation rather than raw logs alone.
   5. CAP workflow dispatch has a clear post-commit or outbox-style path for later declarative triggers.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [x] 03-01-PLAN.md — Create plugin-owned execution model, durable store, and sanitized result contract.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 03-02-PLAN.md — Wrap starts with transaction-safe tracking, internal outbox payloads, and post-commit dispatch.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 03-03-PLAN.md — Expose query, paging, ordering, and duplicate policy APIs.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 03-04-PLAN.md — Add state-aware cancellation, mock parity, and aggregate Phase 3 verification.
 
 ### Phase 4: Declarative CAP Annotations
 
@@ -110,7 +144,21 @@ Plans:
   4. `cds build` reports clear errors for missing inputs and type mismatches in workflow trigger annotations.
   5. `cds build` reports warnings for extra inputs or untyped workflow references without blocking incremental adoption.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+**Wave 1**
+
+- [x] 05-01-PLAN.md - Create workflow artifact contract, sidecar schema, sanitizer, generated CDS, and demo app artifacts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 05-02-PLAN.md - Add package CLI local/live import with npm wrappers and secret-safe selection behavior.
+- [x] 05-03-PLAN.md - Add shared annotation validator and CAP build integration for typed workflow mappings.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 05-04-PLAN.md - Wire direct CLI validation and run aggregate Phase 5 integration/source-gate verification.
 
 ### Phase 6: n8n Credentials, Metadata Discovery, and Read Operations
 
@@ -125,8 +173,18 @@ Plans:
   4. n8n workflow designer can use Read mode to retrieve one CAP entity by key and receives a clear n8n-native not-found error when appropriate.
   5. n8n workflow designer receives plain item data and n8n-native errors instead of raw OData wrappers or unsanitized CAP responses.
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [x] 06-01-PLAN.md - Create SAP CAP credentials and metadata-backed entity discovery.
+- [x] 06-02-PLAN.md - Create OData response cleanup and sanitized n8n error helpers.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 06-03-PLAN.md - Wire Query and Read runtime behavior with aggregate Phase 6 verification.
 
 ### Phase 7: n8n Mutations and CAP Actions/Functions
 
@@ -141,14 +199,31 @@ Plans:
   4. n8n workflow designer receives consistent response cleanup and n8n-native errors across Query, Read, Create, Update, Delete, and Action/Function modes.
   5. Developer can run integration tests covering credentials, metadata discovery, CRUD, response cleanup, actions/functions, and composite keys.
 
-**Plans**: TBD
+**Plans**: 4 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [x] 07-01-PLAN.md - Create metadata-derived composite-key helper contracts.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 07-02-PLAN.md - Add Create, Update, and Delete node runtime behavior.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 07-03-PLAN.md - Add combined Action/Function metadata and runtime behavior.
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 07-04-PLAN.md - Update README, manual visual showcase, and mockup for Phase 7.
 
 ### Phase 8: Deployment, Docs, and Release Readiness
 
 **Goal**: Developers, platform engineers, and reviewers can run, configure, verify, and assess the integration using documented repeatable commands.
 **Depends on**: Phase 7
-**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, VERIFY-05, VERIFY-06
+**Requirements**: DOCS-01, DOCS-02, DOCS-03, DOCS-04, DOCS-05, DOCS-06, DOCS-07, VERIFY-05, VERIFY-06, VERIFY-07
 **Success Criteria** (what must be TRUE):
 
   1. Developer can follow documentation to run the CAP demo app with local n8n, cloud n8n, mock mode, and the n8n node against a CAP service.
@@ -156,6 +231,8 @@ Plans:
   3. Platform engineer can follow SAP BTP deployment guidance for credentials, connectivity, and Cloud Foundry or Kyma deployment considerations.
   4. Reviewer can trace n8n mockups, workflow fixtures, and documentation examples to implemented n8n-specific user stories.
   5. Developer can run a documented smoke test and repeatable local or CI command that reports whether the project is ready for review.
+  6. Reviewer can run a no-harness visual showcase for cancellation, including a long-running/stoppable n8n fixture and documented stop API configuration.
+  7. Reviewer can run a real n8n custom-node E2E check with the local SAP CAP community node installed or mounted into n8n, the CAP demo app running, SAP CAP credentials created in n8n, `$metadata` Test Connection, metadata-backed entity selection, Query, Read, and after Phase 7 mutation/action flows executed against CAP.
 
 **Plans**: TBD
 
@@ -174,10 +251,10 @@ Optional v2 SAP CAP Trigger Node work remains deferred. It is not mapped to any 
 | Phase 5: Workflow Import and Build Validation | 8 |
 | Phase 6: n8n Credentials, Metadata Discovery, and Read Operations | 7 |
 | Phase 7: n8n Mutations and CAP Actions/Functions | 6 |
-| Phase 8: Deployment, Docs, and Release Readiness | 9 |
-| **Total** | **58** |
+| Phase 8: Deployment, Docs, and Release Readiness | 10 |
+| **Total** | **59** |
 
-All 58 v1 requirements map to exactly one phase. No v2 requirements are included in v1 coverage.
+All 59 v1 requirements map to exactly one phase. No v2 requirements are included in v1 coverage.
 
 ## Progress
 
@@ -187,10 +264,10 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Package Foundations and Tooling | 4/4 | Complete    | 2026-05-31 |
-| 2. Typed CAP Service, Mock Runtime, and Configuration | 0/TBD | Not started | - |
-| 3. Execution Store and Transaction-Safe Dispatch | 0/TBD | Not started | - |
-| 4. Declarative CAP Annotations | 0/TBD | Not started | - |
-| 5. Workflow Import and Build Validation | 0/TBD | Not started | - |
-| 6. n8n Credentials, Metadata Discovery, and Read Operations | 0/TBD | Not started | - |
-| 7. n8n Mutations and CAP Actions/Functions | 0/TBD | Not started | - |
+| 2. Typed CAP Service, Mock Runtime, and Configuration | 4/4 | Complete    | 2026-05-31 |
+| 3. Execution Store and Transaction-Safe Dispatch | 4/4 | Complete    | 2026-06-02 |
+| 4. Declarative CAP Annotations | 4/4 | Complete    | 2026-06-02 |
+| 5. Workflow Import and Build Validation | 4/4 | In Progress|  |
+| 6. n8n Credentials, Metadata Discovery, and Read Operations | 3/3 | Complete    | 2026-06-03 |
+| 7. n8n Mutations and CAP Actions/Functions | 4/4 | Complete    | 2026-06-03 |
 | 8. Deployment, Docs, and Release Readiness | 0/TBD | Not started | - |

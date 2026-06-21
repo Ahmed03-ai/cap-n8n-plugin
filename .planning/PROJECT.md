@@ -22,18 +22,22 @@ CAP developers can add reliable n8n workflow automation to CAP applications with
 - [x] Exported n8n workflow fixture exists for local workflow import/export scripts.
 - [x] n8n-specific UI mockups exist for credentials and Query, Read, Create, Update, and Delete modes.
 - [x] Supervisor-ready requirements source exists in `cap_n8n_requirements_v2.md`.
+- [x] Phase 2 validated a typed CAP `N8nWorkflowService` start contract with package-level exports and deterministic integration coverage.
+- [x] Phase 2 validated local mock runtime support for offline development and integration tests.
+- [x] Phase 2 validated CAP-profile runtime selection for mock, local n8n, cloud n8n, and production webhook modes.
+- [x] Phase 2 validated sanitized configuration, retry, timeout, and structured error handling for CAP-to-n8n webhook calls.
+- [x] Phase 2 added repeatable integration tests for the CAP programmatic API, auth headers, mock runtime, errors, and retry behavior.
+- [x] Phase 3 validated persisted execution tracking, lookup, query, duplicate handling, transaction-safe dispatch, and cancellation semantics.
+- [x] Phase 4 validated declarative CAP annotations for workflow start, cancellation, CAP CRUD event selection, scalar input mapping, and conditional execution.
+- [x] Phase 6 validated SAP CAP n8n node credentials, metadata discovery, Query, Read, response cleanup, and sanitized error handling with deterministic integration coverage.
+- [x] Phase 7 validated SAP CAP n8n node Create, Update, Delete, composite-key handling, combined Action/Function invocation, response cleanup, docs, and visual showcase updates.
 
 ### Active
 
-- [ ] Provide a typed CAP `N8nWorkflowService` contract with programmatic start, cancel, and execution lookup capabilities.
-- [ ] Add a local mock implementation for offline development and deterministic integration tests.
-- [ ] Support configuration profiles for local mock, local real n8n, cloud n8n, and production deployment.
-- [ ] Add retry, timeout, and structured error handling for CAP-to-n8n HTTP calls.
-- [ ] Implement declarative CAP annotations for workflow start, cancellation, event selection, input mapping, and conditional execution.
 - [ ] Implement workflow import from local JSON and live n8n, including generated CDS typings.
 - [ ] Validate workflow input mappings at build time.
-- [ ] Implement the n8n community node with SAP CAP credentials, Query, Read, Create, Update, Delete, metadata discovery, action/function invocation, and OData response cleanup.
-- [ ] Add integration tests across the CAP plugin, demo app, workflow import, and n8n node behavior.
+- [ ] Validate the installed n8n community node inside a real n8n editor/runtime and document the release-readiness path.
+- [ ] Add integration tests for remaining workflow import and release-readiness behavior.
 - [ ] Document local, hybrid, and SAP BTP deployment setups.
 
 ### Out of Scope
@@ -48,11 +52,11 @@ CAP developers can add reliable n8n workflow automation to CAP applications with
 
 The codebase currently contains three npm workspaces: `cap-n8n-plugin`, `demo-app`, and `cap-n8n-node`. The root `package.json` also provides scripts to import and export local n8n workflows through Docker Compose.
 
-The CAP plugin surface currently lives mainly in `cap-n8n-plugin/lib/N8nWorkflowService.js` and `cap-n8n-plugin/cds-plugin.js`. It supports a single `start` event that posts JSON to an n8n webhook. The implementation does not yet provide the full service model, cancel/query APIs, local mock, retry policy, timeout behavior, annotation scanning, workflow import, or build-time validation described in the requirements.
+The CAP plugin surface currently lives mainly in `cap-n8n-plugin/lib/N8nWorkflowService.js`, `cap-n8n-plugin/lib/MockN8nWorkflowService.js`, `cap-n8n-plugin/lib/config.js`, `cap-n8n-plugin/cds-plugin.js`, and `cap-n8n-plugin/lib/annotations/`. It supports a typed programmatic `start` contract, deterministic mock runtime, CAP profile runtime selection, production webhook configuration validation, sanitized retry/timeout/error handling, persisted execution tracking, lookup/query/cancel APIs, transaction-safe dispatch, and declarative annotation scanning. The implementation does not yet provide workflow import, generated CDS typings, or build-time validation described in the remaining requirements.
 
-The demo app under `demo-app` is a SAP CAP Bookshop-style application with CDS domain models, OData services, service handlers, Fiori annotations, and sample data. It demonstrates one hard-coded workflow trigger in `demo-app/srv/admin-service.js`.
+The demo app under `demo-app` is a SAP CAP Bookshop-style application with CDS domain models, OData services, service handlers, Fiori annotations, and sample data. It now demonstrates workflow automation through CDS annotations while keeping reusable integration behavior in `cap-n8n-plugin`.
 
-The n8n node package under `cap-n8n-node` is currently a placeholder. The desired n8n-node behavior is described in `cap_n8n_requirements_v2.md` and partially visualized in `mockups/n8n-node-mockup.html`.
+The n8n node package under `cap-n8n-node` now implements the Phase 6 and Phase 7 SAP CAP node surface: SAP CAP API credentials, metadata discovery, Query, Read, Create, Update, Delete, composite keys, combined Action/Function invocation, OData response cleanup, sanitized errors, and built-node integration tests. Real installed custom-node E2E in a live n8n instance remains Phase 8 release-readiness evidence.
 
 Detailed brownfield mapping lives in `.planning/codebase/` and should be consulted before planning implementation phases.
 
@@ -77,6 +81,11 @@ Detailed brownfield mapping lives in `.planning/codebase/` and should be consult
 | Prefer integration tests in requirements and planning language | Supervisor explicitly requested switching unit-test references to integration tests. | Good |
 | Do not require CAP plugin UI mockups | The CAP plugin is developer-facing through service APIs, annotations, generated artifacts, and configuration. | Good |
 | Include n8n node mockups where the node editor exposes functionality | Supervisor feedback said mockups are useful for n8n-specific user stories. | Good |
+| Keep Phase 2 verification local and deterministic | Programmatic CAP service behavior can be validated without requiring Docker n8n or cloud credentials. | Good |
+| Treat mock runtime executions as evidence | Mock starts, including explicit failed starts, are recorded so integration tests can assert behavior deterministically. | Good |
+| Use CAP CRUD vocabulary for declarative annotations | CAP developers configure `CREATE`, `UPDATE`, and `DELETE` events directly in CDS annotations. | Good |
+| Defer to-one and to-many annotation mappings | Phase 4 intentionally supports scalar mappings only; association and composition mapping need a later design. | Good |
+| Keep live installed n8n custom-node E2E as release-readiness evidence | Phase 7 validated the built node deterministically; installing/mounting it in a real n8n instance belongs to Phase 8. | Good |
 
 ## Evolution
 
@@ -98,4 +107,4 @@ After each milestone:
 4. Update Context with current code, feedback, and verification state.
 
 ---
-*Last updated: 2026-05-28 after initialization*
+*Last updated: 2026-06-03 after Phase 7 completion*

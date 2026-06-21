@@ -18,58 +18,58 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### CAP Programmatic API
 
-- [ ] **CAPAPI-01**: CAP developer can connect to a typed `N8nWorkflowService` through `cds.connect.to('n8n')`.
-- [ ] **CAPAPI-02**: CAP developer can start an n8n workflow programmatically with `workflowId` and input payload.
-- [ ] **CAPAPI-03**: CAP developer receives a workflow execution identifier or clear result object after a successful start.
-- [ ] **CAPAPI-04**: CAP developer can cancel a running workflow execution by execution ID.
-- [ ] **CAPAPI-05**: CAP developer can query workflow executions by execution ID, workflow ID, business key, tag, or status.
-- [ ] **CAPAPI-06**: CAP developer can page through large execution query results.
+- [x] **CAPAPI-01**: CAP developer can connect to a typed `N8nWorkflowService` through `cds.connect.to('n8n')`.
+- [x] **CAPAPI-02**: CAP developer can start an n8n workflow programmatically with `workflowId` and input payload.
+- [x] **CAPAPI-03**: CAP developer receives a workflow execution identifier or clear result object after a successful start.
+- [x] **CAPAPI-04**: CAP developer can cancel a running workflow execution by execution ID.
+- [x] **CAPAPI-05**: CAP developer can query workflow executions by execution ID, workflow ID, business key, tag, or status.
+- [x] **CAPAPI-06**: CAP developer can page through large execution query results.
 
 ### CAP Runtime Reliability
 
-- [ ] **RUNTIME-01**: CAP developer can use a local mock n8n runtime without starting a live n8n instance.
-- [ ] **RUNTIME-02**: CAP developer can switch between mock, local n8n, cloud n8n, and production configuration through CAP profiles.
-- [ ] **RUNTIME-03**: Production startup fails clearly when required n8n base URL or credentials are missing.
-- [ ] **RUNTIME-04**: CAP developer receives structured, sanitized CDS errors for n8n communication failures.
-- [ ] **RUNTIME-05**: Transient n8n HTTP failures use configurable timeout and retry behavior.
-- [ ] **RUNTIME-06**: Workflow starts and retries are correlated so duplicate or ambiguous executions can be detected.
-- [ ] **RUNTIME-07**: Workflow execution state is persisted or otherwise tracked enough to support query, cancellation, retry, and business-key lookup.
+- [x] **RUNTIME-01**: CAP developer can use a local mock n8n runtime without starting a live n8n instance.
+- [x] **RUNTIME-02**: CAP developer can switch between mock, local n8n, cloud n8n, and production configuration through CAP profiles.
+- [x] **RUNTIME-03**: Production startup fails clearly when required n8n base URL or credentials are missing.
+- [x] **RUNTIME-04**: CAP developer receives structured, sanitized CDS errors for n8n communication failures.
+- [x] **RUNTIME-05**: Transient n8n HTTP failures use configurable timeout and retry behavior.
+- [x] **RUNTIME-06**: Workflow starts and retries are correlated so duplicate or ambiguous executions can be detected.
+- [x] **RUNTIME-07**: Workflow execution state is persisted or otherwise tracked enough to support query, cancellation, retry, and business-key lookup.
 
 ### CAP Declarative Triggers
 
-- [ ] **ANNO-01**: CAP developer can annotate a CDS entity to start an n8n workflow after a successful CREATE.
-- [ ] **ANNO-02**: CAP developer can configure annotated workflow starts for UPDATE and DELETE events.
-- [ ] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
-- [ ] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
-- [ ] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
-- [ ] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
-- [ ] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
+- [x] **ANNO-01**: CAP developer can annotate a CDS entity to start an n8n workflow after a successful CREATE.
+- [x] **ANNO-02**: CAP developer can configure annotated workflow starts for UPDATE and DELETE events.
+- [x] **ANNO-03**: CAP developer can map selected scalar entity fields into the workflow input payload.
+- [x] **ANNO-04**: CAP developer receives startup or registration-time errors for invalid annotations or missing mapped fields.
+- [x] **ANNO-05**: CAP developer can configure a conditional expression that decides whether a workflow should start.
+- [x] **ANNO-06**: CAP developer can declaratively cancel obsolete workflow executions when configured data events occur.
+- [x] **ANNO-07**: Declarative trigger failures are logged without rolling back the original CAP write by default.
 
 ### Workflow Import and Build Validation
 
-- [ ] **IMPORT-01**: CAP developer can import a local n8n workflow JSON file without connecting to a live n8n instance.
-- [ ] **IMPORT-02**: CAP developer can import a workflow definition from a live n8n instance using configured credentials.
-- [ ] **IMPORT-03**: Imported workflow definitions generate CDS artifacts with typed workflow inputs.
-- [ ] **IMPORT-04**: Imported workflow artifacts are stored locally in a deterministic, sanitized layout.
-- [ ] **IMPORT-05**: `cds build` validates workflow trigger annotations against generated workflow input definitions.
-- [ ] **IMPORT-06**: Build validation reports clear errors for missing inputs and type mismatches.
-- [ ] **IMPORT-07**: Build validation reports warnings for extra inputs or untyped workflow references.
+- [x] **IMPORT-01**: CAP developer can import a local n8n workflow JSON file without connecting to a live n8n instance.
+- [x] **IMPORT-02**: CAP developer can import a workflow definition from a live n8n instance using configured credentials.
+- [x] **IMPORT-03**: Imported workflow definitions generate CDS artifacts with typed workflow inputs.
+- [x] **IMPORT-04**: Imported workflow artifacts are stored locally in a deterministic, sanitized layout.
+- [x] **IMPORT-05**: `cds build` validates workflow trigger annotations against generated workflow input definitions.
+- [x] **IMPORT-06**: Build validation reports clear errors for missing inputs and type mismatches.
+- [x] **IMPORT-07**: Build validation reports warnings for extra inputs or untyped workflow references.
 
 ### n8n CAP Action Node
 
 - [x] **NODE-01**: n8n workflow designer can install and load an SAP CAP community node package.
-- [ ] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
-- [ ] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
-- [ ] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
-- [ ] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
-- [ ] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
-- [ ] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
-- [ ] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
-- [ ] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
-- [ ] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
-- [ ] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
-- [ ] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
-- [ ] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
+- [x] **NODE-02**: n8n user can configure SAP CAP credentials with Basic Auth, OAuth2 Client Credentials, and service Base URL.
+- [x] **NODE-03**: n8n user can test CAP credentials against the CAP service `$metadata` endpoint.
+- [x] **NODE-04**: n8n workflow designer can select CAP entity sets from a dynamically loaded dropdown.
+- [x] **NODE-05**: n8n workflow designer can use Query mode to retrieve a filtered, sorted, paginated collection of CAP entities.
+- [x] **NODE-06**: n8n workflow designer can use Read mode to retrieve one CAP entity by known key.
+- [x] **NODE-07**: n8n workflow designer can use Create mode to create a CAP entity.
+- [x] **NODE-08**: n8n workflow designer can use Update mode to patch an existing CAP entity by key.
+- [x] **NODE-09**: n8n workflow designer can use Delete mode to remove a CAP entity by key.
+- [x] **NODE-10**: n8n workflow designer receives plain n8n item data instead of raw OData wrapper structures.
+- [x] **NODE-11**: n8n workflow designer receives n8n-native errors for CAP authentication, validation, not-found, and server failures.
+- [x] **NODE-12**: n8n workflow designer can invoke CAP actions and functions exposed by a CAP OData service.
+- [x] **NODE-13**: n8n workflow designer can work with CAP entities that use composite keys.
 
 ### Documentation and Deployment
 
@@ -83,12 +83,13 @@ Requirements for the initial project roadmap. Each requirement maps to exactly o
 
 ### Verification
 
-- [ ] **VERIFY-01**: Developer can run integration tests for the CAP programmatic API, authentication, errors, retry behavior, and mock runtime.
-- [ ] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
-- [ ] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
-- [ ] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
+- [x] **VERIFY-01**: Developer can run integration tests for the CAP programmatic API, authentication, errors, retry behavior, and mock runtime.
+- [x] **VERIFY-02**: Developer can run integration tests for declarative CAP annotations and non-rollback behavior.
+- [x] **VERIFY-03**: Developer can run integration tests for workflow import and build-time validation.
+- [x] **VERIFY-04**: Developer can run integration tests for n8n credential handling, metadata discovery, Query, Read, Create, Update, Delete, and response cleanup.
 - [ ] **VERIFY-05**: Developer can run a documented smoke test covering the demo CAP app, local n8n, and exported workflow fixture.
 - [ ] **VERIFY-06**: CI or an equivalent repeatable local command reports whether the project is ready for review.
+- [ ] **VERIFY-07**: Developer or reviewer can run a real n8n custom-node E2E check that installs or mounts the SAP CAP node in n8n, starts the CAP demo app, creates SAP CAP credentials, runs Test Connection, loads metadata-backed entity options, executes Query and Read, and after Phase 7 also exercises mutation/action modes.
 
 ## v2 Requirements
 
@@ -137,46 +138,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
 | FOUND-05 | Phase 1 | Complete |
-| CAPAPI-01 | Phase 2 | Pending |
-| CAPAPI-02 | Phase 2 | Pending |
-| CAPAPI-03 | Phase 2 | Pending |
-| CAPAPI-04 | Phase 3 | Pending |
-| CAPAPI-05 | Phase 3 | Pending |
-| CAPAPI-06 | Phase 3 | Pending |
-| RUNTIME-01 | Phase 2 | Pending |
-| RUNTIME-02 | Phase 2 | Pending |
-| RUNTIME-03 | Phase 2 | Pending |
-| RUNTIME-04 | Phase 2 | Pending |
-| RUNTIME-05 | Phase 2 | Pending |
-| RUNTIME-06 | Phase 3 | Pending |
-| RUNTIME-07 | Phase 3 | Pending |
-| ANNO-01 | Phase 4 | Pending |
-| ANNO-02 | Phase 4 | Pending |
-| ANNO-03 | Phase 4 | Pending |
-| ANNO-04 | Phase 4 | Pending |
-| ANNO-05 | Phase 4 | Pending |
-| ANNO-06 | Phase 4 | Pending |
-| ANNO-07 | Phase 4 | Pending |
-| IMPORT-01 | Phase 5 | Pending |
-| IMPORT-02 | Phase 5 | Pending |
-| IMPORT-03 | Phase 5 | Pending |
-| IMPORT-04 | Phase 5 | Pending |
-| IMPORT-05 | Phase 5 | Pending |
-| IMPORT-06 | Phase 5 | Pending |
-| IMPORT-07 | Phase 5 | Pending |
+| CAPAPI-01 | Phase 2 | Complete |
+| CAPAPI-02 | Phase 2 | Complete |
+| CAPAPI-03 | Phase 2 | Complete |
+| CAPAPI-04 | Phase 3 | Complete |
+| CAPAPI-05 | Phase 3 | Complete |
+| CAPAPI-06 | Phase 3 | Complete |
+| RUNTIME-01 | Phase 2 | Complete |
+| RUNTIME-02 | Phase 2 | Complete |
+| RUNTIME-03 | Phase 2 | Complete |
+| RUNTIME-04 | Phase 2 | Complete |
+| RUNTIME-05 | Phase 2 | Complete |
+| RUNTIME-06 | Phase 3 | Complete |
+| RUNTIME-07 | Phase 3 | Complete |
+| ANNO-01 | Phase 4 | Complete |
+| ANNO-02 | Phase 4 | Complete |
+| ANNO-03 | Phase 4 | Complete |
+| ANNO-04 | Phase 4 | Complete |
+| ANNO-05 | Phase 4 | Complete |
+| ANNO-06 | Phase 4 | Complete |
+| ANNO-07 | Phase 4 | Complete |
+| IMPORT-01 | Phase 5 | Complete |
+| IMPORT-02 | Phase 5 | Complete |
+| IMPORT-03 | Phase 5 | Complete |
+| IMPORT-04 | Phase 5 | Complete |
+| IMPORT-05 | Phase 5 | Complete |
+| IMPORT-06 | Phase 5 | Complete |
+| IMPORT-07 | Phase 5 | Complete |
 | NODE-01 | Phase 1 | Complete |
-| NODE-02 | Phase 6 | Pending |
-| NODE-03 | Phase 6 | Pending |
-| NODE-04 | Phase 6 | Pending |
-| NODE-05 | Phase 6 | Pending |
-| NODE-06 | Phase 6 | Pending |
-| NODE-07 | Phase 7 | Pending |
-| NODE-08 | Phase 7 | Pending |
-| NODE-09 | Phase 7 | Pending |
-| NODE-10 | Phase 6 | Pending |
-| NODE-11 | Phase 6 | Pending |
-| NODE-12 | Phase 7 | Pending |
-| NODE-13 | Phase 7 | Pending |
+| NODE-02 | Phase 6 | Complete |
+| NODE-03 | Phase 6 | Complete |
+| NODE-04 | Phase 6 | Complete |
+| NODE-05 | Phase 6 | Complete |
+| NODE-06 | Phase 6 | Complete |
+| NODE-07 | Phase 7 | Complete |
+| NODE-08 | Phase 7 | Complete |
+| NODE-09 | Phase 7 | Complete |
+| NODE-10 | Phase 6 | Complete |
+| NODE-11 | Phase 6 | Complete |
+| NODE-12 | Phase 7 | Complete |
+| NODE-13 | Phase 7 | Complete |
 | DOCS-01 | Phase 8 | Pending |
 | DOCS-02 | Phase 8 | Pending |
 | DOCS-03 | Phase 8 | Pending |
@@ -184,16 +185,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-05 | Phase 8 | Pending |
 | DOCS-06 | Phase 8 | Pending |
 | DOCS-07 | Phase 8 | Pending |
-| VERIFY-01 | Phase 2 | Pending |
-| VERIFY-02 | Phase 4 | Pending |
-| VERIFY-03 | Phase 5 | Pending |
-| VERIFY-04 | Phase 7 | Pending |
+| VERIFY-01 | Phase 2 | Complete |
+| VERIFY-02 | Phase 4 | Complete |
+| VERIFY-03 | Phase 5 | Complete |
+| VERIFY-04 | Phase 7 | Complete |
 | VERIFY-05 | Phase 8 | Pending |
 | VERIFY-06 | Phase 8 | Pending |
+| VERIFY-07 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 58 total
-- Mapped to phases: 58
+
+- v1 requirements: 59 total
+- Mapped to phases: 59
 - Unmapped: 0
 
 ---

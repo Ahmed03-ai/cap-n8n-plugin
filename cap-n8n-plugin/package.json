@@ -3,17 +3,27 @@
   "version": "1.0.0",
   "description": "SAP CAP plugin for triggering n8n workflows",
   "main": "index.js",
+  "bin": {
+    "cap-n8n": "./bin/cap-n8n.js"
+  },
   "exports": {
     ".": "./index.js",
     "./service": "./lib/N8nWorkflowService.js",
+    "./mock-service": "./lib/MockN8nWorkflowService.js",
+    "./index.cds": "./index.cds",
     "./cds-plugin": "./cds-plugin.js",
     "./cds-plugin.js": "./cds-plugin.js"
   },
   "files": [
+    "bin/",
     "index.js",
+    "index.cds",
     "cds-plugin.js",
     "lib/"
   ],
+  "cds": {
+    "model": "index.cds"
+  },
   "scripts": {
     "test": "node -e \"const plugin = require('./index.js'); if (typeof plugin.N8nWorkflowService !== 'function') process.exit(1)\""
   },

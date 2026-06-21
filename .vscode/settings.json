@@ -1,0 +1,9 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "npm install": true,
+        "nvm": true,
+        "volta": true,
+        "nvs": true,
+        "winget": true
+    }
+}

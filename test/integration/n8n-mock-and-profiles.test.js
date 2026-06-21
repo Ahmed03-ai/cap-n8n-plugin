@@ -1,0 +1,310 @@
+import { afterEach, describe, expect, it } from 'vitest'
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+const cds = require('@sap/cds')
+const originalN8nConfig = cds.env.requires?.n8n
+
+function loadConfig() {
+  return require('../../cap-n8n-plugin/lib/config.js')
+}
+
+function loadFreshCdsPlugin() {
+  const pluginPath = require.resolve('../../cap-n8n-plugin/cds-plugin.js')
+  delete require.cache[pluginPath]
+  require(pluginPath)
+}
+
+function configureMockN8n(options = {}) {
+  cds.env.requires ??= {}
+  cds.env.requires.n8n = {
+    kind: 'mock',
+    impl: require.resolve('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js'),
+    ...options
+  }
+}
+
+async function resetN8nService() {
+  try {
+    await cds.disconnect('n8n')
+  } catch (err) {
+    // Service may not have been connected yet.
+  }
+  delete cds.services.n8n
+
+  if (originalN8nConfig) {
+    cds.env.requires.n8n = originalN8nConfig
+  } else if (cds.env.requires) {
+    delete cds.env.requires.n8n
+  }
+}
+
+afterEach(async () => {
+  await resetN8nService()
+})
+
+describe('n8n mock runtime and profile configuration', () => {
+  it("resolves explicit kind: 'mock' without requiring webhook credentials", () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    expect(resolveN8nConfig({ kind: 'mock' }, { NODE_ENV: 'production' })).toMatchObject({
+      kind: 'mock'
+    })
+  })
+
+  it("falls back to kind: 'mock' for development profiles without a baseUrl", () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    expect(resolveN8nConfig({}, { CDS_ENV: 'development', NODE_ENV: 'production' })).toMatchObject({
+      kind: 'mock'
+    })
+    expect(resolveN8nConfig({}, { NODE_ENV: 'test' })).toMatchObject({
+      kind: 'mock'
+    })
+  })
+
+  it("resolves kind: 'webhook' when a webhook baseUrl is configured", () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    expect(resolveN8nConfig({
+      kind: 'webhook',
+      credentials: {
+        baseUrl: 'http://localhost:5678'
+      }
+    }, { NODE_ENV: 'production' })).toMatchObject({
+      kind: 'webhook',
+      baseUrl: 'http://localhost:5678'
+    })
+  })
+
+  it('does not require an apiKey when webhook baseUrl is present', () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    const config = resolveN8nConfig({
+      credentials: {
+        baseUrl: 'http://localhost:5678'
+      }
+    }, { NODE_ENV: 'production' })
+
+    expect(config).toMatchObject({
+      kind: 'webhook',
+      baseUrl: 'http://localhost:5678'
+    })
+    expect(config.apiKey).toBeUndefined()
+  })
+
+  it('resolves env placeholders for webhook and cancellation credentials', () => {
+    const { resolveN8nConfig } = loadConfig()
+    const config = resolveN8nConfig({
+      kind: 'webhook',
+      credentials: {
+        baseUrl: '{env.N8N_CLOUD_BASE_URL}',
+        apiKey: '{env.N8N_CLOUD_API_KEY}'
+      },
+      cancel: {
+        supported: '{env.N8N_CANCEL_SUPPORTED}',
+        apiBaseUrl: '{env.N8N_CLOUD_API_BASE_URL}'
+      }
+    }, {
+      NODE_ENV: 'production',
+      N8N_CLOUD_BASE_URL: 'https://cloud-n8n.example',
+      N8N_CLOUD_API_KEY: 'cloud-api-key-value',
+      N8N_CANCEL_SUPPORTED: 'true',
+      N8N_CLOUD_API_BASE_URL: 'https://cloud-n8n.example/api'
+    })
+
+    expect(config).toMatchObject({
+      kind: 'webhook',
+      baseUrl: 'https://cloud-n8n.example',
+      apiKey: 'cloud-api-key-value',
+      cancel: {
+        supported: true,
+        apiBaseUrl: 'https://cloud-n8n.example/api'
+      }
+    })
+  })
+
+  it('throws a sanitized baseUrl error for production webhook mode without credentials', () => {
+    const { resolveN8nConfig } = loadConfig()
+    const secretApiKey = 'secret-api-key-value'
+
+    expect(() => resolveN8nConfig({
+      kind: 'webhook',
+      credentials: {
+        apiKey: secretApiKey
+      }
+    }, { NODE_ENV: 'production' })).toThrow(/baseUrl/)
+
+    try {
+      resolveN8nConfig({
+        kind: 'webhook',
+        credentials: {
+          apiKey: secretApiKey
+        }
+      }, { NODE_ENV: 'production' })
+    } catch (err) {
+      expect(err.message).toContain('baseUrl')
+      expect(err.message).not.toContain(secretApiKey)
+      expect(err).toMatchObject({
+        code: 'ERR_N8N_CONFIG',
+        source: 'n8n'
+      })
+    }
+  })
+
+  it('fails non-development webhook configuration without a baseUrl', () => {
+    const { resolveN8nConfig } = loadConfig()
+
+    expect(() => resolveN8nConfig({}, { NODE_ENV: 'production' })).toThrow(/baseUrl/)
+  })
+})
+
+describe('MockN8nWorkflowService', () => {
+  it('returns deterministic mock execution results and records start metadata', async () => {
+    configureMockN8n()
+
+    const n8n = await cds.connect.to('n8n')
+    const result = await n8n.start(
+      'cap-test-trigger',
+      { event: 'BookCreated' },
+      { correlationId: 'corr-1', businessKey: 'book-1' }
+    )
+    const sendResult = await n8n.send('start', {
+      workflowId: 'webhook-test/debug-trigger',
+      inputs: { event: 'Debug' },
+      options: { businessKey: 'book-2' }
+    })
+
+    expect(result).toMatchObject({
+      accepted: true,
+      workflowId: 'cap-test-trigger',
+      executionId: 'mock-exec-1',
+      correlationId: 'corr-1',
+      businessKey: 'book-1',
+      status: 'succeeded',
+      mock: true
+    })
+    expect(sendResult).toMatchObject({
+      accepted: true,
+      workflowId: 'webhook-test/debug-trigger',
+      executionId: 'mock-exec-2',
+      businessKey: 'book-2',
+      status: 'succeeded',
+      mock: true
+    })
+    expect(JSON.stringify(result.result)).not.toContain('inputs')
+    expect(JSON.stringify(sendResult.result)).not.toContain('inputs')
+    expect(n8n.executions).toHaveLength(2)
+    expect(n8n.executions[0]).toMatchObject({
+      executionId: 'mock-exec-1',
+      workflowId: 'cap-test-trigger',
+      inputs: { event: 'BookCreated' },
+      status: 'succeeded',
+      correlationId: 'corr-1',
+      businessKey: 'book-1'
+    })
+    expect(n8n.executions[0].startedAt).toEqual(expect.any(String))
+    expect(n8n.executions[0].finishedAt).toEqual(expect.any(String))
+  })
+
+  it('supports explicit opt-in mock failures plus query and cancel APIs', async () => {
+    configureMockN8n({
+      mock: {
+        failWorkflows: ['fail-me']
+      }
+    })
+
+    const n8n = await cds.connect.to('n8n')
+
+    await expect(n8n.start('ok-workflow', { event: 'BookCreated' })).resolves.toMatchObject({
+      executionId: 'mock-exec-1',
+      status: 'succeeded',
+      mock: true
+    })
+    let failure
+    try {
+      await n8n.start('fail-me', { secret: 'do-not-leak' })
+    } catch (err) {
+      failure = err
+    }
+
+    expect(failure).toMatchObject({
+      code: 'ERR_N8N_MOCK_FAILURE',
+      source: 'n8n',
+      mock: true
+    })
+    expect(failure.message).toContain('fail-me')
+    expect(failure.message).not.toContain('do-not-leak')
+    expect(n8n.executions).toHaveLength(2)
+    expect(n8n.executions[1]).toMatchObject({
+      executionId: 'mock-exec-2',
+      workflowId: 'fail-me',
+      inputs: { secret: 'do-not-leak' },
+      status: 'failed'
+    })
+
+    await expect(n8n.getExecution('mock-exec-1')).resolves.toMatchObject({
+      executionId: 'mock-exec-1',
+      workflowId: 'ok-workflow',
+      status: 'succeeded'
+    })
+    await expect(n8n.queryExecutions({ workflowId: 'ok-workflow' })).resolves.toMatchObject({
+      items: [
+        expect.objectContaining({
+          executionId: 'mock-exec-1',
+          status: 'succeeded'
+        })
+      ]
+    })
+    await expect(n8n.cancel('mock-exec-1')).resolves.toMatchObject({
+      executionId: 'mock-exec-1',
+      status: 'succeeded',
+      noOp: true
+    })
+
+    const MockN8nWorkflowService = require('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js')
+    expect(typeof MockN8nWorkflowService.prototype.getExecution).toBe('function')
+    expect(typeof MockN8nWorkflowService.prototype.queryExecutions).toBe('function')
+    expect(typeof MockN8nWorkflowService.prototype.cancel).toBe('function')
+  })
+})
+
+describe('CAP plugin runtime implementation selection', () => {
+  it("selects mock implementation when kind: 'mock' has no explicit impl", () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = { kind: 'mock' }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe(require.resolve('../../cap-n8n-plugin/lib/MockN8nWorkflowService.js'))
+  })
+
+  it("selects webhook implementation when kind: 'webhook' has no explicit impl", () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = {
+      kind: 'webhook',
+      credentials: {
+        baseUrl: 'http://localhost:5678'
+      }
+    }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe(require.resolve('../../cap-n8n-plugin/lib/N8nWorkflowService.js'))
+  })
+
+  it('preserves explicit n8n implementation overrides', () => {
+    cds.env.requires ??= {}
+    cds.env.requires.n8n = {
+      kind: 'mock',
+      impl: 'custom-n8n-service'
+    }
+
+    loadFreshCdsPlugin()
+    cds.emit('bootstrap')
+
+    expect(cds.env.requires.n8n.impl).toBe('custom-n8n-service')
+  })
+})

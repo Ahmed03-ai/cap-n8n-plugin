@@ -1,0 +1,82 @@
+[
+  {
+    "name": "CAP n8n Cancellation Test",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "cap-cancel-stoppable",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "6f2328d7-3cde-4a75-8e47-9402dbbfaf01",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -480,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"executionId\": $execution.id, \"status\": \"running\", \"keepRunning\": true } }}",
+          "options": {
+            "responseCode": 202
+          }
+        },
+        "id": "75641dc6-2f1a-4f43-a0be-77a8b333e12f",
+        "name": "Respond with running execution",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          -160,
+          0
+        ]
+      },
+      {
+        "parameters": {
+          "resume": "timeInterval",
+          "amount": 15,
+          "unit": "minutes"
+        },
+        "id": "05a52f6e-44b2-44a2-8c81-45d993800cd7",
+        "name": "Wait for cancellation review",
+        "type": "n8n-nodes-base.wait",
+        "typeVersion": 1.1,
+        "position": [
+          160,
+          0
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Respond with running execution",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Respond with running execution": {
+        "main": [
+          [
+            {
+              "node": "Wait for cancellation review",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    }
+  }
+]
