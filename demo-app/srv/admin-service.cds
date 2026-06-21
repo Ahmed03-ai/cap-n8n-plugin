@@ -12,7 +12,8 @@ annotate AdminService.Books with @n8n.workflow.start: {
   on: ['CREATE', 'UPDATE'],
   inputs: {
     bookId: 'ID',
-    title: 'title'
+    title: 'title',
+    stock: 'stock'
   },
   if: 'stock > 0',
   businessKey: 'ID',
