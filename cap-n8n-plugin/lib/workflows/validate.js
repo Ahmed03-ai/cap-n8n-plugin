@@ -1,6 +1,7 @@
 const { readWorkflowAnnotations } = require('../annotations/AnnotationParser')
 const { readWorkflowArtifacts } = require('./artifacts')
 const { createDiagnostic, summarizeDiagnostics } = require('./diagnostics')
+const cds = require('@sap/cds')
 
 const ANNOTATION = '@n8n.workflow.start'
 const TYPE_COMPATIBILITY = {
@@ -48,9 +49,17 @@ function entityName(name, definition = {}) {
   return definition.name || name || definition.kind || 'entity'
 }
 
+function effectiveDefinitions(csn = {}) {
+  try {
+    return cds.compile.for.nodejs(csn).definitions || csn.definitions || {}
+  } catch (error) {
+    return csn.definitions || {}
+  }
+}
+
 function startAnnotations(csn = {}) {
   const starts = []
-  const definitions = csn.definitions || {}
+  const definitions = effectiveDefinitions(csn)
 
   for (const [name, definition] of Object.entries(definitions)) {
     if (!definition || definition.kind !== 'entity') continue

@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: human_verification
 last_updated: "2026-06-21T17:45:00Z"
-last_activity: 2026-06-21 -- Completed quick task 260621-r3q: Rewrite agent startup routine to load stock update discord msg test workflow
+last_activity: 2026-06-22 -- Completed quick task 260622-pld: Expand demo workflow payload
 progress:
   total_phases: 8
   completed_phases: 7
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 Phase: 08 (deployment-docs-and-release-readiness) - HUMAN UAT
 Plan: 4 of 4 completed
 Status: Automated verification passed; human UAT pending
-Last activity: 2026-06-21 -- Completed quick task 260621-mrg: Merge community node branch into port branch
+Last activity: 2026-06-22 -- Completed quick task 260622-pld: Expand demo workflow payload
 
 Progress: [██████████] 100%
 
@@ -182,6 +182,7 @@ Recent decisions affecting current work:
 | 260621-nt4 | Build agentic startup routine for local CAP and n8n review | 2026-06-21 | pending | [260621-nt4-build-agentic-startup-routine-for-local-](./quick/260621-nt4-build-agentic-startup-routine-for-local-/) |
 | 260621-r3q | Rewrite agent startup routine to load stock update discord msg test workflow | 2026-06-21 | pending | [260621-r3q-rewrite-agent-startup-routine-to-load-st](./quick/260621-r3q-rewrite-agent-startup-routine-to-load-st/) |
 | 260621-mrg | Merge community node branch into port branch | 2026-06-21 | pending | [260621-mrg-merge-community-node-into-port](./quick/260621-mrg-merge-community-node-into-port/) |
+| 260622-pld | Expand demo workflow payload | 2026-06-22 | pending | [260622-pld-expand-demo-workflow-payload](./quick/260622-pld-expand-demo-workflow-payload/) |
 
 ## Deferred Items
 

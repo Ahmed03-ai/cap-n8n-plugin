@@ -4,9 +4,29 @@
       "required": true,
       "type": "Integer"
     },
+    "authorId": {
+      "required": false,
+      "type": "Integer"
+    },
+    "currencyCode": {
+      "required": false,
+      "type": "String"
+    },
+    "description": {
+      "required": false,
+      "type": "String"
+    },
     "event": {
       "required": false,
       "type": "JSON"
+    },
+    "genreId": {
+      "required": false,
+      "type": "String"
+    },
+    "price": {
+      "required": false,
+      "type": "Decimal"
     },
     "stock": {
       "required": true,

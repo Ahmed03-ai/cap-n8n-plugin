@@ -225,7 +225,13 @@ describe('demo AdminService n8n annotations', () => {
     expect(adminBooks).toMatchObject({
       '@n8n.workflow.start.workflowId': workflowId,
       '@n8n.workflow.start.on': ['CREATE', 'UPDATE'],
+      '@n8n.workflow.start.inputs.authorId': 'author_ID',
       '@n8n.workflow.start.inputs.bookId': 'ID',
+      '@n8n.workflow.start.inputs.currencyCode': 'currency_code',
+      '@n8n.workflow.start.inputs.description': 'descr',
+      '@n8n.workflow.start.inputs.genreId': 'genre_ID',
+      '@n8n.workflow.start.inputs.price': 'price',
+      '@n8n.workflow.start.inputs.stock': 'stock',
       '@n8n.workflow.start.inputs.title': 'title',
       '@n8n.workflow.start.if': 'stock > 0',
       '@n8n.workflow.start.businessKey': 'ID',
@@ -255,7 +261,10 @@ describe('demo AdminService n8n annotations', () => {
       await adminRun(srv, INSERT.into(srv.entities.Books).entries({
         ID: createId,
         title: 'Annotated Demo Create',
+        descr: 'Payload includes book description',
         stock: 5,
+        price: 10,
+        currency_code: 'USD',
         author: { ID: authorId },
         genre: { ID: demoGenreId }
       }))
@@ -265,7 +274,13 @@ describe('demo AdminService n8n annotations', () => {
         url: `/${workflowId}`,
         body: {
           bookId: createId,
-          title: 'Annotated Demo Create'
+          title: 'Annotated Demo Create',
+          description: 'Payload includes book description',
+          authorId,
+          genreId: demoGenreId,
+          stock: 5,
+          price: 10,
+          currencyCode: 'USD'
         }
       })
       expectEventMetadata(server.requests[0].body, 'CREATE', { ID: createId })
@@ -277,7 +292,13 @@ describe('demo AdminService n8n annotations', () => {
         url: `/${workflowId}`,
         body: {
           bookId: createId,
-          title: 'Annotated Demo Create'
+          title: 'Annotated Demo Create',
+          description: 'Payload includes book description',
+          authorId,
+          genreId: demoGenreId,
+          stock: 7,
+          price: 10,
+          currencyCode: 'USD'
         }
       })
       expectEventMetadata(server.requests[1].body, 'UPDATE', { ID: createId })

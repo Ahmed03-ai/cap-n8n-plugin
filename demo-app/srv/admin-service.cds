@@ -14,7 +14,12 @@ annotate AdminService.Books with @n8n.workflow.start: {
   inputs: {
     bookId: 'ID',
     title: 'title',
-    stock: 'stock'
+    description: 'descr',
+    authorId: 'author_ID',
+    genreId: 'genre_ID',
+    stock: 'stock',
+    price: 'price',
+    currencyCode: 'currency_code'
   },
   if: 'stock > 0',
   businessKey: 'ID',
