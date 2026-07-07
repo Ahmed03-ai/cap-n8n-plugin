@@ -67,8 +67,20 @@ function servedServices(services) {
   return Object.values(services);
 }
 
+function isPersistenceService(srv) {
+  // Annotation handlers belong on the served application services only. The
+  // database service exposes the same entities, so registering there makes a
+  // single OData write fire each handler twice (once on the app service, once
+  // as it propagates to the db layer) — e.g. cancel runs twice and the second
+  // pass logs a spurious "no active executions matched" after the first already
+  // cancelled. Skip the persistence layer to keep handlers firing exactly once.
+  if (srv === cds.db) return true;
+  return Boolean(cds.DatabaseService && srv instanceof cds.DatabaseService);
+}
+
 cds.on('served', (services) => {
   for (const srv of servedServices(services)) {
+    if (isPersistenceService(srv)) continue;
     registerN8nAnnotations(srv);
   }
 });
