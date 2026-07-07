@@ -412,6 +412,14 @@ function resolveActionFunctionDescriptor(input: ActionFunctionRequestInput): Res
   })
 }
 
+function stripActionFunctionOptionPrefix(value: string): string {
+  for (const prefix of ['bound::', 'unbound::']) {
+    if (value.startsWith(prefix)) return value.slice(prefix.length)
+  }
+
+  return value
+}
+
 function parseActionFunctionDescriptor(value: unknown): ActionFunctionDescriptorInput {
   if (isPlainObject(value)) return value as ActionFunctionDescriptorInput
 
@@ -422,7 +430,7 @@ function parseActionFunctionDescriptor(value: unknown): ActionFunctionDescriptor
   }
 
   try {
-    const parsed = JSON.parse(value)
+    const parsed = JSON.parse(stripActionFunctionOptionPrefix(value))
 
     if (isPlainObject(parsed)) return parsed as ActionFunctionDescriptorInput
   } catch (err) {
@@ -609,7 +617,12 @@ export async function sapCapApiRequest(
     }) as FullHttpResponse
 
     if (response.statusCode >= 400) {
-      throw createHttpStatusError(response.statusCode, input.errorContext ?? 'odata')
+      throw createHttpStatusError(
+        response.statusCode,
+        input.errorContext ?? 'odata',
+        extractCapErrorDetail(response.body),
+        input.path
+      )
     }
 
     if (responseFormat === 'json') {
@@ -638,14 +651,50 @@ export async function sapCapApiRequest(
 
 export function createSapCapRequestError(
   message: string,
-  options: { statusCode?: number, category: string }
+  options: { statusCode?: number, category: string, detail?: string, resourcePath?: string }
 ) {
-  const err = new Error(message) as Error & { statusCode?: number, category: string }
+  const err = new Error(message) as Error & {
+    statusCode?: number
+    category: string
+    detail?: string
+    resourcePath?: string
+  }
 
   err.statusCode = options.statusCode
   err.category = options.category
+  if (options.detail) err.detail = options.detail
+  if (options.resourcePath) err.resourcePath = options.resourcePath
 
   return err
+}
+
+// Pulls only CAP's human-readable OData error message (`error.message`) out of a failed
+// response so it can be surfaced to the developer. Every other field — Authorization,
+// tokens, stack traces, the rest of the body — is deliberately ignored, and the message
+// is trimmed and length-capped so a large payload can never be dumped into the workflow.
+function extractCapErrorDetail(bodyText: unknown): string | undefined {
+  if (typeof bodyText !== 'string' || !bodyText.trim()) return undefined
+
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(bodyText)
+  } catch (err) {
+    return undefined
+  }
+
+  if (!isPlainObject(parsed) || !isPlainObject(parsed.error)) return undefined
+
+  const rawMessage = parsed.error.message
+  const message = typeof rawMessage === 'string'
+    ? rawMessage
+    : isPlainObject(rawMessage) && typeof rawMessage.value === 'string'
+      ? rawMessage.value
+      : undefined
+
+  if (!message || !message.trim()) return undefined
+
+  return message.trim().slice(0, 300)
 }
 
 export function buildBasicAuthHeaders(credentials: ICredentialDataDecryptedObject) {
@@ -901,13 +950,20 @@ function setIntegerQueryParam(
   params.set(key, String(numberValue))
 }
 
-function createHttpStatusError(statusCode: number, context: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction') {
+function createHttpStatusError(
+  statusCode: number,
+  context: 'metadata' | 'odata' | 'read' | 'delete' | 'actionFunction',
+  detail?: string,
+  resourcePath?: string
+) {
   const category = categoryForStatus(statusCode)
   const message = messageForStatus(statusCode, category, context)
 
   return createSapCapRequestError(message, {
     statusCode,
     category,
+    detail,
+    resourcePath,
   })
 }
 

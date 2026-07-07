@@ -31,7 +31,8 @@
   "n8n": {
     "n8nNodesApiVersion": 1,
     "nodes": [
-      "dist/nodes/SapCap/SapCap.node.js"
+      "dist/nodes/SapCap/SapCap.node.js",
+      "dist/nodes/SapCap/SapCapTrigger.node.js"
     ],
     "credentials": [
       "dist/credentials/SapCapApi.credentials.js"

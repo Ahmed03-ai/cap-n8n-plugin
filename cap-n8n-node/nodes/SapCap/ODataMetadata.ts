@@ -1,5 +1,6 @@
 import {
   ILoadOptionsFunctions,
+  INodeListSearchResult,
   INodePropertyOptions,
 } from 'n8n-workflow'
 
@@ -22,6 +23,11 @@ export type EntitySetDescriptor = {
   name: string
   entityType?: string
   keys: EntityKeyDescriptor[]
+}
+
+export type EntityFieldDescriptor = {
+  name: string
+  type?: string
 }
 
 export type ActionFunctionParameterDescriptor = {
@@ -108,38 +114,137 @@ export function extractActionFunctionDescriptors(metadataXml: string): ActionFun
   ]
 }
 
+// The dropdown option value is prefixed with the binding so that the node's
+// displayOptions can reshape the downstream form (key inputs vs. parameters only)
+// purely from the selection, without asking the user to restate the binding.
+export const BOUND_OPTION_PREFIX = 'bound::'
+export const UNBOUND_OPTION_PREFIX = 'unbound::'
+
+export function actionFunctionOptionValue(descriptor: ActionFunctionDescriptor): string {
+  const prefix = descriptor.isBound ? BOUND_OPTION_PREFIX : UNBOUND_OPTION_PREFIX
+
+  return `${prefix}${JSON.stringify(descriptor)}`
+}
+
 export function extractActionFunctionOptions(metadataXml: string): INodePropertyOptions[] {
   return extractActionFunctionDescriptors(metadataXml).map((descriptor) => ({
     name: actionFunctionOptionName(descriptor),
-    value: JSON.stringify(descriptor),
+    value: actionFunctionOptionValue(descriptor),
     description: descriptor.qualifiedName,
   }))
 }
 
+// CAP managed timestamp columns; surfaced first so the polling trigger defaults
+// to a sensible change-detection field without the user hunting through the list.
+const PREFERRED_TIMESTAMP_FIELDS = ['modifiedAt', 'createdAt']
+
+export function extractEntityFieldDescriptors(
+  metadataXml: string,
+  entitySetName: string
+): EntityFieldDescriptor[] {
+  validateMetadataXml(metadataXml)
+
+  const entitySet = extractEntitySets(metadataXml).find((candidate) => candidate.name === entitySetName)
+
+  if (!entitySet?.entityType) return []
+
+  const fieldsByType = extractEntityTypeFields(metadataXml)
+  const localName = entitySet.entityType.split('.').pop()
+
+  return fieldsByType.get(entitySet.entityType)
+    ?? (localName ? fieldsByType.get(localName) : undefined)
+    ?? []
+}
+
+export function extractTimestampFieldOptions(
+  metadataXml: string,
+  entitySetName: string
+): INodePropertyOptions[] {
+  const fields = extractEntityFieldDescriptors(metadataXml, entitySetName)
+  // Only date/time fields are valid change markers for polling; non-temporal fields
+  // (strings, keys, …) would break the timestamp watermark, so keep them out of the list.
+  const temporal = fields.filter((field) => isTemporalEdmType(field.type))
+
+  return sortPreferredFirst(temporal).map((field) => ({
+    name: field.name,
+    value: field.name,
+    ...(field.type ? { description: field.type } : {}),
+  }))
+}
+
+export async function loadTimestampFieldOptions(this: ILoadOptionsFunctions) {
+  const rawEntitySet = this.getCurrentNodeParameter('entitySet')
+  const entitySetName = rawEntitySet && typeof rawEntitySet === 'object'
+    ? String((rawEntitySet as { value?: unknown }).value ?? '')
+    : String(rawEntitySet ?? '')
+
+  if (!entitySetName) return []
+
+  return extractTimestampFieldOptions(await fetchDesignTimeMetadataXml(this), entitySetName)
+}
+
 export async function loadEntitySetOptions(this: ILoadOptionsFunctions) {
-  const credentials = await this.getCredentials('sapCapApi')
-  const metadataPath = normalizeMetadataPath(credentials.metadataPath)
-  const metadataXml = await sapCapApiRequest(this, {
+  return extractEntitySetOptions(await fetchDesignTimeMetadataXml(this))
+}
+
+// Dropdown loads prefer the node's Service Path so the entity and action lists reflect
+// the service the user typed (e.g. /odata/v4/catalog surfaces submitOrder), falling back
+// to the credential's Metadata Path when the Service Path is unavailable.
+async function fetchDesignTimeMetadataXml(context: ILoadOptionsFunctions): Promise<string> {
+  const credentials = await context.getCredentials('sapCapApi')
+
+  return await sapCapApiRequest(context, {
     method: 'GET',
-    path: metadataPath,
+    path: resolveDesignTimeMetadataPath(context, credentials.metadataPath),
     responseFormat: 'text',
     errorContext: 'metadata',
   }) as string
+}
 
-  return extractEntitySetOptions(metadataXml)
+function resolveDesignTimeMetadataPath(context: ILoadOptionsFunctions, credentialMetadataPath: unknown): string {
+  const servicePath = typeof context.getCurrentNodeParameter === 'function'
+    ? context.getCurrentNodeParameter('servicePath')
+    : undefined
+
+  if (typeof servicePath === 'string' && servicePath.trim()) {
+    return normalizeMetadataPath(`${servicePath.replace(/\/+$/, '')}/$metadata`)
+  }
+
+  return normalizeMetadataPath(credentialMetadataPath)
+}
+
+// resourceLocator "From List" search backends. They reuse the option loaders and
+// apply the editor's type-ahead filter, so the entity-set and action/function
+// pickers no longer need a separate "From Metadata / Manual" source dropdown.
+export async function searchEntitySets(
+  this: ILoadOptionsFunctions,
+  filter?: string
+): Promise<INodeListSearchResult> {
+  return toSearchResults(await loadEntitySetOptions.call(this), filter)
+}
+
+export async function searchActionFunctions(
+  this: ILoadOptionsFunctions,
+  filter?: string
+): Promise<INodeListSearchResult> {
+  return toSearchResults(await loadActionFunctionOptions.call(this), filter)
+}
+
+function toSearchResults(options: INodePropertyOptions[], filter?: string): INodeListSearchResult {
+  const term = (filter ?? '').trim().toLowerCase()
+  const results = options
+    .filter((option) => !term || String(option.name).toLowerCase().includes(term))
+    .map((option) => ({
+      name: String(option.name),
+      value: String(option.value),
+      ...(option.description ? { description: option.description } : {}),
+    }))
+
+  return { results }
 }
 
 export async function loadActionFunctionOptions(this: ILoadOptionsFunctions) {
-  const credentials = await this.getCredentials('sapCapApi')
-  const metadataPath = normalizeMetadataPath(credentials.metadataPath)
-  const metadataXml = await sapCapApiRequest(this, {
-    method: 'GET',
-    path: metadataPath,
-    responseFormat: 'text',
-    errorContext: 'metadata',
-  }) as string
-
-  return extractActionFunctionOptions(metadataXml)
+  return extractActionFunctionOptions(await fetchDesignTimeMetadataXml(this))
 }
 
 function validateMetadataXml(metadataXml: string) {
@@ -391,6 +496,48 @@ function extractEntityTypesFromSchema(
     entityTypes.set(name, keys)
     if (namespace) entityTypes.set(`${namespace}.${name}`, keys)
   }
+}
+
+function extractEntityTypeFields(metadataXml: string) {
+  const schemaPattern = /<(?:(?:\w+):)?Schema\b([^>]*)>([\s\S]*?)<\/(?:(?:\w+):)?Schema>/g
+  const fieldsByType = new Map<string, EntityFieldDescriptor[]>()
+  let schemaMatch: RegExpExecArray | null
+
+  while ((schemaMatch = schemaPattern.exec(metadataXml)) !== null) {
+    const schemaAttributes = parseAttributes(schemaMatch[1])
+    const namespace = schemaAttributes.Namespace
+    const entityTypePattern = /<(?:(?:\w+):)?EntityType\b([^>]*?)(\/>|>([\s\S]*?)<\/(?:(?:\w+):)?EntityType>)/g
+    let typeMatch: RegExpExecArray | null
+
+    while ((typeMatch = entityTypePattern.exec(schemaMatch[2])) !== null) {
+      const name = parseAttributes(typeMatch[1]).Name
+
+      if (!name) continue
+
+      const fields = Array.from(extractPropertyTypes(typeMatch[3] ?? ''))
+        .map(([fieldName, type]) => ({ name: fieldName, type }))
+
+      fieldsByType.set(name, fields)
+      if (namespace) fieldsByType.set(`${namespace}.${name}`, fields)
+    }
+  }
+
+  return fieldsByType
+}
+
+function isTemporalEdmType(type: string | undefined) {
+  if (!type) return false
+
+  return /Edm\.(DateTimeOffset|Date|Time|Timestamp)/i.test(type)
+}
+
+function sortPreferredFirst(fields: EntityFieldDescriptor[]): EntityFieldDescriptor[] {
+  const preferred = PREFERRED_TIMESTAMP_FIELDS
+    .map((name) => fields.find((field) => field.name === name))
+    .filter((field): field is EntityFieldDescriptor => Boolean(field))
+  const rest = fields.filter((field) => !PREFERRED_TIMESTAMP_FIELDS.includes(field.name))
+
+  return [...preferred, ...rest]
 }
 
 function extractKeyDescriptors(entityTypeXml: string): EntityKeyDescriptor[] {

@@ -399,13 +399,14 @@ The n8n node UI follows n8n's standard node editor patterns. The project can inf
 
 #### Acceptance Criteria
 
-- [ ] The CAP Action Node offers an Action/Function operation mode.
-- [ ] Available actions and functions are parsed from `$metadata` and shown in a dropdown.
-- [ ] Bound actions are invoked with the correct entity key in the URL path.
-- [ ] Unbound actions and functions are invoked at the service root.
-- [ ] Parameters for the action or function can be provided as a JSON body or query parameters depending on the OData convention.
-- [ ] The node outputs the action or function result as one n8n item.
-- [ ] Integration tests cover bound actions, unbound actions, function imports, and error scenarios.
+- [x] The CAP Action Node offers an Action/Function operation mode.
+- [x] Available actions and functions are parsed from `$metadata` and shown in a dropdown.
+- [x] Bound actions are invoked with the correct entity key in the URL path.
+- [x] Unbound actions and functions are invoked at the service root.
+- [x] Parameters for the action or function can be provided as a JSON body or query parameters depending on the OData convention.
+- [x] The node outputs the action or function result as one n8n item.
+- [x] Integration tests cover bound actions, unbound actions, function imports, and error scenarios.
+- [x] The binding (bound/unbound) is detected automatically from `$metadata`; selecting an operation reshapes the form so only the relevant inputs (entity key for bound, parameters only for unbound) are shown, without a manual binding choice.
 
 ### US 4.9: OData Response Cleanup
 
@@ -433,14 +434,14 @@ Reacting to CAP changes directly from n8n.
 
 #### Acceptance Criteria
 
-- [ ] A dedicated n8n Trigger Node named `SAP CAP Trigger` is registered in the node package.
-- [ ] The node uses the SAP CAP credentials from US 4.1 for authentication.
-- [ ] The user can select an Entity Set to poll from a dropdown.
-- [ ] A configurable polling interval is available.
-- [ ] The node tracks the last poll timestamp and fetches only new or changed records where possible.
-- [ ] Each new or changed record is emitted as an individual n8n item to trigger downstream nodes.
-- [ ] On first run, when no previous timestamp exists, the node either fetches all records or starts from the current time based on a user setting.
-- [ ] Integration tests cover polling logic, deduplication, first-run behavior, and error handling.
+- [x] A dedicated n8n Trigger Node named `SAP CAP Trigger` is registered in the node package.
+- [x] The node uses the SAP CAP credentials from US 4.1 for authentication.
+- [x] The user can select an Entity Set to poll from a dropdown.
+- [x] A configurable polling interval is available.
+- [x] The node tracks the last poll timestamp and fetches only new or changed records where possible.
+- [x] Each new or changed record is emitted as an individual n8n item to trigger downstream nodes.
+- [x] On first run, when no previous timestamp exists, the node either fetches all records or starts from the current time based on a user setting.
+- [x] Integration tests cover polling logic, deduplication, first-run behavior, and error handling.
 
 ## Epic 6: Deployment and Configuration
 

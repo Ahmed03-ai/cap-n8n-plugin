@@ -484,8 +484,17 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
     ])
     expect(options).toHaveLength(4)
 
+    // The option value carries the binding as a prefix so the node's displayOptions
+    // can reshape the form by type without a separate manual binding choice.
+    expect(options.map((option) => option.value.split('::')[0])).toEqual([
+      'unbound',
+      'unbound',
+      'bound',
+      'bound',
+    ])
+
     for (const option of options) {
-      const descriptor = JSON.parse(option.value)
+      const descriptor = JSON.parse(option.value.replace(/^(?:un)?bound::/, ''))
       const allowedFields = [
         'kind',
         'name',
@@ -530,6 +539,25 @@ describe('n8n SAP CAP metadata discovery helpers', () => {
       'Action: Books/restock',
       'Function: Books/inventoryValue',
     ])
+  })
+
+  it('loads the dropdown from the node Service Path, not the credential Metadata Path', async () => {
+    const { loadActionFunctionOptions } = await importDistModule('dist/nodes/SapCap/ODataMetadata.js')
+    const server = await createCapServer(() => ({ body: metadataWithActionFunctions }))
+    const context = {
+      ...createContext(basicCredentials(server.baseUrl)),
+      // Credential Metadata Path is /odata/v4/admin/$metadata, but the user typed a
+      // different Service Path; the dropdown must follow the Service Path.
+      getCurrentNodeParameter: (name) => (name === 'servicePath' ? '/odata/v4/catalog' : undefined),
+    }
+
+    await loadActionFunctionOptions.call(context)
+
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/odata/v4/catalog/$metadata',
+    })
   })
 
   it('returns an empty Action/Function option list when valid metadata has no operations', async () => {
