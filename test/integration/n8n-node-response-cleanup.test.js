@@ -368,7 +368,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(401),
         { operation: 'query' },
         {
-          message: 'CAP authentication failed. Check the SAP CAP API credential.',
+          message: 'Authentication failed (HTTP 401). Check the username and password in the SAP CAP credential.',
           statusCode: 401,
           category: 'authentication',
         },
@@ -377,7 +377,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(403),
         { operation: 'query' },
         {
-          message: 'CAP authorization failed. This credential cannot access the CAP service.',
+          message: 'Access denied (HTTP 403). This credential does not have permission for this operation.',
           statusCode: 403,
           category: 'authorization',
         },
@@ -386,7 +386,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(404),
         { operation: 'read' },
         {
-          message: 'CAP entity was not found for the selected entity set and key predicate.',
+          message: 'Not found (HTTP 404). No CAP entity matches the selected entity set and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -395,7 +395,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(404),
         { operation: 'delete' },
         {
-          message: 'CAP entity was not found for Delete. Check the selected entity set and key.',
+          message: 'Not found (HTTP 404). No CAP entity matches the selected entity set and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -404,7 +404,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(404),
         { operation: 'actionFunction' },
         {
-          message: 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.',
+          message: 'Not found (HTTP 404). No action/function matches. Check the operation, service path, and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -413,7 +413,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(404),
         { operation: 'metadata' },
         {
-          message: 'CAP metadata endpoint was not found. Check Base URL and Metadata Path.',
+          message: 'Not found (HTTP 404). The CAP metadata endpoint was not found. Check the Base URL and Metadata Path.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -422,7 +422,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(404),
         { operation: 'query' },
         {
-          message: 'CAP OData endpoint was not found. Check the service path and entity set.',
+          message: 'Not found (HTTP 404). No CAP entity matches the selected entity set and key.',
           statusCode: 404,
           category: 'notFound',
         },
@@ -431,7 +431,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(400),
         { operation: 'query' },
         {
-          message: 'CAP rejected the OData request. Check the OData options.',
+          message: 'Bad request (HTTP 400) for query. Check your input parameters.',
           statusCode: 400,
           category: 'validation',
         },
@@ -440,7 +440,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         statusError(502),
         { operation: 'query' },
         {
-          message: 'CAP service returned a server error. Try again or check the CAP service logs.',
+          message: 'CAP service error (HTTP 502). Check the CAP service logs.',
           statusCode: 502,
           category: 'server',
         },
@@ -449,7 +449,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
         new Error(`getaddrinfo ENOTFOUND ${fakeBearerToken} ${fakePassword}`),
         { operation: 'query' },
         {
-          message: 'Could not reach CAP service. Check Base URL and network access from n8n.',
+          message: 'Could not reach the CAP service. Check the Base URL and network access from n8n.',
           category: 'network',
         },
       ],
@@ -497,7 +497,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     })
 
     expect(safeError).toEqual({
-      message: 'CAP service returned a server error. Try again or check the CAP service logs.',
+      message: 'CAP service error (HTTP 500). Check the CAP service logs.',
       statusCode: 500,
       category: 'server',
     })
@@ -507,7 +507,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
   it('creates continueOnFail items with safe structured error JSON', async () => {
     const { classifySapCapError, toContinueOnFailItem } = await importResponseHelpers()
     const safeValidationError = {
-      message: 'CAP rejected the OData request. Check the OData options.',
+      message: 'Bad request (HTTP 400) for query. Check your input parameters.',
       statusCode: 400,
       category: 'validation',
     }
@@ -526,7 +526,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
 
     expect(toContinueOnFailItem(safeValidationError, 4)).toEqual({
       json: {
-        error: 'CAP rejected the OData request. Check the OData options.',
+        error: 'Bad request (HTTP 400) for query. Check your input parameters.',
         statusCode: 400,
         category: 'validation',
       },
@@ -534,7 +534,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     })
     expect(toContinueOnFailItem(safeNetworkError, 5)).toEqual({
       json: {
-        error: 'Could not reach CAP service. Check Base URL and network access from n8n.',
+        error: 'Could not reach the CAP service. Check the Base URL and network access from n8n.',
         category: 'network',
       },
       pairedItem: { item: 5 },
@@ -542,7 +542,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     expect(toContinueOnFailItem(safeNetworkError, 5).json).not.toHaveProperty('statusCode')
     expect(toContinueOnFailItem(safeDeleteNotFoundError, 6)).toEqual({
       json: {
-        error: 'CAP entity was not found for Delete. Check the selected entity set and key.',
+        error: 'Not found (HTTP 404). No CAP entity matches the selected entity set and key.',
         statusCode: 404,
         category: 'notFound',
       },
@@ -550,7 +550,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     })
     expect(toContinueOnFailItem(safeActionFunctionNotFoundError, 7)).toEqual({
       json: {
-        error: 'CAP action/function endpoint was not found. Check the selected operation, service path, and key.',
+        error: 'Not found (HTTP 404). No action/function matches. Check the operation, service path, and key.',
         statusCode: 404,
         category: 'notFound',
       },
@@ -585,7 +585,7 @@ describe('n8n SAP CAP OData response cleanup helpers', () => {
     })
 
     expect(nodeError).toBeInstanceOf(NodeOperationError)
-    expect(nodeError.message).toBe('CAP service returned a server error. Try again or check the CAP service logs.')
+    expect(nodeError.message).toBe('CAP service error (HTTP 500). Check the CAP service logs.')
     expect(nodeError.context.itemIndex).toBe(6)
     expect(serialized).not.toContain(fakePassword)
     expect(serialized).not.toContain(fakeBearerToken)

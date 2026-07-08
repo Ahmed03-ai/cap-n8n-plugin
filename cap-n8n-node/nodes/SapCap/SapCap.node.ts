@@ -30,6 +30,8 @@ import {
   extractEntitySetOptions,
   loadActionFunctionOptions,
   loadEntitySetOptions,
+  searchActionFunctions,
+  searchEntitySets,
 } from './ODataMetadata'
 import {
   classifySapCapError,
@@ -39,6 +41,24 @@ import {
 } from './ODataResponse'
 
 type SapCapOperation = 'query' | 'read' | 'create' | 'update' | 'delete' | 'actionFunction'
+
+// A bound action/function (from-list value prefixed `bound::`) is invoked against a
+// keyed entity, so it needs an entity key. n8n unwraps the resourceLocator's `__rl`
+// value when a bare `actionFunction` key is matched, and this rule depends only on
+// `operation` + `actionFunction` (both always resolvable) — using `hide` or referencing
+// a conditionally-shown field would stop n8n applying the fields' defaults.
+const SHOW_FOR_BOUND_ACTION_FUNCTION = {
+  operation: ['actionFunction'],
+  actionFunction: [{ _cnd: { regex: '^bound::' } }],
+}
+
+// A value with no binding prefix and at least one character is a manually typed
+// ("By Name") operation, where the user must still pick the kind and binding. From-list
+// values always carry a `bound::` / `unbound::` prefix, so they never match.
+const SHOW_FOR_MANUAL_ACTION_FUNCTION = {
+  operation: ['actionFunction'],
+  actionFunction: [{ _cnd: { regex: '^(?!bound::)(?!unbound::).+' } }],
+}
 
 export class SapCap implements INodeType {
   description: INodeTypeDescription = {
@@ -107,7 +127,7 @@ export class SapCap implements INodeType {
           },
         ],
         default: 'query',
-        description: 'CAP OData operation to run.',
+        description: 'CAP OData operation to run',
       },
       {
         displayName: 'Service Path',
@@ -116,95 +136,70 @@ export class SapCap implements INodeType {
         default: '/odata/v4/admin',
         required: true,
         placeholder: '/odata/v4/admin',
-        description: 'Path to the CAP OData service.',
-      },
-      {
-        displayName: 'Entity Set Source',
-        name: 'entitySetSource',
-        type: 'options',
-        options: [
-          {
-            name: 'From Metadata',
-            value: 'metadata',
-          },
-          {
-            name: 'Manual',
-            value: 'manual',
-          },
-        ],
-        default: 'metadata',
-        required: true,
-        description: 'Choose whether to load entity sets from CAP metadata or enter a name manually.',
+        description: 'Path to the CAP OData service',
       },
       {
         displayName: 'Entity Set',
         name: 'entitySet',
-        type: 'options',
-        default: '',
+        type: 'resourceLocator',
+        default: { mode: 'list', value: '' },
         required: true,
-        placeholder: 'Select an entity set',
-        description: 'Loaded from $metadata using the selected SAP CAP API credential.',
-        typeOptions: {
-          loadOptionsMethod: 'getEntitySets',
-        },
-        displayOptions: {
-          show: {
-            entitySetSource: ['metadata'],
-          },
-        },
-      },
-      {
-        displayName: 'Entity Set Name',
-        name: 'entitySetManual',
-        type: 'string',
-        default: '',
-        required: true,
-        placeholder: 'Books',
-        description: 'Use this when metadata cannot be loaded. Enter only the CAP entity set name, not a path or query string.',
-        displayOptions: {
-          show: {
-            entitySetSource: ['manual'],
-          },
-        },
-      },
-      {
-        displayName: 'Operation Source',
-        name: 'operationSource',
-        type: 'options',
-        options: [
+        description: 'CAP entity set. Pick it from $metadata, or switch to By Name to type it when metadata cannot be loaded.',
+        modes: [
           {
-            name: 'From Metadata',
-            value: 'metadata',
+            displayName: 'From List',
+            name: 'list',
+            type: 'list',
+            typeOptions: {
+              searchListMethod: 'searchEntitySets',
+              searchable: true,
+            },
           },
           {
-            name: 'Manual',
-            value: 'manual',
+            displayName: 'By Name',
+            name: 'name',
+            type: 'string',
+            placeholder: 'Books',
+            hint: 'Enter only the CAP entity set name, not a path or query string.',
           },
         ],
-        default: 'metadata',
-        required: true,
-        description: 'Choose whether to load CAP actions/functions from metadata or enter operation details manually.',
+        // A resourceLocator does not initialize its default when it carries a `hide`
+        // rule, so use `show`. Action/Function does not need the picker: bound operations
+        // take their entity set from the selected action's metadata.
         displayOptions: {
           show: {
-            operation: ['actionFunction'],
+            operation: ['query', 'read', 'create', 'update', 'delete'],
           },
         },
       },
       {
         displayName: 'Action/Function',
         name: 'actionFunction',
-        type: 'options',
-        default: '',
+        type: 'resourceLocator',
+        default: { mode: 'list', value: '' },
         required: true,
-        placeholder: 'Select an action or function',
-        description: 'Loaded from $metadata as a combined list of CAP actions and functions.',
-        typeOptions: {
-          loadOptionsMethod: 'getActionFunctions',
-        },
+        description: 'CAP action or function. From List reads $metadata (binding detected automatically); By Name lets you type one when metadata cannot be loaded.',
+        modes: [
+          {
+            displayName: 'From List',
+            name: 'list',
+            type: 'list',
+            typeOptions: {
+              searchListMethod: 'searchActionFunctions',
+              searchable: true,
+            },
+          },
+          {
+            displayName: 'By Name',
+            name: 'name',
+            type: 'string',
+            placeholder: 'submitOrder',
+            hint: 'Qualified name such as CatalogService.restock for bound operations when required.',
+          },
+        ],
         displayOptions: {
           show: {
             operation: ['actionFunction'],
-            operationSource: ['metadata'],
           },
         },
       },
@@ -224,27 +219,9 @@ export class SapCap implements INodeType {
         ],
         default: 'action',
         required: true,
-        description: 'Manual operation kind to invoke.',
+        description: 'Whether the typed operation is an action (POST) or a function (GET). Detected automatically when picked From List.',
         displayOptions: {
-          show: {
-            operation: ['actionFunction'],
-            operationSource: ['manual'],
-          },
-        },
-      },
-      {
-        displayName: 'Operation Name',
-        name: 'actionFunctionName',
-        type: 'string',
-        default: '',
-        required: true,
-        placeholder: 'submitOrder',
-        description: 'Manual CAP operation name. Use a qualified name such as CatalogService.restock for bound operations when required.',
-        displayOptions: {
-          show: {
-            operation: ['actionFunction'],
-            operationSource: ['manual'],
-          },
+          show: SHOW_FOR_MANUAL_ACTION_FUNCTION,
         },
       },
       {
@@ -263,12 +240,9 @@ export class SapCap implements INodeType {
         ],
         default: 'unbound',
         required: true,
-        description: 'Whether the manual action/function is invoked at the service root or against a keyed entity.',
+        description: 'Whether the typed action/function is invoked at the service root or against a keyed entity. Detected automatically when picked From List.',
         displayOptions: {
-          show: {
-            operation: ['actionFunction'],
-            operationSource: ['manual'],
-          },
+          show: SHOW_FOR_MANUAL_ACTION_FUNCTION,
         },
       },
       {
@@ -277,7 +251,7 @@ export class SapCap implements INodeType {
         type: 'string',
         default: '',
         placeholder: "title eq 'Dune'",
-        description: 'Raw OData $filter expression.',
+        description: 'Raw OData $filter expression',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -290,7 +264,7 @@ export class SapCap implements INodeType {
         type: 'string',
         default: '',
         placeholder: 'title asc, stock desc',
-        description: 'Raw OData $orderby expression.',
+        description: 'Raw OData $orderby expression',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -303,7 +277,7 @@ export class SapCap implements INodeType {
         type: 'string',
         default: '',
         placeholder: 'ID,title,stock',
-        description: 'Comma-separated field list for OData $select.',
+        description: 'Comma-separated field list for OData $select',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -315,7 +289,7 @@ export class SapCap implements INodeType {
         name: 'top',
         type: 'number',
         default: 100,
-        description: 'Maximum number of records to return using $top.',
+        description: 'Maximum number of records to return using $top',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -327,7 +301,7 @@ export class SapCap implements INodeType {
         name: 'skip',
         type: 'number',
         default: 0,
-        description: 'Number of records to skip using $skip.',
+        description: 'Number of records to skip using $skip',
         displayOptions: {
           show: {
             operation: ['query'],
@@ -350,10 +324,10 @@ export class SapCap implements INodeType {
         ],
         default: 'manual',
         required: true,
-        description: 'Choose metadata-derived key parts or a manual OData key predicate.',
+        description: 'Choose metadata-derived key parts or a manual OData key predicate',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete', 'actionFunction'],
+            operation: ['read', 'update', 'delete'],
           },
         },
       },
@@ -364,10 +338,10 @@ export class SapCap implements INodeType {
         default: '',
         required: true,
         placeholder: '{ "ID": 201, "IsActiveEntity": true }',
-        description: 'JSON object containing values for every key part from CAP metadata.',
+        description: 'JSON object containing values for every key part from CAP metadata',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete', 'actionFunction'],
+            operation: ['read', 'update', 'delete'],
             keyInputMode: ['metadata'],
           },
         },
@@ -382,9 +356,21 @@ export class SapCap implements INodeType {
         description: 'OData key predicate. Parentheses are optional; examples: ID=201 or ID=201,IsActiveEntity=true.',
         displayOptions: {
           show: {
-            operation: ['read', 'update', 'delete', 'actionFunction'],
+            operation: ['read', 'update', 'delete'],
             keyInputMode: ['manual'],
           },
+        },
+      },
+      {
+        displayName: 'Entity Key',
+        name: 'actionFunctionKey',
+        type: 'string',
+        default: '',
+        required: true,
+        placeholder: 'ID=201',
+        description: 'Key predicate of the entity the bound action/function targets, for example ID=201. Only bound operations need this.',
+        displayOptions: {
+          show: SHOW_FOR_BOUND_ACTION_FUNCTION,
         },
       },
       {
@@ -394,7 +380,7 @@ export class SapCap implements INodeType {
         default: '',
         required: true,
         placeholder: '{ "title": "New Book" }',
-        description: 'Explicit JSON object sent as the CAP entity payload.',
+        description: 'Explicit JSON object sent as the CAP entity payload',
         displayOptions: {
           show: {
             operation: ['create', 'update'],
@@ -408,7 +394,7 @@ export class SapCap implements INodeType {
         default: '{}',
         required: true,
         placeholder: '{ "book": 201, "quantity": 1 }',
-        description: 'Explicit JSON object sent as action parameters or encoded into OData function-call parameters.',
+        description: 'Explicit JSON object sent as action parameters or encoded into OData function-call parameters',
         displayOptions: {
           show: {
             operation: ['actionFunction'],
@@ -422,6 +408,10 @@ export class SapCap implements INodeType {
     loadOptions: {
       getEntitySets: loadEntitySetOptions,
       getActionFunctions: loadActionFunctionOptions,
+    },
+    listSearch: {
+      searchEntitySets,
+      searchActionFunctions,
     },
     credentialTest: {
       async sapCapApiCredentialTest(
@@ -519,12 +509,14 @@ async function buildOperationRequest(
   }
 
   if (operation === 'actionFunction') {
+    const actionFunction = readResourceLocator(context.getNodeParameter('actionFunction', itemIndex, ''))
+    const operationSource = actionFunction.mode === 'name' ? 'manual' : 'metadata'
     const actionFunctionInput = {
       servicePath,
-      operationSource: context.getNodeParameter('operationSource', itemIndex, 'metadata'),
-      operationDescriptor: context.getNodeParameter('actionFunction', itemIndex, ''),
+      operationSource,
+      operationDescriptor: operationSource === 'metadata' ? actionFunction.value : '',
       operationKind: context.getNodeParameter('actionFunctionKind', itemIndex, 'action'),
-      operationName: context.getNodeParameter('actionFunctionName', itemIndex, ''),
+      operationName: operationSource === 'manual' ? actionFunction.value : '',
       operationBinding: context.getNodeParameter('actionFunctionBinding', itemIndex, 'unbound'),
       parameters: context.getNodeParameter('parameters', itemIndex),
     }
@@ -532,7 +524,7 @@ async function buildOperationRequest(
       ? resolveActionFunctionEntitySet(actionFunctionInput) ?? resolveEntitySetParameter(context, itemIndex)
       : undefined
     const keyInput = actionFunctionEntitySetName
-      ? await resolveKeyInput(context, itemIndex, actionFunctionEntitySetName)
+      ? { keyPredicate: context.getNodeParameter('actionFunctionKey', itemIndex, '') as string }
       : {}
 
     return buildActionFunctionRequest({
@@ -577,10 +569,26 @@ async function buildOperationRequest(
 
 function resolveEntitySetParameter(context: IExecuteFunctions, itemIndex: number) {
   return resolveEntitySetName({
-    entitySetSource: context.getNodeParameter('entitySetSource', itemIndex) as string,
-    entitySet: context.getNodeParameter('entitySet', itemIndex, '') as string,
-    entitySetManual: context.getNodeParameter('entitySetManual', itemIndex, '') as string,
+    entitySet: readResourceLocator(context.getNodeParameter('entitySet', itemIndex, '')).value,
   })
+}
+
+// A resourceLocator value is `{ mode, value }` in n8n; manual/By-Name selections may
+// also arrive as a plain string. Normalize both so callers just read mode and value.
+function readResourceLocator(raw: unknown): { mode: string | undefined, value: string } {
+  if (raw && typeof raw === 'object') {
+    const locator = raw as { mode?: unknown, value?: unknown }
+
+    return {
+      mode: typeof locator.mode === 'string' ? locator.mode : undefined,
+      value: locator.value === undefined || locator.value === null ? '' : String(locator.value),
+    }
+  }
+
+  return {
+    mode: undefined,
+    value: typeof raw === 'string' ? raw : '',
+  }
 }
 
 async function resolveKeyInput(

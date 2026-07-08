@@ -176,19 +176,15 @@ function defaultParameters(overrides = {}) {
   return {
     operation: 'query',
     servicePath: '/odata/v4/admin',
-    entitySetSource: 'metadata',
-    entitySet: 'Books',
-    entitySetManual: '',
+    entitySet: { mode: 'list', value: 'Books' },
     filter: '',
     orderBy: '',
     select: '',
     top: 100,
     skip: 0,
     keyPredicate: '',
-    operationSource: 'metadata',
-    actionFunction: '',
+    actionFunction: { mode: 'list', value: '' },
     actionFunctionKind: 'action',
-    actionFunctionName: '',
     actionFunctionBinding: 'unbound',
     parameters: '{}',
     ...overrides,
@@ -377,9 +373,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
 
     const result = await executeSapCap([
       defaultParameters({
-        entitySetSource: 'manual',
-        entitySet: '',
-        entitySetManual: 'Books',
+        entitySet: { mode: 'name', value: 'Books' },
       }),
     ], {
       credentials: basicCredentials(queryServer.baseUrl),
@@ -804,6 +798,22 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     })
     expect(boundFunctionRequest.method).toBe('GET')
     expect(boundFunctionRequest.path).toBe('/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue(currency=\'USD\')')
+
+    // The metadata dropdown emits a binding-prefixed value; the builder must accept
+    // it and still resolve bound vs. unbound paths from the embedded descriptor.
+    expect(buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: `unbound::${JSON.stringify(actionDescriptor)}`,
+      parameters: JSON.stringify({ book: 201, quantity: 2 }),
+    }).path).toBe('/odata/v4/catalog/submitOrder')
+    expect(buildActionFunctionRequest({
+      servicePath: '/odata/v4/catalog',
+      operationSource: 'metadata',
+      operationDescriptor: `bound::${JSON.stringify(boundActionDescriptor)}`,
+      keyPredicate: 'ID=201',
+      parameters: JSON.stringify({ quantity: 5 }),
+    }).path).toBe('/odata/v4/catalog/Books(ID=201)/CatalogService.restock')
 
     expect(buildActionFunctionRequest({
       servicePath: '/odata/v4/catalog',
@@ -1265,8 +1275,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         entitySet: 'Authors',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Action: Books/restock'),
-        keyInputMode: 'manual',
-        keyPredicate: 'ID=201',
+        actionFunctionKey: 'ID=201',
         parameters: JSON.stringify({
           quantity: 5,
         }),
@@ -1277,10 +1286,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         entitySet: 'Authors',
         operationSource: 'metadata',
         actionFunction: optionByName.get('Function: Books/inventoryValue'),
-        keyInputMode: 'metadata',
-        keyParts: JSON.stringify({
-          ID: 201,
-        }),
+        actionFunctionKey: 'ID=201',
         parameters: JSON.stringify({
           currency: 'USD',
         }),
@@ -1291,7 +1297,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       }),
     })
 
-    expect(server.requests).toHaveLength(5)
+    expect(server.requests).toHaveLength(4)
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
       url: '/odata/v4/catalog/submitOrder',
@@ -1315,10 +1321,6 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       }),
     })
     expect(server.requests[3]).toMatchObject({
-      method: 'GET',
-      url: '/odata/v4/admin/$metadata',
-    })
-    expect(server.requests[4]).toMatchObject({
       method: 'GET',
       url: '/odata/v4/catalog/Books(ID=201)/CatalogService.inventoryValue(currency=\'USD\')',
       body: '',
@@ -1373,9 +1375,8 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
-        operationSource: 'manual',
+        actionFunction: { mode: 'name', value: 'submitOrder' },
         actionFunctionKind: 'action',
-        actionFunctionName: 'submitOrder',
         actionFunctionBinding: 'unbound',
         parameters: JSON.stringify({
           book: 201,
@@ -1385,9 +1386,8 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       defaultParameters({
         operation: 'actionFunction',
         servicePath: '/odata/v4/catalog',
-        operationSource: 'manual',
+        actionFunction: { mode: 'name', value: 'manualAvailability' },
         actionFunctionKind: 'function',
-        actionFunctionName: 'manualAvailability',
         actionFunctionBinding: 'unbound',
         parameters: JSON.stringify({
           book: 201,
@@ -1426,16 +1426,14 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     const invalidResult = await executeSapCap([
       defaultParameters({
         operation: 'actionFunction',
-        operationSource: 'manual',
+        actionFunction: { mode: 'name', value: 'submitOrder' },
         actionFunctionKind: 'action',
-        actionFunctionName: 'submitOrder',
         parameters: '{',
       }),
       defaultParameters({
         operation: 'actionFunction',
-        operationSource: 'manual',
+        actionFunction: { mode: 'name', value: 'manualAvailability' },
         actionFunctionKind: 'function',
-        actionFunctionName: 'manualAvailability',
         parameters: '[]',
       }),
     ], {
@@ -1571,14 +1569,10 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
 
     const result = await executeSapCap([
       defaultParameters({
-        entitySetSource: 'manual',
-        entitySet: '',
-        entitySetManual: '..',
+        entitySet: { mode: 'name', value: '..' },
       }),
       defaultParameters({
-        entitySetSource: 'manual',
-        entitySet: '',
-        entitySetManual: 'Books%2F$value',
+        entitySet: { mode: 'name', value: 'Books%2F$value' },
       }),
     ], {
       credentials: basicCredentials(server.baseUrl),
@@ -1604,6 +1598,73 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     ])
   })
 
+  it('turns a CAP duplicate-key error into a plain-language message without leaking credentials', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 500,
+      body: JSON.stringify({
+        error: { message: 'UNIQUE constraint failed: AdminService_Books.ID' },
+        // Sensitive fields that live alongside the message must never be surfaced.
+        Authorization: `Bearer ${fakeBearerToken}`,
+        password: fakePassword,
+        stack: 'stack trace should not be exposed',
+      }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({ operation: 'create', body: JSON.stringify({ ID: 201, title: 'Dune' }) }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+    const errorMessage = result[0][0].json.error
+
+    expect(errorMessage).toBe('Conflict. An entity with this key already exists — use a different key value.')
+    expect(errorMessage).not.toContain(fakePassword)
+    expect(errorMessage).not.toContain(fakeBearerToken)
+    expect(errorMessage).not.toContain('stack trace')
+  })
+
+  it('surfaces CAP error.message for other failures so developers see the real reason', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 400,
+      body: JSON.stringify({
+        error: { message: 'Value of property "price" is above the allowed maximum.' },
+        Authorization: `Bearer ${fakeBearerToken}`,
+        password: fakePassword,
+      }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({ operation: 'create', body: JSON.stringify({ ID: 1, price: 9999 }) }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+    const errorMessage = result[0][0].json.error
+
+    expect(errorMessage).toContain('Value of property "price" is above the allowed maximum.')
+    expect(errorMessage).not.toContain(fakePassword)
+    expect(errorMessage).not.toContain(fakeBearerToken)
+  })
+
+  it('explains a 405 as an unsupported / read-only operation', async () => {
+    const server = await createCapServer(() => ({
+      statusCode: 405,
+      body: JSON.stringify({ error: { message: 'Entity "Books" is read-only' } }),
+    }))
+
+    const result = await executeSapCap([
+      defaultParameters({ operation: 'create', body: JSON.stringify({ ID: 1, title: 'X' }) }),
+    ], {
+      credentials: basicCredentials(server.baseUrl),
+      continueOnFail: true,
+    })
+    const errorMessage = result[0][0].json.error
+
+    expect(errorMessage).toContain('Create is not supported on this entity set')
+    expect(errorMessage).toContain('read-only')
+  })
+
   it('throws sanitized not-found errors for missing Read entities when continueOnFail is false', async () => {
     const server = await createCapServer(() => ({
       statusCode: 404,
@@ -1627,7 +1688,7 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
         credentials: basicCredentials(server.baseUrl),
       }),
       {
-        message: 'CAP entity was not found for the selected entity set and key predicate.',
+        message: 'Not found (HTTP 404). No CAP entity matches on /odata/v4/admin/Books(ID=999).',
         itemIndex: 0,
       }
     )
@@ -1635,11 +1696,11 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
 
   it('maps CAP and OData failures to sanitized continueOnFail items with paired item metadata', async () => {
     const cases = [
-      [400, 'validation', 'CAP rejected the OData request. Check the OData options.'],
-      [401, 'authentication', 'CAP authentication failed. Check the SAP CAP API credential.'],
-      [403, 'authorization', 'CAP authorization failed. This credential cannot access the CAP service.'],
-      [404, 'notFound', 'CAP entity was not found for the selected entity set and key predicate.'],
-      [502, 'server', 'CAP service returned a server error. Try again or check the CAP service logs.'],
+      [400, 'validation', 'Bad request (HTTP 400) for read on /odata/v4/admin/Books(ID=999). Check your input parameters.'],
+      [401, 'authentication', 'Authentication failed (HTTP 401). Check the username and password in the SAP CAP credential.'],
+      [403, 'authorization', 'Access denied (HTTP 403). This credential does not have permission for this operation.'],
+      [404, 'notFound', 'Not found (HTTP 404). No CAP entity matches on /odata/v4/admin/Books(ID=999).'],
+      [502, 'server', 'CAP service error (HTTP 502). Check the CAP service logs.'],
     ]
 
     for (const [statusCode, category, message] of cases) {
@@ -1877,6 +1938,38 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expectNoSecrets(result)
   })
 
+  it('uses only plain displayOptions keys so n8n can resolve parameter dependencies', async () => {
+    // A dotted key such as `actionFunction.mode` makes n8n's dependency resolver loop
+    // ("Could not resolve parameter dependencies. Max iterations reached!"), because the
+    // key is treated as a literal parameter name. resourceLocator conditions must match
+    // the bare parameter (n8n unwraps its `__rl` value automatically).
+    const SapCap = await importSapCapNode()
+    const node = new SapCap()
+    const dottedKeys = []
+
+    for (const property of node.description.properties) {
+      for (const rule of Object.values(property.displayOptions ?? {})) {
+        for (const key of Object.keys(rule)) {
+          if (key.includes('.')) dottedKeys.push(`${property.name}: ${key}`)
+        }
+      }
+    }
+
+    expect(dottedKeys).toEqual([])
+  })
+
+  it('does not put a hide rule on resourceLocator fields', async () => {
+    // n8n does not initialize a resourceLocator's default when it carries a `hide` rule,
+    // which leaves the picker showing "Mode.../undefined". Use `show` instead.
+    const SapCap = await importSapCapNode()
+    const node = new SapCap()
+    const offenders = node.description.properties
+      .filter((property) => property.type === 'resourceLocator' && property.displayOptions?.hide)
+      .map((property) => property.name)
+
+    expect(offenders).toEqual([])
+  })
+
   it('keeps built node metadata and runtime source inside Phase 7 operation scope', async () => {
     const SapCap = await importSapCapNode()
     const node = new SapCap()
@@ -1893,10 +1986,9 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
     expect(propertyNames).toEqual(expect.arrayContaining([
       'operation',
       'body',
-      'operationSource',
+      'entitySet',
       'actionFunction',
       'actionFunctionKind',
-      'actionFunctionName',
       'actionFunctionBinding',
       'parameters',
       'keyInputMode',
@@ -1907,6 +1999,10 @@ describe('n8n SAP CAP Query and Read runtime integration', () => {
       'rawResponse',
       'rawODataResponse',
       'pollInterval',
+      'operationSource',
+      'entitySetSource',
+      'entitySetManual',
+      'actionFunctionName',
       'actionName',
       'functionName',
       'entityKey',

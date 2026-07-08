@@ -98,13 +98,9 @@ describe('package boundaries', () => {
     expect(propertyNames).toEqual([
       'operation',
       'servicePath',
-      'entitySetSource',
       'entitySet',
-      'entitySetManual',
-      'operationSource',
       'actionFunction',
       'actionFunctionKind',
-      'actionFunctionName',
       'actionFunctionBinding',
       'filter',
       'orderBy',
@@ -114,6 +110,7 @@ describe('package boundaries', () => {
       'keyInputMode',
       'keyParts',
       'keyPredicate',
+      'actionFunctionKey',
       'body',
       'parameters',
     ])
@@ -166,32 +163,13 @@ describe('package boundaries', () => {
     expect(propertyByName(node.description.properties, 'servicePath')).toMatchObject({
       default: '/odata/v4/admin',
     })
-    expect(propertyByName(node.description.properties, 'entitySetSource')).toMatchObject({
-      default: 'metadata',
-      options: [
-        { name: 'From Metadata', value: 'metadata' },
-        { name: 'Manual', value: 'manual' },
-      ],
-    })
     expect(propertyByName(node.description.properties, 'entitySet')).toMatchObject({
-      type: 'options',
-      typeOptions: {
-        loadOptionsMethod: 'getEntitySets',
-      },
-      displayOptions: {
-        show: {
-          entitySetSource: ['metadata'],
-        },
-      },
-    })
-    expect(propertyByName(node.description.properties, 'entitySetManual')).toMatchObject({
-      displayName: 'Entity Set Name',
-      placeholder: 'Books',
-      displayOptions: {
-        show: {
-          entitySetSource: ['manual'],
-        },
-      },
+      displayName: 'Entity Set',
+      type: 'resourceLocator',
+      modes: [
+        { name: 'list', type: 'list', typeOptions: { searchListMethod: 'searchEntitySets' } },
+        { name: 'name', type: 'string' },
+      ],
     })
     expect(propertyByName(node.description.properties, 'filter')).toMatchObject({
       displayName: 'Filter',
@@ -216,7 +194,7 @@ describe('package boundaries', () => {
       placeholder: 'ID=201,IsActiveEntity=true',
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete', 'actionFunction'],
+          operation: ['read', 'update', 'delete'],
           keyInputMode: ['manual'],
         },
       },
@@ -229,7 +207,7 @@ describe('package boundaries', () => {
       ],
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete', 'actionFunction'],
+          operation: ['read', 'update', 'delete'],
         },
       },
     })
@@ -238,7 +216,7 @@ describe('package boundaries', () => {
       type: 'json',
       displayOptions: {
         show: {
-          operation: ['read', 'update', 'delete', 'actionFunction'],
+          operation: ['read', 'update', 'delete'],
           keyInputMode: ['metadata'],
         },
       },
@@ -252,28 +230,16 @@ describe('package boundaries', () => {
         },
       },
     })
-    expect(propertyByName(node.description.properties, 'operationSource')).toMatchObject({
-      default: 'metadata',
-      options: [
-        { name: 'From Metadata', value: 'metadata' },
-        { name: 'Manual', value: 'manual' },
+    expect(propertyByName(node.description.properties, 'actionFunction')).toMatchObject({
+      displayName: 'Action/Function',
+      type: 'resourceLocator',
+      modes: [
+        { name: 'list', type: 'list', typeOptions: { searchListMethod: 'searchActionFunctions' } },
+        { name: 'name', type: 'string' },
       ],
       displayOptions: {
         show: {
           operation: ['actionFunction'],
-        },
-      },
-    })
-    expect(propertyByName(node.description.properties, 'actionFunction')).toMatchObject({
-      displayName: 'Action/Function',
-      type: 'options',
-      typeOptions: {
-        loadOptionsMethod: 'getActionFunctions',
-      },
-      displayOptions: {
-        show: {
-          operation: ['actionFunction'],
-          operationSource: ['metadata'],
         },
       },
     })
@@ -283,10 +249,11 @@ describe('package boundaries', () => {
         { name: 'Action', value: 'action' },
         { name: 'Function', value: 'function' },
       ],
-    })
-    expect(propertyByName(node.description.properties, 'actionFunctionName')).toMatchObject({
-      displayName: 'Operation Name',
-      placeholder: 'submitOrder',
+      displayOptions: {
+        show: {
+          operation: ['actionFunction'],
+        },
+      },
     })
     expect(propertyByName(node.description.properties, 'actionFunctionBinding')).toMatchObject({
       default: 'unbound',

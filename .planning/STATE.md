@@ -89,7 +89,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - Initial roadmap keeps the research-suggested eight phases because each phase has distinct requirement coverage and dependency boundaries.
-- Optional v2 SAP CAP Trigger Node work remains deferred unless explicitly promoted later.
+- Optional v2 SAP CAP Trigger Node (US 5.1) is now implemented: `SapCapTrigger` polling node with entity-set + timestamp-field dropdowns, watermark dedup, and Start From Now / Fetch All first-run modes.
 - Package-owned CAP plugin and n8n node artifacts are the deliverables; the demo app is evidence, not the integration owner.
 - [Phase 02]: Workflow IDs remain caller-facing in start results; only outbound webhook paths are normalized. — Preserves the CAP developer contract while still supporting n8n webhook and webhook-test routes.
 - [Phase 02]: Webhook responses are wrapped in accepted/result start envelopes with optional executionId and correlation metadata. — Keeps Phase 2 schema-friendly without adding Phase 3 durable tracking, query, or cancel behavior.
@@ -188,7 +188,7 @@ Recent decisions affecting current work:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| v2 | SAP CAP Trigger Node polling, deduplication, and first-run behavior | Deferred | Initial roadmap |
+| v2 | SAP CAP Trigger Node polling, deduplication, and first-run behavior | Implemented (US 5.1) | Initial roadmap |
 
 ## Session Continuity
 
