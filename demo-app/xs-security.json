@@ -1,0 +1,20 @@
+{
+  "xsappname": "cap-n8n-demo",
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.admin",
+      "description": "Admin access to CAP n8n demo AdminService (Books, Authors, Genres)"
+    }
+  ],
+  "authorities": [
+    "$XSAPPNAME.admin"
+  ],
+  "role-templates": [
+    {
+      "name": "Admin",
+      "description": "Admin role for the CAP n8n demo — grants access to AdminService",
+      "scope-references": ["$XSAPPNAME.admin"]
+    }
+  ]
+}
