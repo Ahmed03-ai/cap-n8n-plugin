@@ -1,0 +1,21 @@
+---
+applications:
+  - name: cap-n8n-demo
+    # Upload repo root so npm workspaces resolves cap-n8n-plugin
+    path: ..
+    buildpacks:
+      - nodejs_buildpack
+    command: npm run cap:serve
+    memory: 256M
+    disk_quota: 1024M
+    instances: 1
+    health-check-type: process
+    # Bind XSUAA — CF injects credentials into VCAP_SERVICES at runtime
+    services:
+      - cap-n8n-xsuaa
+    env:
+      # Install devDependencies so @cap-js/sqlite is available
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: "false"
+      # In-memory SQLite, mock n8n (no n8n on CF), JWT auth via bound XSUAA
+      CDS_CONFIG: '{"requires":{"db":{"kind":"sqlite","credentials":{"database":":memory:"}},"n8n":{"kind":"mock"},"auth":{"kind":"jwt"}}}'

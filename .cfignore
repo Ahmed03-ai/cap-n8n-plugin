@@ -1,0 +1,34 @@
+# Dependencies — CF reinstalls these during staging
+node_modules/
+demo-app/node_modules/
+cap-n8n-plugin/node_modules/
+cap-n8n-node/node_modules/
+
+# Build output — not needed at runtime
+cap-n8n-node/dist/
+
+# Local n8n data
+.n8n-data/
+.n8n-review-data/
+
+# Secrets and local config
+.env
+.cds-services.json
+
+# Git
+.git/
+
+# Dev tooling and planning docs
+.planning/
+.vscode/
+docs/
+mockups/
+scripts/
+
+# Tests
+test/
+test-workflows/
+
+# Logs and packed tarballs
+*.log
+*.tgz

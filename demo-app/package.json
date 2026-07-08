@@ -6,6 +6,7 @@
   ],
   "dependencies": {
     "@sap/cds": "^9.9.1",
+    "@sap/xssec": "^4",
     "cap-n8n-plugin": "*"
   },
   "devDependencies": {
