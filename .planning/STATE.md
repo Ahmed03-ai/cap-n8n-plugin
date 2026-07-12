@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: human_verification
-last_updated: "2026-06-21T17:45:00Z"
-last_activity: 2026-06-22 -- Completed quick task 260622-e2e: Replace demo workflow fixture
+last_updated: "2026-07-12T20:26:23Z"
+last_activity: 2026-07-12 -- Completed quick task 260712-v5z: Install the supplied local book recommendation workflow
 progress:
   total_phases: 8
   completed_phases: 7
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-31)
 Phase: 08 (deployment-docs-and-release-readiness) - HUMAN UAT
 Plan: 4 of 4 completed
 Status: Automated verification passed; human UAT pending
-Last activity: 2026-06-22 -- Completed quick task 260622-e2e: Replace demo workflow fixture
+Last activity: 2026-07-12 -- Completed quick task 260712-v5z: Install the supplied local book recommendation workflow
 
 Progress: [██████████] 100%
 
@@ -183,6 +183,7 @@ Recent decisions affecting current work:
 | 260621-r3q | Rewrite agent startup routine to load stock update discord msg test workflow | 2026-06-21 | pending | [260621-r3q-rewrite-agent-startup-routine-to-load-st](./quick/260621-r3q-rewrite-agent-startup-routine-to-load-st/) |
 | 260621-mrg | Merge community node branch into port branch | 2026-06-21 | pending | [260621-mrg-merge-community-node-into-port](./quick/260621-mrg-merge-community-node-into-port/) |
 | 260622-pld | Expand demo workflow payload | 2026-06-22 | pending | [260622-pld-expand-demo-workflow-payload](./quick/260622-pld-expand-demo-workflow-payload/) |
+| 260712-v5z | Install the supplied local book recommendation workflow | 2026-07-12 | cf894ae | [260712-v5z-install-the-supplied-local-book-recommen](./quick/260712-v5z-install-the-supplied-local-book-recommen/) |
 
 ## Deferred Items
 
