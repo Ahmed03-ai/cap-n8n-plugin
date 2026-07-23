@@ -64,7 +64,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://discord.com/api/webhooks/1527988422101307454/GwMfBG7ama7Sre8Z1BoYWQKCFEiQMcSW6H-FZvwq1aJRskqnPLwbZPSHrAYJwzbAlang",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
         "sendBody": true,
         "bodyParameters": {
           "parameters": [
@@ -133,7 +133,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ executionId: $execution.id }) }}",
+        "responseBody": "{\n  \"executionId\": \"{{ $execution.id }}\",\n  \"status\": \"running\",\n  \"keepRunning\": true\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
