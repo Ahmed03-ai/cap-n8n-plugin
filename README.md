@@ -157,6 +157,12 @@ module.exports = class SomeService extends cds.ApplicationService {
 
 Successful starts return an accepted result object containing the caller-facing `workflowId`, optional `executionId`, optional correlation metadata, and the parsed webhook or mock result.
 
+## Example Workflows
+
+The [`examples/`](examples/) folder contains ready-to-import n8n workflows for trying the plugin end to end. Import them through **Import from File** in the n8n editor.
+
+[`examples/cap-stock-alert-discord-ai-cancellable.json`](examples/cap-stock-alert-discord-ai-cancellable.json) can be used to manually test both directions of the plugin: create a Book in the demo app to trigger the workflow (a low-stock Discord alert via an AI agent), and delete the same Book to cancel the running execution. See [examples/README.md](examples/README.md) for the credentials and cancellation-test setup.
+
 ## Shared n8n Workflows
 
 Shared local workflow fixtures live in `test-workflows/`.
