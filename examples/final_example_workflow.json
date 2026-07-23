@@ -1,0 +1,505 @@
+{
+  "name": "Final Example Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c59297a9-6e7c-4c3b-9992-a0cd0370e430",
+              "leftValue": "={{ $json.body.stock }}",
+              "operator": {
+                "operation": "lt",
+                "type": "number"
+              },
+              "rightValue": 20
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "6e86a2bf-7380-4812-adf1-17ca67f55858",
+      "name": "Stock low? (<20)",
+      "position": [
+        208,
+        0
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {},
+      "id": "b5ffe978-b8d2-4f16-b591-ab000a96134f",
+      "name": "Stock OK (no action)",
+      "position": [
+        512,
+        240
+      ],
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "63c8e654-fdd4-40c7-844f-2e9e1f3daa59",
+      "name": "Send Discord Alert",
+      "position": [
+        768,
+        -224
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "id": "1dbce8a2-cb6f-4eb8-8c1e-543008475c67",
+      "name": "Google Gemini Chat Model",
+      "position": [
+        416,
+        0
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "entitySet": "Books",
+        "keyPredicate": "=ID={{ $('CAP Book Event').item.json.body.bookId }},IsActiveEntity=true",
+        "body": "={\n  \"descr\": \"={{ $json.output }}\"\n}"
+      },
+      "id": "cfd78982-c871-4148-9dfb-5dec2a7a8375",
+      "name": "SAP CAP",
+      "position": [
+        672,
+        560
+      ],
+      "type": "CUSTOM.sapCap",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Hi, create a short discord message telling the user that the stock of his book with title {{ $('CAP Book Event').item.json.body.title }}, with ID {{ $('CAP Book Event').item.json.body.bookId }} and stock level {{ $('CAP Book Event').item.json.body.stock }} is low. Only write the message and nothing else. I trust your decision. Thanks",
+        "options": {}
+      },
+      "id": "3fbfaa32-3afe-4937-bc3e-f2ca0e8a1dc5",
+      "name": "AI Reminder Agent",
+      "position": [
+        416,
+        -224
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You enrich book metadata for a CAP Book entity.\n\nInput:\nTitle: {{ $('CAP Book Event').item.json.body.title }}\nCurrent description: {{ $('CAP Book Event').item.json.body.description }}\nCurrent author ID: {{ $('CAP Book Event').item.json.body.authorId }}\nCurrent genre ID: {{ $('CAP Book Event').item.json.body.genreId }}\n\nTask:\nWrite an improved book description for this book.\n\nRules:\n- Return only the improved description as plain text.\n- Keep it factual and concise.\n- Do not mention that you are an AI.\n- Do not include JSON, markdown, labels, bullets, or quotes.\n- Length: 6 to 8 sentences.\n- Preserve the original meaning, but add useful context if obvious from the title and description.",
+        "options": {}
+      },
+      "id": "2824063b-59a6-4f93-887d-0ce5fe217e02",
+      "name": "AI Enrichment",
+      "position": [
+        256,
+        560
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "id": "40520234-c078-4bf8-8c67-6fb2be92b2cd",
+      "name": "Google Gemini Enrichment",
+      "position": [
+        384,
+        1392
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You recommend books similar to an existing CAP Book.\n\nSource book:\nTitle: {{ $('CAP Book Event').item.json.body.title }}\nDescription: {{ $('CAP Book Event').item.json.body.description }}\nAuthor ID: {{ $('CAP Book Event').item.json.body.authorId }}\nGenre ID: {{ $('CAP Book Event').item.json.body.genreId }}\n\nTask:\nRecommend exactly 3 real, published books that fit the source book’s themes, genre, mood, or likely reader interest.\n\nRules:\n- Do not recommend the source book itself.\n- Make all three recommendations distinct.\n- Prefer a mix of closely related and slightly broader recommendations.\n- Use factual titles, authors, genres, and descriptions. Do not invent books, authors, or links.\n- Each description must be concise.\n- `coverImageUrl` must be a public direct link to a book-cover image, not a webpage, search result, or markdown image.\n- Return only valid JSON. No markdown or text before or after it. \n- The response must conform to the connected output parser. Return JSON only. Do not wrap it in ```json code fences.\n\nReturn this exact shape:\n\n{\n  \"recommendations\": [\n    {\n      \"title\": \"Book title\",\n      \"author\": \"Author name\",\n      \"genre\": \"Readable genre name\",\n      \"description\": \"Short recommendation description and relevance to the source book.\",\n      \"coverImageUrl\": \"https://example.com/book-cover.jpg\"\n    },\n    {\n      \"title\": \"Book title\",\n      \"author\": \"Author name\",\n      \"genre\": \"Readable genre name\",\n      \"description\": \"Short recommendation description and relevance to the source book.\",\n      \"coverImageUrl\": \"https://example.com/book-cover.jpg\"\n    },\n    {\n      \"title\": \"Book title\",\n      \"author\": \"Author name\",\n      \"genre\": \"Readable genre name\",\n      \"description\": \"Short recommendation description and relevance to the source book.\",\n      \"coverImageUrl\": \"https://example.com/book-cover.jpg\"\n    }\n  ]\n}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "id": "cd57e617-f685-49b0-ba44-3949e6b40df0",
+      "name": "AI Book Recommendation",
+      "position": [
+        384,
+        1168
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "entitySet": "Books",
+        "keyPredicate": "=ID={{ $('CAP Book Event').item.json.body.bookId }},IsActiveEntity=true",
+        "body": "={\n  \"descr\": \"={{ $json.output }}\"\n}"
+      },
+      "id": "17d630c0-4b92-4987-a10c-f22fc8845f52",
+      "name": "SAP CAP2",
+      "position": [
+        688,
+        2128
+      ],
+      "type": "CUSTOM.sapCap",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "entitySet": "Books",
+        "keyPredicate": "=ID={{ $('CAP Book Event').item.json.body.bookId }},IsActiveEntity=true",
+        "body": "={\n  \"descr\": \"={{ $json.output }}\"\n}"
+      },
+      "id": "5268e6df-0b8a-41de-99ff-80767661cffd",
+      "name": "SAP CAP3",
+      "position": [
+        896,
+        2128
+      ],
+      "type": "CUSTOM.sapCap",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"recommendations\": {\n      \"type\": \"array\",\n      \"minItems\": 3,\n      \"maxItems\": 3,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\": { \"type\": \"string\" },\n          \"author\": { \"type\": \"string\" },\n          \"genre\": { \"type\": \"string\" },\n          \"description\": { \"type\": \"string\" },\n          \"coverImageUrl\": { \"type\": \"string\" }\n        },\n        \"required\": [\n          \"title\",\n          \"author\",\n          \"genre\",\n          \"description\",\n          \"coverImageUrl\"\n        ],\n        \"additionalProperties\": false\n      }\n    }\n  },\n  \"required\": [\"recommendations\"],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        528,
+        1392
+      ],
+      "id": "40e0b45f-5923-4da9-aebd-bfcf09b28d08",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.recommendations",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        720,
+        1168
+      ],
+      "id": "1f04d3fe-d445-404e-9655-495c29c98a2e",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "entitySet": "Books",
+        "body": "={\n  \"title\": \"{{ $('Split Out').item.json.title }}\",\n  \"descr\": \"{{ $('Split Out').item.json.description }}\",\n  \"author_ID\": \"150\",\n  \"genre_ID\": \"13aaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\n  \"stock\": 10,\n  \"price\": 14.99,\n  \"currency_code\": \"EUR\"\n}"
+      },
+      "id": "ac3baa5d-bd7d-4436-9585-a11709cec6b6",
+      "name": "SAP CAP Create Recommended Books",
+      "position": [
+        1360,
+        1168
+      ],
+      "type": "CUSTOM.sapCap",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "https://openlibrary.org/search.json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "author",
+              "value": "={{ $json.author }}"
+            },
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        912,
+        1168
+      ],
+      "id": "089d7fb7-4aa2-4494-bb19-11edb23c7a15",
+      "name": "HTTP Request",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "actionFunction",
+        "actionFunction": {
+          "__rl": true,
+          "value": "bound::{\"kind\":\"action\",\"name\":\"draftActivate\",\"qualifiedName\":\"AdminService.draftActivate\",\"isBound\":true,\"bindingType\":\"AdminService.Books\",\"parameters\":[],\"entitySet\":\"Books\"}",
+          "mode": "list",
+          "cachedResultName": "Action: Books/draftActivate"
+        },
+        "actionFunctionKey": "={{ 'ID=' + $json.ID + ',IsActiveEntity=false' }}",
+        "parameters": "={}"
+      },
+      "id": "83dc2ee3-f34c-46c1-86f8-e00c5c016e34",
+      "name": "SAP CAP Activate Books",
+      "position": [
+        1568,
+        1168
+      ],
+      "type": "CUSTOM.sapCap",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.DISCORD_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "=📚 **{{ $('Split Out').item.json.title }}** by {{ $('Split Out').item.json.title }}\nGenre: {{ $('Split Out').item.json.genre }}\n\n{{ $('Split Out').item.json.title }}\n\nCover: {{ $json.docs?.[0]?.cover_i\n  ? 'https://covers.openlibrary.org/b/id/' + $json.docs[0].cover_i + '-L.jpg'\n  : '' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1a30ed9d-001b-4ff8-90aa-75ab1c29ccef",
+      "name": "Send Recommendations",
+      "position": [
+        1392,
+        1472
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1152,
+        1168
+      ],
+      "id": "ef453347-6847-44a1-9584-ac175983a7fa",
+      "name": "Wait",
+      "webhookId": "9e5f8ec5-600d-400a-979b-3e3ab8e3b4dc"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cap-test-trigger",
+        "options": {}
+      },
+      "id": "9fd6a43a-1249-4032-9506-56de71fc3c13",
+      "name": "CAP Book Event",
+      "position": [
+        160,
+        1168
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "webhookId": "c754277f-3707-40a1-b8a7-85274ce629a8"
+    }
+  ],
+  "connections": {
+    "AI Enrichment": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "SAP CAP",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "AI Reminder Agent": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Send Discord Alert",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "AI Reminder Agent",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Google Gemini Enrichment": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Book Recommendation",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Enrichment",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stock low? (<20)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "AI Reminder Agent",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Stock OK (no action)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "AI Book Recommendation": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Book Recommendation",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SAP CAP Create Recommended Books": {
+      "main": [
+        [
+          {
+            "node": "SAP CAP Activate Books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "SAP CAP Create Recommended Books",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CAP Book Event": {
+      "main": [
+        [
+          {
+            "node": "AI Book Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}

@@ -7,6 +7,15 @@ These are templates, not test fixtures. The shared fixtures used by the local de
 loop (`npm run n8n:import` / `npm run n8n:export`) live in `test-workflows/`, which is
 mounted into the n8n container.
 
+## final_example_workflow.json
+
+**Final Example Workflow**
+
+This is the complete presentation workflow. A CAP Book event triggers AI description
+enrichment, a low-stock Discord alert, three book recommendations, Open Library cover
+lookup, and SAP CAP write-back operations. Before running it, configure the Google
+Gemini credentials, the SAP CAP credential, and the Discord webhook URL in n8n.
+
 ## cap-stock-alert-discord-ai-cancellable.json
 
 **CAP Stock Alert - Discord + AI (cancellable)**
