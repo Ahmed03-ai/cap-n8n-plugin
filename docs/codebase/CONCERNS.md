@@ -18,11 +18,6 @@
 - Impact: Deterministic tests verify the built node package, but the default local n8n UI will not show the SAP CAP node unless the package is separately installed or mounted.
 - Fix approach: Add a Phase 8-style local custom-node harness or documented Docker override that installs/mounts `cap-n8n-node`, then run live editor/runtime E2E verification.
 
-**Generated agent context can drift after codebase-map changes:**
-- Issue: `AGENTS.md` embeds snapshots from `.planning/codebase/` documents and can become stale after incremental codebase maps unless the generated agent context is refreshed.
-- Files: `AGENTS.md`, `.planning/codebase/*.md`
-- Impact: Future agent sessions may see old stack/convention/architecture facts even after mapper docs have been corrected.
-- Fix approach: Regenerate or refresh `AGENTS.md` after this incremental map is accepted, especially because it still contains older "placeholder" and "no automated test runner" wording.
 
 **No CI pipeline yet:**
 - Issue: The repo has passing local scripts (`npm run smoke`, `npm run test:integration`, `npm test`, and package-level workspace checks) but no `.github/workflows` or equivalent CI configuration.

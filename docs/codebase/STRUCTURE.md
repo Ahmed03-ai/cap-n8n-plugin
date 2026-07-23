@@ -8,7 +8,7 @@
 
 ```text
 cap-n8n-plugin/
-|-- .planning/                  # GSD planning and generated codebase maps
+|-- docs/                       # User and contributor documentation, incl. codebase maps
 |-- cap-n8n-plugin/             # CAP plugin package for CAP -> n8n integration
 |   |-- lib/                    # Reusable CAP service implementations
 |   |   `-- annotations/        # Declarative annotation helper contracts
@@ -37,7 +37,6 @@ cap-n8n-plugin/
 |   `-- manual-visual-showcase.md
 |-- test/                       # Vitest smoke and integration tests
 |-- test-workflows/             # Shared exported n8n workflows
-|-- AGENTS.md                   # Generated Codex/agent operating context from GSD docs
 |-- docker-compose.yml          # Local n8n orchestration config
 |-- package-lock.json           # Root npm workspace lockfile
 |-- package.json                # npm workspace root
@@ -48,10 +47,10 @@ cap-n8n-plugin/
 
 ## Directory Purposes
 
-**`.planning/`:**
-- Purpose: Stores GSD planning artifacts and codebase maps.
-- Contains: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/STRUCTURE.md`, and other mapper-owned documents.
-- Key files: `.planning/codebase/ARCHITECTURE.md`, `.planning/codebase/STRUCTURE.md`
+**`docs/`:**
+- Purpose: Stores user and contributor documentation, including the codebase maps.
+- Contains: `docs/codebase/ARCHITECTURE.md`, `docs/codebase/STRUCTURE.md`, manual testing and deployment runbooks.
+- Key files: `docs/codebase/ARCHITECTURE.md`, `docs/codebase/STRUCTURE.md`, `docs/manual-testing.md`
 
 **`cap-n8n-plugin/`:**
 - Purpose: Package boundary for the reusable CAP plugin that lets CAP applications trigger n8n workflows.
@@ -221,7 +220,6 @@ cap-n8n-plugin/
 **Documentation:**
 - `README.md`: Root package overview and local development flow.
 - `docs/manual-visual-showcase.md`: Manual demo/showcase runbook that separates implemented evidence from Phase 8 live custom-node E2E work.
-- `AGENTS.md`: Generated project operating context consumed by Codex/agent sessions; includes embedded snapshots from GSD project and codebase documents.
 - `demo-app/readme.md`: Demo app-specific workflow-trigger notes.
 - `N8N_REQUIREMENTS.md`: Requirements for CAP-to-n8n and n8n-to-CAP integration.
 - `cap_n8n_requirements_v2.md`: Requirements version with user stories and acceptance criteria.
@@ -310,8 +308,8 @@ cap-n8n-plugin/
 - Generated: Yes
 - Committed: No
 
-**`.planning/codebase/`:**
-- Purpose: Generated GSD codebase map documents consumed by planning/execution workflows.
+**`docs/codebase/`:**
+- Purpose: Codebase map documents describing architecture, structure, stack, conventions, testing, and integrations.
 - Generated: Yes
 - Committed: Yes
 
