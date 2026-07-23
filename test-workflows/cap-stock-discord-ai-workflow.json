@@ -1,0 +1,228 @@
+{
+  "name": "stock update discord msg test workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cap-test-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "3d324ba2-02a0-433e-b4d0-727619a57fde",
+      "name": "CAP Book Event",
+      "position": [
+        -1024,
+        192
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c59297a9-6e7c-4c3b-9992-a0cd0370e430",
+              "leftValue": "={{ $json.body.stock }}",
+              "operator": {
+                "operation": "lt",
+                "type": "number"
+              },
+              "rightValue": 20
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          }
+        },
+        "options": {}
+      },
+      "id": "363acd84-3426-4b8e-8c56-06f0280c18f4",
+      "name": "Stock low? (<20)",
+      "position": [
+        -704,
+        192
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3
+    },
+    {
+      "parameters": {},
+      "id": "6110ed83-1cee-473e-900c-856d68cd91ab",
+      "name": "Stock OK (no action)",
+      "position": [
+        96,
+        416
+      ],
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://discord.com/api/webhooks/1527988422101307454/GwMfBG7ama7Sre8Z1BoYWQKCFEiQMcSW6H-FZvwq1aJRskqnPLwbZPSHrAYJwzbAlang",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.output }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "420766a4-9aac-4a9a-9090-ee1234dad690",
+      "name": "Send Discord Alert",
+      "position": [
+        352,
+        -48
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "7e0b20d3-6729-4bba-801d-4d81e63161db",
+      "name": "Google Gemini Chat Model",
+      "position": [
+        0,
+        176
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HNB1ejfg82Wskhdu",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Hi, create a short discord message telling the user that the stock of his book with title {{ $('CAP Book Event').item.json.body.title }}, with ID {{ $('CAP Book Event').item.json.body.bookId }} and stock level {{ $('CAP Book Event').item.json.body.stock }} is low. Only write the message and nothing else. I trust your decision. Thanks",
+        "options": {}
+      },
+      "id": "d09232ee-eb65-4efc-82b5-ac4cfd948807",
+      "name": "AI Reminder Agent",
+      "position": [
+        0,
+        -48
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        -48
+      ],
+      "id": "0e824928-13e1-4854-a9d5-64a15385a0df",
+      "name": "Wait"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ executionId: $execution.id }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -464,
+        -48
+      ],
+      "id": "2b28cf5c-24e1-48f4-b84c-214e9f5a2682",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "AI Reminder Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Discord Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CAP Book Event": {
+      "main": [
+        [
+          {
+            "node": "Stock low? (<20)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Reminder Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stock low? (<20)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Stock OK (no action)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "AI Reminder Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
