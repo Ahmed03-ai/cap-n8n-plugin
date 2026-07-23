@@ -1,5 +1,5 @@
 {
-  "name": "stock update discord msg test workflow",
+  "name": "CAP Stock Alert - Discord + AI (cancellable)",
   "nodes": [
     {
       "parameters": {

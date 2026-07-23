@@ -131,7 +131,7 @@ To cancel a running workflow (via `@n8n.workflow.cancel` or `n8n.cancel()`), the
 
 Without this node, starting workflows still works normally — but a cancel has no execution to stop and is logged as a no-op warning.
 
-A ready-made example workflow is included: import [test-workflows/cap-stock-discord-ai-workflow.json](test-workflows/cap-stock-discord-ai-workflow.json) through **Import from File** in the n8n editor. It already responds with the execution ID and waits, so cancellation can be observed end to end. Add your own Google Gemini and Discord credentials to the AI and Discord nodes before running it.
+A ready-made example workflow is included: import [test-workflows/cap-stock-alert-discord-ai-cancellable.json](test-workflows/cap-stock-alert-discord-ai-cancellable.json) through **Import from File** in the n8n editor. It sends a low-stock Discord alert via an AI agent, and it already responds with the execution ID and waits, so cancellation can be tested with the same workflow. Add your own Google Gemini and Discord credentials to those nodes before running it.
 
 ## Programmatic CAP Usage
 
