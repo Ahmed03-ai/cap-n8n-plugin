@@ -19,7 +19,7 @@ const demoModelRoots = [
   path.join(repoRoot, 'demo-app', 'srv'),
   path.join(repoRoot, 'demo-app', 'app')
 ]
-const workflowId = 'webhook-test/cap-test-trigger'
+const workflowId = 'webhook/cap-test-trigger'
 const serviceName = 'AdminService'
 const sourceBooks = 'sap.capire.bookshop.Books'
 const sourceAuthors = 'sap.capire.bookshop.Authors'

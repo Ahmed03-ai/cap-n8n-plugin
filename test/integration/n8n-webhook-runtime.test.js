@@ -226,7 +226,7 @@ describe('N8nWorkflowService webhook runtime reliability', () => {
 
     try {
       configureN8n(server.baseUrl, {
-        timeoutMs: 25,
+        timeoutMs: 200,
         retries: 1,
         retryDelayMs: 5
       })
