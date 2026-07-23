@@ -18,6 +18,7 @@
     "bin/",
     "index.js",
     "index.cds",
+    "n8n-service.cds",
     "cds-plugin.js",
     "lib/"
   ],
