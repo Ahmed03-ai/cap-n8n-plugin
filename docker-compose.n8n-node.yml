@@ -1,11 +1,11 @@
 services:
   n8n:
     image: n8nio/n8n:2.22.5
-    container_name: n8n_cap_node_review
     ports:
       - "5678:5678"
     volumes:
-      - ./.n8n-review-data:/home/node/.n8n
+      - n8n_review_data:/home/node/.n8n
+      - ./.n8n-review-data/custom:/home/node/.n8n/custom
       - ./test-workflows:/test-workflows
     environment:
       - N8N_HOST=localhost
@@ -18,3 +18,6 @@ services:
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - N8N_UNVERIFIED_PACKAGES_ENABLED=true
       - N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom
+
+volumes:
+  n8n_review_data:
